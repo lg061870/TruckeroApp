@@ -1,0 +1,128 @@
+﻿@page "/"
+
+<div id="stats-overview" class="grid grid-cols-4 gap-6 mb-6">
+    <div class="bg-white p-6 rounded-xl shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-gray-500">Total Jobs</h3>
+            <i class="fa-solid fa-truck-fast text-[#FF6B00]"></i>
+        </div>
+        <p class="text-2xl font-bold">2,451</p>
+        <p class="text-sm text-green-500 mt-2">+15.2% this month</p>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-gray-500">Active Drivers</h3>
+            <i class="fa-solid fa-user-group text-[#FF6B00]"></i>
+        </div>
+        <p class="text-2xl font-bold">847</p>
+        <p class="text-sm text-green-500 mt-2">+5.3% this month</p>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-gray-500">Revenue</h3>
+            <i class="fa-solid fa-dollar-sign text-[#FF6B00]"></i>
+        </div>
+        <p class="text-2xl font-bold">$324.5K</p>
+        <p class="text-sm text-green-500 mt-2">+12.7% this month</p>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-gray-500">Open Disputes</h3>
+            <i class="fa-solid fa-triangle-exclamation text-[#FF6B00]"></i>
+        </div>
+        <p class="text-2xl font-bold">23</p>
+        <p class="text-sm text-red-500 mt-2">+2 new today</p>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div id="recent-activity" class="grid grid-cols-3 gap-6">
+    <!-- Recent Jobs -->
+    <div class="bg-white rounded-xl shadow-sm col-span-2">
+        <div class="p-6 border-b">
+            <h2 class="text-xl font-bold">Recent Jobs</h2>
+        </div>
+        <div class="p-6">
+            <div class="space-y-4">
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <i class="fa-solid fa-box text-blue-500"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="font-semibold">Freight Delivery #2451</h4>
+                            <p class="text-sm text-gray-500">Los Angeles to San Francisco</p>
+                        </div>
+                    </div>
+                    <span class="px-3 py-1 bg-green-100 text-green-600 rounded-full text-sm">Completed</span>
+                </div>
+
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                            <i class="fa-solid fa-box text-purple-500"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="font-semibold">Freight Delivery #2450</h4>
+                            <p class="text-sm text-gray-500">Seattle to Portland</p>
+                        </div>
+                    </div>
+                    <span class="px-3 py-1 bg-yellow-100 text-yellow-600 rounded-full text-sm">In Progress</span>
+                </div>
+
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                            <i class="fa-solid fa-box text-red-500"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="font-semibold">Freight Delivery #2449</h4>
+                            <p class="text-sm text-gray-500">Miami to Orlando</p>
+                        </div>
+                    </div>
+                    <span class="px-3 py-1 bg-red-100 text-red-600 rounded-full text-sm">Cancelled</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Users -->
+    <div class="bg-white rounded-xl shadow-sm">
+        <div class="p-6 border-b">
+            <h2 class="text-xl font-bold">New Users</h2>
+        </div>
+        <div class="p-6">
+            <div class="space-y-4">
+                <div class="flex items-center">
+                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" class="w-10 h-10 rounded-full">
+                    <div class="ml-4">
+                        <h4 class="font-semibold">Sarah Johnson</h4>
+                        <p class="text-sm text-gray-500">Driver</p>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" class="w-10 h-10 rounded-full">
+                    <div class="ml-4">
+                        <h4 class="font-semibold">Michael Chen</h4>
+                        <p class="text-sm text-gray-500">Customer</p>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-4.jpg" class="w-10 h-10 rounded-full">
+                    <div class="ml-4">
+                        <h4 class="font-semibold">David Wilson</h4>
+                        <p class="text-sm text-gray-500">Store Owner</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@code {
+
+}

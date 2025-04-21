@@ -1,0 +1,34 @@
+[
+  {
+    "allowedMemberTypes": ["User"],
+    "description": "Can schedule and track delivery jobs",
+    "displayName": "Consumer",
+    "id": "b68fae1e-0111-4ac3-a02e-111111111111",
+    "isEnabled": true,
+    "value": "Consumer"
+  },
+  {
+    "allowedMemberTypes": ["User"],
+    "description": "Performs delivery tasks in local regions",
+    "displayName": "Driver",
+    "id": "c7c27f6a-2222-46bb-8b7d-222222222222",
+    "isEnabled": true,
+    "value": "Driver"
+  },
+  {
+    "allowedMemberTypes": ["User"],
+    "description": "Creates jobs on behalf of retail stores",
+    "displayName": "StoreClerk",
+    "id": "d0a8b678-3333-40e1-901f-333333333333",
+    "isEnabled": true,
+    "value": "StoreClerk"
+  },
+  {
+    "allowedMemberTypes": ["User"],
+    "description": "Administers the Truckero platform",
+    "displayName": "Admin",
+    "id": "ae56dd90-4444-4df2-b1d4-444444444444",
+    "isEnabled": true,
+    "value": "Admin"
+  }
+]

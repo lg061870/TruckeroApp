@@ -1,0 +1,167 @@
+.login-container[b-s5dpzs6mb8] {
+    max-width: 400px;
+    margin: 2rem auto;
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+}
+
+.logo-section[b-s5dpzs6mb8] {
+    text-align: center;
+}
+
+.logo[b-s5dpzs6mb8] {
+    width: 120px;
+    height: auto;
+    margin-bottom: 1rem;
+}
+
+h1[b-s5dpzs6mb8] {
+    color: #1a237e;
+    font-size: 1.75rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.form-section[b-s5dpzs6mb8] {
+    width: 100%;
+}
+
+.form-group[b-s5dpzs6mb8] {
+    margin-bottom: 1rem;
+}
+
+.input-group[b-s5dpzs6mb8] {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 0.5rem;
+}
+
+.input-icon[b-s5dpzs6mb8] {
+    padding: 0 0.5rem;
+    color: #757575;
+}
+
+.form-input[b-s5dpzs6mb8] {
+    flex: 1;
+    border: none;
+    padding: 0.75rem;
+    font-size: 1rem;
+    background: transparent;
+    outline: none;
+}
+
+.password-toggle[b-s5dpzs6mb8] {
+    padding: 0 0.5rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.forgot-password[b-s5dpzs6mb8] {
+    display: block;
+    text-align: right;
+    color: #ff5722;
+    text-decoration: none;
+    margin: 0.5rem 0 1.5rem;
+    font-size: 0.875rem;
+}
+
+.login-button[b-s5dpzs6mb8] {
+    width: 100%;
+    padding: 1rem;
+    background: #ff5722;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.login-button:hover[b-s5dpzs6mb8] {
+    background: #f4511e;
+}
+
+.divider[b-s5dpzs6mb8] {
+    text-align: center;
+    margin: 1.5rem 0;
+    position: relative;
+}
+
+.divider[b-s5dpzs6mb8]::before,
+.divider[b-s5dpzs6mb8]::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 45%;
+    height: 1px;
+    background: #e0e0e0;
+}
+
+.divider[b-s5dpzs6mb8]::before {
+    left: 0;
+}
+
+.divider[b-s5dpzs6mb8]::after {
+    right: 0;
+}
+
+.divider span[b-s5dpzs6mb8] {
+    background: #fff;
+    padding: 0 1rem;
+    color: #757575;
+    font-size: 0.875rem;
+}
+
+.social-login[b-s5dpzs6mb8] {
+    display: flex;
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.social-button[b-s5dpzs6mb8] {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    background: white;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.social-button img[b-s5dpzs6mb8] {
+    width: 24px;
+    height: 24px;
+}
+
+.social-button:hover[b-s5dpzs6mb8] {
+    background: #f5f5f5;
+}
+
+.signup-prompt[b-s5dpzs6mb8] {
+    text-align: center;
+    margin-top: 1.5rem;
+    color: #757575;
+    font-size: 0.875rem;
+}
+
+.signup-prompt a[b-s5dpzs6mb8] {
+    color: #ff5722;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.signup-prompt a:hover[b-s5dpzs6mb8] {
+    text-decoration: underline;
+}

@@ -1,0 +1,45 @@
+{
+  "Files": [
+    {
+      "Id": "C:\\Users\\lg061\\source\\repos\\TruckeroSLN\\Truckero.Admin\\obj\\Debug\\net8.0\\scopedcss\\projectbundle\\Truckero.Admin.bundle.scp.css",
+      "PackagePath": "staticwebassets\\Truckero.Admin.fctphgi8bv.bundle.scp.css"
+    },
+    {
+      "Id": "C:\\Users\\lg061\\source\\repos\\TruckeroSLN\\Truckero.Admin\\wwwroot\\app.css",
+      "PackagePath": "staticwebassets\\app.css"
+    },
+    {
+      "Id": "C:\\Users\\lg061\\source\\repos\\TruckeroSLN\\Truckero.Admin\\wwwroot\\bootstrap\\bootstrap.min.css",
+      "PackagePath": "staticwebassets\\bootstrap\\bootstrap.min.css"
+    },
+    {
+      "Id": "C:\\Users\\lg061\\source\\repos\\TruckeroSLN\\Truckero.Admin\\wwwroot\\bootstrap\\bootstrap.min.css.map",
+      "PackagePath": "staticwebassets\\bootstrap\\bootstrap.min.css.map"
+    },
+    {
+      "Id": "C:\\Users\\lg061\\source\\repos\\TruckeroSLN\\Truckero.Admin\\wwwroot\\favicon.png",
+      "PackagePath": "staticwebassets\\favicon.png"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.Truckero.Admin.Microsoft.AspNetCore.StaticWebAssetEndpoints.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssetEndpoints.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.Truckero.Admin.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.build.Truckero.Admin.props",
+      "PackagePath": "build\\Truckero.Admin.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildMultiTargeting.Truckero.Admin.props",
+      "PackagePath": "buildMultiTargeting\\Truckero.Admin.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildTransitive.Truckero.Admin.props",
+      "PackagePath": "buildTransitive\\Truckero.Admin.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

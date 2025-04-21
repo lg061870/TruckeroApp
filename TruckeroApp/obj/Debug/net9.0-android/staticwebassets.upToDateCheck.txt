@@ -1,0 +1,8 @@
+C:\Users\lg061\source\repos\TruckeroSLN\TruckeroApp\wwwroot\css\app.css
+C:\Users\lg061\source\repos\TruckeroSLN\TruckeroApp\wwwroot\index.html
+C:\Users\lg061\source\repos\TruckeroSLN\TruckeroApp\wwwroot\css\bootstrap\bootstrap.min.css.map
+C:\Users\lg061\source\repos\TruckeroSLN\TruckeroApp\wwwroot\css\bootstrap\bootstrap.min.css
+wwwroot\css\app.css
+wwwroot\css\bootstrap\bootstrap.min.css
+wwwroot\css\bootstrap\bootstrap.min.css.map
+wwwroot\index.html

@@ -1,0 +1,56 @@
+﻿@using Truckero.Admin.Components.Pages;
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">Truckero.Admin</a>
+    </div>
+</div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+    <div class="space-y-2">
+        <div class="flex items-center p-3">
+            <NavLink class="flex items-center p-3 bg-indigo-800 rounded-lg" href="dashboard" Match="NavLinkMatch.All">
+                <i class="fa-solid fa-gauge-high w-5"></i>
+                <span class="ml-3">Dashboard</span>
+            </NavLink>
+        </div>
+
+        <div class="flex items-center p-3">
+            <NavLink class="flex items-center p-3 hover:bg-indigo-800 rounded-lg" href="disputes">
+                <i class="fa-solid fa-triangle-exclamation w-5"></i>
+                <span class="ml-3">Disputes</span>
+            </NavLink>
+        </div>
+
+        <div class="flex items-center p-3">
+            <NavLink class="flex items-center p-3 hover:bg-indigo-800 rounded-lg" href="jobrecords">
+                <i class="fa-solid fa-clipboard-list w-5"></i>
+                <span class="ml-3">Job Records</span>
+            </NavLink>
+        </div>
+
+        <div class="flex items-center p-3">
+            <NavLink class="flex items-center p-3 hover:bg-indigo-800 rounded-lg" href="manageusers">
+                <i class="fa-solid fa-users w-5"></i>
+                <span class="ml-3">Manage Users</span>
+            </NavLink>
+        </div>
+
+        <div class="flex items-center p-3">
+            <NavLink class="flex items-center p-3 hover:bg-indigo-800 rounded-lg" href="pricingrules">
+                <i class="fa-solid fa-tags w-5"></i>
+                <span class="ml-3">Pricing Rules</span>
+            </NavLink>
+        </div>
+
+        <div class="flex items-center p-3">
+            <NavLink class="flex items-center p-3 hover:bg-indigo-800 rounded-lg" href="settings">
+                <i class="fa-solid fa-gear w-5"></i>
+                <span class="ml-3">Settings</span>
+            </NavLink>
+        </div>
+    </div>
+</div>
+

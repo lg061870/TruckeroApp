@@ -1,0 +1,156 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\lg061\\source\\repos\\TruckeroApp\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{0A20C0CC-540B-4CC7-B59A-A58444FBC3C1}|TruckeroApp.csproj|c:\\users\\lg061\\source\\repos\\truckeroapp\\components\\pages\\register\\registerpaymentmethods.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{0A20C0CC-540B-4CC7-B59A-A58444FBC3C1}|TruckeroApp.csproj|solutionrelative:components\\pages\\register\\registerpaymentmethods.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A20C0CC-540B-4CC7-B59A-A58444FBC3C1}|TruckeroApp.csproj|c:\\users\\lg061\\source\\repos\\truckeroapp\\components\\pages\\register\\registeruser.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{0A20C0CC-540B-4CC7-B59A-A58444FBC3C1}|TruckeroApp.csproj|solutionrelative:components\\pages\\register\\registeruser.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A20C0CC-540B-4CC7-B59A-A58444FBC3C1}|TruckeroApp.csproj|c:\\users\\lg061\\source\\repos\\truckeroapp\\components\\pages\\register\\registertruck.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{0A20C0CC-540B-4CC7-B59A-A58444FBC3C1}|TruckeroApp.csproj|solutionrelative:components\\pages\\register\\registertruck.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A20C0CC-540B-4CC7-B59A-A58444FBC3C1}|TruckeroApp.csproj|c:\\users\\lg061\\source\\repos\\truckeroapp\\components\\pages\\register\\registerdriver.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{0A20C0CC-540B-4CC7-B59A-A58444FBC3C1}|TruckeroApp.csproj|solutionrelative:components\\pages\\register\\registerdriver.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A20C0CC-540B-4CC7-B59A-A58444FBC3C1}|TruckeroApp.csproj|c:\\users\\lg061\\source\\repos\\truckeroapp\\components\\pages\\home.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{0A20C0CC-540B-4CC7-B59A-A58444FBC3C1}|TruckeroApp.csproj|solutionrelative:components\\pages\\home.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A20C0CC-540B-4CC7-B59A-A58444FBC3C1}|TruckeroApp.csproj|c:\\users\\lg061\\source\\repos\\truckeroapp\\components\\pages\\paymentmethodsdashboard.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{0A20C0CC-540B-4CC7-B59A-A58444FBC3C1}|TruckeroApp.csproj|solutionrelative:components\\pages\\paymentmethodsdashboard.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A20C0CC-540B-4CC7-B59A-A58444FBC3C1}|TruckeroApp.csproj|c:\\users\\lg061\\source\\repos\\truckeroapp\\components\\pages\\roleswitcher.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{0A20C0CC-540B-4CC7-B59A-A58444FBC3C1}|TruckeroApp.csproj|solutionrelative:components\\pages\\roleswitcher.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A20C0CC-540B-4CC7-B59A-A58444FBC3C1}|TruckeroApp.csproj|c:\\users\\lg061\\source\\repos\\truckeroapp\\components\\pages\\weather.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{0A20C0CC-540B-4CC7-B59A-A58444FBC3C1}|TruckeroApp.csproj|solutionrelative:components\\pages\\weather.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 3,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "RegisterUser.razor",
+              "DocumentMoniker": "C:\\Users\\lg061\\source\\repos\\TruckeroApp\\Components\\Pages\\register\\RegisterUser.razor",
+              "RelativeDocumentMoniker": "Components\\Pages\\register\\RegisterUser.razor",
+              "ToolTip": "C:\\Users\\lg061\\source\\repos\\TruckeroApp\\Components\\Pages\\register\\RegisterUser.razor",
+              "RelativeToolTip": "Components\\Pages\\register\\RegisterUser.razor",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-04-14T21:14:18.17Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "RegisterTruck.razor",
+              "DocumentMoniker": "C:\\Users\\lg061\\source\\repos\\TruckeroApp\\Components\\Pages\\register\\RegisterTruck.razor",
+              "RelativeDocumentMoniker": "Components\\Pages\\register\\RegisterTruck.razor",
+              "ToolTip": "C:\\Users\\lg061\\source\\repos\\TruckeroApp\\Components\\Pages\\register\\RegisterTruck.razor",
+              "RelativeToolTip": "Components\\Pages\\register\\RegisterTruck.razor",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-04-14T21:14:15.842Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "RegisterDriver.razor",
+              "DocumentMoniker": "C:\\Users\\lg061\\source\\repos\\TruckeroApp\\Components\\Pages\\register\\RegisterDriver.razor",
+              "RelativeDocumentMoniker": "Components\\Pages\\register\\RegisterDriver.razor",
+              "ToolTip": "C:\\Users\\lg061\\source\\repos\\TruckeroApp\\Components\\Pages\\register\\RegisterDriver.razor",
+              "RelativeToolTip": "Components\\Pages\\register\\RegisterDriver.razor",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-04-14T21:13:59.307Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "RegisterPaymentMethods.razor",
+              "DocumentMoniker": "C:\\Users\\lg061\\source\\repos\\TruckeroApp\\Components\\Pages\\register\\RegisterPaymentMethods.razor",
+              "RelativeDocumentMoniker": "Components\\Pages\\register\\RegisterPaymentMethods.razor",
+              "ToolTip": "C:\\Users\\lg061\\source\\repos\\TruckeroApp\\Components\\Pages\\register\\RegisterPaymentMethods.razor",
+              "RelativeToolTip": "Components\\Pages\\register\\RegisterPaymentMethods.razor",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-04-14T21:13:57.417Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "Weather.razor",
+              "DocumentMoniker": "C:\\Users\\lg061\\source\\repos\\TruckeroApp\\Components\\Pages\\Weather.razor",
+              "RelativeDocumentMoniker": "Components\\Pages\\Weather.razor",
+              "ToolTip": "C:\\Users\\lg061\\source\\repos\\TruckeroApp\\Components\\Pages\\Weather.razor",
+              "RelativeToolTip": "Components\\Pages\\Weather.razor",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-04-14T21:12:47.888Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "RoleSwitcher.razor",
+              "DocumentMoniker": "C:\\Users\\lg061\\source\\repos\\TruckeroApp\\Components\\Pages\\RoleSwitcher.razor",
+              "RelativeDocumentMoniker": "Components\\Pages\\RoleSwitcher.razor",
+              "ToolTip": "C:\\Users\\lg061\\source\\repos\\TruckeroApp\\Components\\Pages\\RoleSwitcher.razor",
+              "RelativeToolTip": "Components\\Pages\\RoleSwitcher.razor",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-04-14T21:12:44.316Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "PaymentMethodsDashboard.razor",
+              "DocumentMoniker": "C:\\Users\\lg061\\source\\repos\\TruckeroApp\\Components\\Pages\\PaymentMethodsDashboard.razor",
+              "RelativeDocumentMoniker": "Components\\Pages\\PaymentMethodsDashboard.razor",
+              "ToolTip": "C:\\Users\\lg061\\source\\repos\\TruckeroApp\\Components\\Pages\\PaymentMethodsDashboard.razor",
+              "RelativeToolTip": "Components\\Pages\\PaymentMethodsDashboard.razor",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-04-14T21:12:42.159Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "Home.razor",
+              "DocumentMoniker": "C:\\Users\\lg061\\source\\repos\\TruckeroApp\\Components\\Pages\\Home.razor",
+              "RelativeDocumentMoniker": "Components\\Pages\\Home.razor",
+              "ToolTip": "C:\\Users\\lg061\\source\\repos\\TruckeroApp\\Components\\Pages\\Home.razor",
+              "RelativeToolTip": "Components\\Pages\\Home.razor",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-04-14T21:12:40.256Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

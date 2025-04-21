@@ -1,0 +1,11 @@
+C:\Users\lg061\source\repos\TruckeroSLN\Truckero.Core\bin\Debug\net9.0\Truckero.Core.deps.json
+C:\Users\lg061\source\repos\TruckeroSLN\Truckero.Core\bin\Debug\net9.0\Truckero.Core.dll
+C:\Users\lg061\source\repos\TruckeroSLN\Truckero.Core\bin\Debug\net9.0\Truckero.Core.pdb
+C:\Users\lg061\source\repos\TruckeroSLN\Truckero.Core\obj\Debug\net9.0\Truckero.Core.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\lg061\source\repos\TruckeroSLN\Truckero.Core\obj\Debug\net9.0\Truckero.Core.AssemblyInfoInputs.cache
+C:\Users\lg061\source\repos\TruckeroSLN\Truckero.Core\obj\Debug\net9.0\Truckero.Core.AssemblyInfo.cs
+C:\Users\lg061\source\repos\TruckeroSLN\Truckero.Core\obj\Debug\net9.0\Truckero.Core.csproj.CoreCompileInputs.cache
+C:\Users\lg061\source\repos\TruckeroSLN\Truckero.Core\obj\Debug\net9.0\Truckero.Core.dll
+C:\Users\lg061\source\repos\TruckeroSLN\Truckero.Core\obj\Debug\net9.0\refint\Truckero.Core.dll
+C:\Users\lg061\source\repos\TruckeroSLN\Truckero.Core\obj\Debug\net9.0\Truckero.Core.pdb
+C:\Users\lg061\source\repos\TruckeroSLN\Truckero.Core\obj\Debug\net9.0\ref\Truckero.Core.dll

@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\Truckero.API.props" />
+</Project>

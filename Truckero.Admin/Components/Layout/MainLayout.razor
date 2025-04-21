@@ -1,0 +1,72 @@
+﻿@inherits LayoutComponentBase
+
+<div class="flex min-h-screen bg-gray-50">
+    <!-- Sidebar -->
+    <div id="sidebar" class="w-64 bg-[#1a237e] text-white fixed h-full">
+        <div id="logo" class="p-6 border-b border-indigo-800">
+            <div class="flex items-center">
+                <i class="fa-solid fa-truck text-[#FF6B00] text-2xl mr-3"></i>
+                <h1 class="text-xl font-bold">TRUCKEO ADMIN</h1>
+            </div>
+        </div>
+
+        <nav id="main-nav" class="p-4">
+            <div class="space-y-2">
+                <a href="#" class="flex items-center p-3 bg-indigo-800 rounded-lg">
+                    <i class="fa-solid fa-gauge-high w-5"></i>
+                    <span class="ml-3">Dashboard</span>
+                </a>
+                <a href="#" class="flex items-center p-3 hover:bg-indigo-800 rounded-lg">
+                    <i class="fa-solid fa-triangle-exclamation w-5"></i>
+                    <span class="ml-3">Disputes</span>
+                </a>
+                <a href="#" class="flex items-center p-3 hover:bg-indigo-800 rounded-lg">
+                    <i class="fa-solid fa-clipboard-list w-5"></i>
+                    <span class="ml-3">Job Records</span>
+                </a>
+                <a href="#" class="flex items-center p-3 hover:bg-indigo-800 rounded-lg">
+                    <i class="fa-solid fa-users w-5"></i>
+                    <span class="ml-3">Manage Users</span>
+                </a>
+                <a href="#" class="flex items-center p-3 hover:bg-indigo-800 rounded-lg">
+                    <i class="fa-solid fa-tags w-5"></i>
+                    <span class="ml-3">Pricing Rules</span>
+                </a>
+                <a href="#" class="flex items-center p-3 hover:bg-indigo-800 rounded-lg">
+                    <i class="fa-solid fa-gear w-5"></i>
+                    <span class="ml-3">Settings</span>
+                </a>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div id="main-content" class="flex-1 ml-64">
+        <!-- Top Header -->
+        <header id="header" class="bg-white h-16 flex items-center justify-between px-6 border-b">
+            <div class="flex items-center">
+                <input type="text" placeholder="Search..." class="bg-gray-100 px-4 py-2 rounded-lg w-64">
+            </div>
+            <div class="flex items-center space-x-4">
+                <button class="p-2 hover:bg-gray-100 rounded-full">
+                    <i class="fa-regular fa-bell text-gray-600"></i>
+                </button>
+                <div class="flex items-center">
+                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-3.jpg" class="w-8 h-8 rounded-full">
+                    <span class="ml-2">Admin User</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <div id="dashboard-content" class="p-6">
+            @Body
+        </div>
+    </div>
+</div>
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>
