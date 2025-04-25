@@ -1,53 +1,89 @@
 using Azure.Identity;
-using Azure.Security.KeyVault.Secrets;
+using Azure.Extensions.AspNetCore.Configuration.Secrets;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Identity.Web;
+using Microsoft.EntityFrameworkCore;
+using Truckero.Infrastructure.Data;
+using Truckero.Core.Interfaces;
+using Truckero.Infrastructure.Services.Onboarding;
+using Truckero.Infrastructure.Services.Auth; // ✅ Add this to use AppDbContext and DbInitializer
 
 var builder = WebApplication.CreateBuilder(args);
+var env = builder.Environment;
 
-// 🔐 Connect to Azure Key Vault (Dev)
-var secretClient = new SecretClient(
-    new Uri("https://truckero-keyvault-dev.vault.azure.net/"),
-    new DefaultAzureCredential());
+// 📦 Load appsettings.{env}.json + secrets
+builder.Configuration
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables();
 
-KeyVaultSecret clientIdSecret = secretClient.GetSecret("B2C-Client-ID");
-KeyVaultSecret clientSecretSecret = secretClient.GetSecret("B2C-Client-Secret");
+// 🔐 Optional: Load Key Vault based on env
+var keyVaultUrl = builder.Configuration["KeyVault:Url"];
 
-// 🪪 Extract secrets
-string clientId = clientIdSecret.Value;
-string clientSecret = clientSecretSecret.Value;
+if (!string.IsNullOrEmpty(keyVaultUrl))
+{
+    builder.Configuration.AddAzureKeyVault(
+        new Uri(keyVaultUrl),
+        new DefaultAzureCredential());
+}
 
-// 🔐 Add Authentication with Azure AD B2C
+// 🪪 Bind B2C options from final merged config
+var b2cOptions = builder.Configuration.GetSection("AzureAdB2C");
+
+// 🔐 Configure Azure AD B2C Auth
 builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
     .AddMicrosoftIdentityWebApp(options =>
     {
-        options.ClientId = clientId;
-        options.ClientSecret = clientSecret;
-        options.Authority = $"https://truckeroappauth.b2clogin.com/truckeroappauth.onmicrosoft.com/B2C_1_signupsignin";
+        options.ClientId = b2cOptions["ClientId"];
+        options.ClientSecret = b2cOptions["ClientSecret"];
+        options.Authority = $"{b2cOptions["Instance"]}{b2cOptions["Domain"]}/{b2cOptions["SignUpSignInPolicyId"]}";
         options.ResponseType = "code";
         options.SaveTokens = true;
     });
 
 builder.Services.AddAuthorization();
 
-// 🌐 Add Swagger/OpenAPI (same as before)
-builder.Services.AddOpenApi();
+// ✅ Register AppDbContext with SQL Server
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// 🌐 Add Swagger/OpenAPI
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+builder.Services.AddScoped<IOnboardingService, OnboardingService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+
+builder.Logging.AddConsole();
+builder.Logging.SetMinimumLevel(LogLevel.Debug);
+
+Console.WriteLine("ENV: " + env.EnvironmentName);
+Console.WriteLine("DB: " + builder.Configuration.GetConnectionString("DefaultConnection"));
 
 var app = builder.Build();
 
-// 🔁 Enable Swagger for Dev only
-if (app.Environment.IsDevelopment())
+
+// ✅ Seed database using DbInitializer
+using (var scope = app.Services.CreateScope())
 {
-    app.MapOpenApi();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await DbInitializer.InitializeAsync(db);
+}
+
+// 🔁 Enable Swagger for Dev only
+if (env.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
-
-// 🔐 Auth Middleware
 app.UseAuthentication();
 app.UseAuthorization();
 
-// 🌤️ Secure Weather Endpoint
+// ✅ Test endpoint
 var summaries = new[]
 {
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
@@ -63,6 +99,7 @@ app.MapGet("/weatherforecast", () =>
             summaries[Random.Shared.Next(summaries.Length)]
         ))
         .ToArray();
+
     return forecast;
 })
 .RequireAuthorization()
