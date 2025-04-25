@@ -51,4 +51,40 @@ public class AuthController : ControllerBase
         await _authService.LogoutAsync(userId);
         return NoContent();
     }
+
+    /// <summary>
+    /// Refreshes an access token using a valid refresh token.
+    /// </summary>
+    [HttpPost("refresh")]
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request)
+    {
+        var response = await _authService.RefreshTokenAsync(request);
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Initiates a password reset request via email.
+    /// </summary>
+    [HttpPost("password-reset/request")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> RequestPasswordReset([FromBody] PasswordResetRequest request)
+    {
+        await _authService.RequestPasswordResetAsync(request); // ✅ corrected
+        return Accepted(new { message = "Reset link sent if email exists" });
+    }
+
+    /// <summary>
+    /// Confirms password reset using a token and sets a new password.
+    /// </summary>
+    [HttpPost("password-reset/confirm")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ConfirmPasswordReset([FromBody] PasswordResetConfirmRequest request)
+    {
+        await _authService.ConfirmPasswordResetAsync(request);
+        return Ok(new { message = "Password has been reset" });
+    }
 }
