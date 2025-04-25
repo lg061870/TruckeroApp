@@ -7,7 +7,9 @@ using Microsoft.EntityFrameworkCore;
 using Truckero.Infrastructure.Data;
 using Truckero.Core.Interfaces;
 using Truckero.Infrastructure.Services.Onboarding;
-using Truckero.Infrastructure.Services.Auth; // ✅ Add this to use AppDbContext and DbInitializer
+using Truckero.Infrastructure.Services.Auth;
+using Microsoft.AspNetCore.Authentication; // ✅ Add this to use AppDbContext and DbInitializer
+using Truckero.API.TestAuth;
 
 var builder = WebApplication.CreateBuilder(args);
 var env = builder.Environment;
@@ -32,8 +34,10 @@ if (!string.IsNullOrEmpty(keyVaultUrl))
 // 🪪 Bind B2C options from final merged config
 var b2cOptions = builder.Configuration.GetSection("AzureAdB2C");
 
-// 🔐 Configure Azure AD B2C Auth
-builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
+if (!builder.Environment.IsEnvironment("UnitTesting"))
+{
+    // 🔐 Configure Azure AD B2C Auth
+    builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
     .AddMicrosoftIdentityWebApp(options =>
     {
         options.ClientId = b2cOptions["ClientId"];
@@ -43,7 +47,16 @@ builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
         options.SaveTokens = true;
     });
 
-builder.Services.AddAuthorization();
+    builder.Services.AddAuthorization();
+}
+else
+{
+    // 🧪 Inject test auth handler — now correctly referenced inside Truckero.API
+    builder.Services.AddAuthentication("Test")
+        .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", options => { });
+
+    builder.Services.AddAuthorization();
+}
 
 // ✅ Register AppDbContext with SQL Server
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -51,10 +64,17 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // 🌐 Add Swagger/OpenAPI
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new() { Title = "Truckero.API", Version = "v1" });
+    c.CustomSchemaIds(type => type.FullName); // Helps avoid name collisions
+});
+
 
 builder.Services.AddScoped<IOnboardingService, OnboardingService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+
+builder.Services.AddControllers();
 
 builder.Logging.AddConsole();
 builder.Logging.SetMinimumLevel(LogLevel.Debug);
@@ -104,6 +124,8 @@ app.MapGet("/weatherforecast", () =>
 })
 .RequireAuthorization()
 .WithName("GetWeatherForecast");
+
+app.MapControllers();
 
 app.Run();
 

@@ -15,18 +15,34 @@ public class OnboardingController : ControllerBase
         _onboardingService = onboardingService;
     }
 
+    /// <summary>
+    /// Starts the onboarding process for a user (e.g., send verification).
+    /// </summary>
     [HttpPost("start")]
-    public async Task<IActionResult> Start([FromBody] StartOnboardingRequest request)
+    public async Task<IActionResult> Start([FromQuery] Guid userId, [FromBody] StartOnboardingRequest request)
     {
-        var userId = GetUserId(); // TODO: Replace with real identity extraction
+        if (userId == Guid.Empty)
+            return BadRequest(new { message = "Missing or invalid userId" });
+
+        if (string.IsNullOrWhiteSpace(request.Phone))
+            return BadRequest(new { message = "Phone number is required" });
+
         await _onboardingService.StartAsync(request, userId);
         return Accepted(new { message = "Verification sent" });
     }
 
+    /// <summary>
+    /// Verifies a code submitted by the user (SMS/email).
+    /// </summary>
     [HttpPost("verify")]
-    public async Task<IActionResult> Verify([FromBody] VerifyCodeRequest request)
+    public async Task<IActionResult> Verify([FromQuery] Guid userId, [FromBody] VerifyCodeRequest request)
     {
-        var userId = GetUserId(); // TODO: Replace with real identity extraction
+        if (userId == Guid.Empty)
+            return BadRequest(new { message = "Missing or invalid userId" });
+
+        if (string.IsNullOrWhiteSpace(request.Code))
+            return BadRequest(new { message = "Verification code is required" });
+
         var result = await _onboardingService.VerifyCodeAsync(request, userId);
 
         if (!result)
@@ -35,18 +51,16 @@ public class OnboardingController : ControllerBase
         return Ok(new { message = "Phone/email verified" });
     }
 
+    /// <summary>
+    /// Returns current onboarding status for the user.
+    /// </summary>
     [HttpGet("progress")]
-    public async Task<IActionResult> GetProgress()
+    public async Task<IActionResult> GetProgress([FromQuery] Guid userId)
     {
-        var userId = GetUserId(); // TODO: Replace with real identity extraction
+        if (userId == Guid.Empty)
+            return BadRequest(new { message = "Missing or invalid userId" });
+
         var progress = await _onboardingService.GetProgressAsync(userId);
         return Ok(progress);
-    }
-
-    // 🚧 Stub for extracting the current user id
-    private Guid GetUserId()
-    {
-        // In real implementation, parse from ClaimsPrincipal (JWT)
-        return Guid.Parse("00000000-0000-0000-0000-000000000001");
     }
 }

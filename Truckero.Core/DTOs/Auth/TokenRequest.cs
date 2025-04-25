@@ -2,19 +2,11 @@
 
 namespace Truckero.Core.DTOs.Auth;
 
-public class RegisterUserRequest
+public class TokenRequest
 {
     [Required]
     public string Email { get; set; } = null!;
 
     [Required]
-    [MinLength(6)]
     public string Password { get; set; } = null!;
-
-    [Required]
-    public string Role { get; set; } = null!;
-
-    [Required]
-    public string Name { get; set; } = null!;
 }
-

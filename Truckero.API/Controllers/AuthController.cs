@@ -37,9 +37,17 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(UnauthorizedResult), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] AuthLoginRequest request)
     {
-        var response = await _authService.LoginAsync(request);
-        return Ok(response);
+        try
+        {
+            var response = await _authService.LoginAsync(request);
+            return Ok(response);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Unauthorized();
+        }
     }
+
 
     /// <summary>
     /// Logs out a user by revoking refresh token.
@@ -60,9 +68,17 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request)
     {
-        var response = await _authService.RefreshTokenAsync(request);
-        return Ok(response);
+        try
+        {
+            var response = await _authService.RefreshTokenAsync(request);
+            return Ok(response);
+        }
+        catch (ArgumentException)
+        {
+            return BadRequest();
+        }
     }
+
 
     /// <summary>
     /// Initiates a password reset request via email.
