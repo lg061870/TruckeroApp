@@ -23,6 +23,7 @@ public class AppDbContext : DbContext
     public DbSet<Vehicle> Vehicles => Set<Vehicle>();
     public DbSet<VehicleType> VehicleTypes => Set<VehicleType>();
     public DbSet<PaymentMethodType> PaymentMethodTypes => Set<PaymentMethodType>();
+    public DbSet<CustomerProfile> CustomerProfiles => Set<CustomerProfile>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -42,13 +43,24 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<OnboardingProgress>()
             .HasKey(o => o.UserId);
 
+        // 🚛 DriverProfile Configuration
         modelBuilder.Entity<DriverProfile>()
             .HasKey(d => d.UserId);
 
         modelBuilder.Entity<DriverProfile>()
-            .HasOne(dp => dp.User)
-            .WithOne()
-            .HasForeignKey<DriverProfile>(dp => dp.UserId);
+            .HasOne(d => d.User)
+            .WithOne(u => u.DriverProfile)
+            .HasForeignKey<DriverProfile>(d => d.UserId);
+
+        // 🛒 CustomerProfile Configuration
+        modelBuilder.Entity<CustomerProfile>()
+            .HasKey(c => c.Id);
+
+        modelBuilder.Entity<CustomerProfile>()
+            .HasOne(c => c.User)
+            .WithOne(u => u.CustomerProfile)
+            .HasForeignKey<CustomerProfile>(c => c.UserId);
+
 
         modelBuilder.Entity<StoreClerkProfile>()
             .HasKey(scp => scp.UserId);

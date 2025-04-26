@@ -1,4 +1,5 @@
-﻿using Truckero.Core.DTOs.Onboarding;
+﻿using Truckero.Core.DTOs;
+using Truckero.Core.DTOs.Onboarding;
 using Truckero.Core.Interfaces;
 
 namespace Truckero.Infrastructure.Services.Onboarding;
@@ -28,5 +29,17 @@ public class OnboardingService : IOnboardingService
             Step = "UploadLicense"
         });
     }
+    public async Task CompleteCustomerOnboardingAsync(CustomerProfileRequest request, Guid userId)
+    {
+        // TODO: Save customer-specific profile info
+        await Task.CompletedTask;
+    }
+
+    public async Task CompleteDriverOnboardingAsync(DriverProfileRequest request, Guid userId)
+    {
+        // TODO: Save driver-specific info, create DriverProfile entity, etc.
+        await Task.CompletedTask;
+    }
+
 }
 

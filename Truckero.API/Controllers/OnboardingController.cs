@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Truckero.Core.DTOs;
 using Truckero.Core.DTOs.Onboarding;
 using Truckero.Core.Interfaces;
 
@@ -63,5 +64,30 @@ public class OnboardingController : ControllerBase
 
         var progress = await _onboardingService.GetProgressAsync(userId);
         return Ok(progress);
+    }
+    /// <summary>
+    /// Completes onboarding for a customer.
+    /// </summary>
+    [HttpPost("customer")]
+    public async Task<IActionResult> CompleteCustomerOnboarding([FromQuery] Guid userId, [FromBody] CustomerProfileRequest request)
+    {
+        if (userId == Guid.Empty)
+            return BadRequest(new { message = "Missing or invalid userId" });
+
+        await _onboardingService.CompleteCustomerOnboardingAsync(request, userId);
+        return Ok(new { message = "Customer onboarding complete" });
+    }
+
+    /// <summary>
+    /// Completes onboarding for a driver.
+    /// </summary>
+    [HttpPost("driver")]
+    public async Task<IActionResult> CompleteDriverOnboarding([FromQuery] Guid userId, [FromBody] DriverProfileRequest request)
+    {
+        if (userId == Guid.Empty)
+            return BadRequest(new { message = "Missing or invalid userId" });
+
+        await _onboardingService.CompleteDriverOnboardingAsync(request, userId);
+        return Ok(new { message = "Driver onboarding complete" });
     }
 }

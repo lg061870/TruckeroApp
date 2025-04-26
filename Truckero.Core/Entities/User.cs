@@ -29,4 +29,8 @@ public class User
     public OnboardingProgress Onboarding { get; set; } = null!;
     public ICollection<PayoutAccount> PayoutAccounts { get; set; } = new List<PayoutAccount>();
     public ICollection<PaymentMethod> PaymentMethods { get; set; } = new List<PaymentMethod>();
+    // In User.cs
+    public DriverProfile? DriverProfile { get; set; }
+    public CustomerProfile? CustomerProfile { get; set; }
+
 }
