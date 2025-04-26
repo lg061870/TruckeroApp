@@ -15,7 +15,6 @@
     <Folder Include="MapServices\" />
     <Folder Include="NotificationProviders\" />
     <Folder Include="PaymentGateways\" />
-    <Folder Include="Repositories\" />
   </ItemGroup>
 
   <ItemGroup>

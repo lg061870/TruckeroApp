@@ -35,21 +35,22 @@ public class OnboardingController : ControllerBase
     /// Verifies a code submitted by the user (SMS/email).
     /// </summary>
     [HttpPost("verify")]
-    public async Task<IActionResult> Verify([FromQuery] Guid userId, [FromBody] VerifyCodeRequest request)
+    public async Task<IActionResult> Verify([FromBody] VerifyCodeRequest request)
     {
-        if (userId == Guid.Empty)
+        if (request.UserId == Guid.Empty)
             return BadRequest(new { message = "Missing or invalid userId" });
 
         if (string.IsNullOrWhiteSpace(request.Code))
             return BadRequest(new { message = "Verification code is required" });
 
-        var result = await _onboardingService.VerifyCodeAsync(request, userId);
+        var result = await _onboardingService.VerifyCodeAsync(request, request.UserId);
 
         if (!result)
             return Unauthorized(new { message = "Invalid verification code" });
 
         return Ok(new { message = "Phone/email verified" });
     }
+
 
     /// <summary>
     /// Returns current onboarding status for the user.

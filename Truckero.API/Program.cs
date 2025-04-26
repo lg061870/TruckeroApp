@@ -10,6 +10,7 @@ using Truckero.Infrastructure.Services.Onboarding;
 using Truckero.Infrastructure.Services.Auth;
 using Microsoft.AspNetCore.Authentication; // ✅ Add this to use AppDbContext and DbInitializer
 using Truckero.API.TestAuth;
+using Truckero.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 var env = builder.Environment;
@@ -58,9 +59,49 @@ else
     builder.Services.AddAuthorization();
 }
 
-// ✅ Register AppDbContext with SQL Server
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// 📦 Load database connection string
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+// 🛡️ Register AppDbContext with advanced options
+builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
+{
+    options.UseSqlServer(connectionString, sqlOptions =>
+    {
+        sqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            errorNumbersToAdd: null // Retry transient errors (like deadlocks, timeouts)
+        );
+
+        sqlOptions.CommandTimeout(30); // SQL queries timeout after 30 seconds
+    });
+
+    // 🔍 Always inject logger if available (development or production)
+    var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
+    if (loggerFactory != null)
+    {
+        options.UseLoggerFactory(loggerFactory);
+    }
+
+    // 🔥 Dev-only detailed logging
+    var env = serviceProvider.GetRequiredService<IWebHostEnvironment>();
+    if (env.IsDevelopment())
+    {
+        options.EnableSensitiveDataLogging(); // ⚠️ Shows SQL parameters — avoid in prod!
+        options.EnableDetailedErrors();       // More descriptive EF Core errors
+    }
+});
+
+
+
+// 🧩 Repository registrations
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IAuthTokenRepository, AuthTokenRepository>();
+
+// 🧠 Service layer
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IOnboardingService, OnboardingService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 // 🌐 Add Swagger/OpenAPI
 builder.Services.AddEndpointsApiExplorer();
@@ -69,10 +110,6 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new() { Title = "Truckero.API", Version = "v1" });
     c.CustomSchemaIds(type => type.FullName); // Helps avoid name collisions
 });
-
-
-builder.Services.AddScoped<IOnboardingService, OnboardingService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
 
 builder.Services.AddControllers();
 
