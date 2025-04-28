@@ -66,4 +66,15 @@
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Models\" />
+      <Folder Include="DTOs\" />
+      <Folder Include="Services\" />
+      <Folder Include="wwwroot\images\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Truckero.Contracts\Truckero.Contracts.csproj" />
+    </ItemGroup>
+
 </Project>
