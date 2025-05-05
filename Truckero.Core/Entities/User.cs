@@ -20,9 +20,10 @@ public class User
 
     public bool EmailVerified { get; set; } = false;
     public DateTime? LastLoginAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // 🔒 Soft lockout
-    public bool IsDisabled { get; set; } = false;
+    public bool IsActive { get; set; } = true;
 
     // 🧾 Navigation properties
     public ICollection<AuthToken> AuthTokens { get; set; } = new List<AuthToken>();
@@ -32,5 +33,4 @@ public class User
     // In User.cs
     public DriverProfile? DriverProfile { get; set; }
     public CustomerProfile? CustomerProfile { get; set; }
-
 }

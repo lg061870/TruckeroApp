@@ -1,0 +1,155 @@
+﻿@page "/login"
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Routing
+
+<CenterWrapper>
+        <!-- Login Screen -->
+        <div id="login-screen" class="relative h-full w-full p-6">
+            <div class="flex justify-center mb-12 pt-12">
+                <div class="flex items-center">
+                    <i class="fa-solid fa-truck text-[#FF6B00] text-4xl mr-3"></i>
+                    <h1 class="text-3xl font-bold text-[#1a237e]">TRUCKEO</h1>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div class="text-center mb-8">
+                    <h2 class="text-2xl font-semibold text-[#1a237e]">Welcome Back!</h2>
+                    <p class="text-gray-500 mt-2">Login to continue</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="relative">
+                        <input type="text" placeholder="Email or Phone Number" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-[#FF6B00] focus:ring-[#FF6B00]" />
+                        <i class="fa-regular fa-envelope absolute right-4 top-4 text-gray-400"></i>
+                    </div>
+
+                    <div class="relative">
+                        <input type="password" placeholder="Password" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-[#FF6B00] focus:ring-[#FF6B00]" />
+                        <i class="fa-regular fa-eye absolute right-4 top-4 text-gray-400"></i>
+                    </div>
+
+                    <div class="flex justify-end">
+                        <a href="#forgot-password" class="text-[#FF6B00] text-sm">Forgot Password?</a>
+                    </div>
+
+                    <button class="w-full bg-[#FF6B00] text-white py-3 rounded-xl font-semibold hover:bg-[#e65100] transition duration-300">
+                        Login
+                    </button>
+                </div>
+
+                <div class="relative my-8">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-2 bg-gray-50 text-gray-500">Or continue with</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <button class="flex items-center justify-center py-3 px-4 border border-gray-300 rounded-xl hover:bg-gray-50">
+                        <i class="fa-brands fa-google text-xl mr-2"></i>
+                        Google
+                    </button>
+                    <button class="flex items-center justify-center py-3 px-4 border border-gray-300 rounded-xl hover:bg-gray-50">
+                        <i class="fa-brands fa-facebook text-xl mr-2"></i>
+                        Facebook
+                    </button>
+                </div>
+
+                <div class="text-center mt-8">
+                    <p class="text-gray-600">
+                        Don't have an account?
+                        <a href="#register" class="text-[#FF6B00] font-semibold">Sign up</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Forgot Password Screen -->
+        <div id="forgot-password-screen" class="p-6 min-h-screen hidden">
+            <div id="forgot-password-header" class="flex items-center mb-8">
+                <button class="text-gray-600">
+                    <i class="fa-solid fa-arrow-left text-xl"></i>
+                </button>
+                <div class="text-center flex-1 mr-8">
+                    <h2 class="text-xl font-semibold">Forgot Password</h2>
+                </div>
+            </div>
+
+            <div id="forgot-password-content" class="mb-8">
+                <div class="text-center mb-8">
+                    <div class="inline-block p-4 bg-orange-100 rounded-full mb-4">
+                        <i class="fa-solid fa-lock text-3xl text-orange-500"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Password Recovery</h3>
+                    <p class="text-gray-600 text-sm">Enter your email address or phone number. We'll send you a link to reset your password.</p>
+                </div>
+            </div>
+
+            <div id="forgot-password-form" class="space-y-4">
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700">Email Address or Phone Number</label>
+                    <div class="relative">
+                        <input type="text" placeholder="Email or Phone Number" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-[#FF6B00] focus:ring-[#FF6B00]" />
+                        <i class="fa-regular fa-envelope absolute right-4 top-4 text-gray-400"></i>
+                    </div>
+                </div>
+
+                <button class="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600 mt-6">
+                    Send Reset Link
+                </button>
+
+                <div id="forgot-password-footer" class="text-center mt-6">
+                    <p class="text-sm text-gray-600">
+                        Remember your password? <span class="text-orange-600 font-medium cursor-pointer">Log In</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Message -->
+        <div id="success-message" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
+            <div class="bg-white p-6 rounded-2xl w-[90%] max-w-sm">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fa-solid fa-check text-green-500 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-[#1a237e]">Success!</h3>
+                    <p class="text-gray-600 mt-2">Your account has been created successfully</p>
+                    <button class="w-full bg-[#FF6B00] text-white py-3 rounded-xl font-semibold hover:bg-[#e65100] transition duration-300 mt-6">
+                        Continue
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <div id="error-message" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
+            <div class="bg-white p-6 rounded-2xl w-[90%] max-w-sm">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fa-solid fa-xmark text-red-500 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-[#1a237e]">Error</h3>
+                    <p class="text-gray-600 mt-2">Invalid email or password. Please try again.</p>
+                    <button class="w-full bg-[#FF6B00] text-white py-3 rounded-xl font-semibold hover:bg-[#e65100] transition duration-300 mt-6">
+                        Try Again
+                    </button>
+                </div>
+            </div>
+        </div>
+</CenterWrapper>
+
+
+
+
+@code {
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+    }
+}
+
+

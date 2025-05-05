@@ -1,0 +1,364 @@
+﻿@page "/registertruck"
+@using Microsoft.AspNetCore.Components
+
+@code {
+    private int currentStep = 1;
+    private readonly int totalSteps = 5;
+
+    private void NextStep()
+    {
+        if (currentStep < totalSteps)
+        {
+            currentStep++;
+        }
+    }
+
+    private void PreviousStep()
+    {
+        if (currentStep > 1)
+        {
+            currentStep--;
+        }
+    }
+
+    private string GetDotClass(int step) => currentStep >= step ? "bg-orange-500" : "bg-gray-300";
+    private bool IsStepActive(int step) => currentStep == step;
+    private string GetStepButtonText() => currentStep == totalSteps ? "Submit" : "Continue";
+}
+
+<CenterWrapper>
+    <div class="h-full text-base-content">
+        <div class="min-h-screen bg-gray-50 p-6">
+            <!-- Header -->
+            <div class="flex items-center mb-8">
+                <button class="text-gray-600" @onclick="PreviousStep" disabled="@(currentStep == 1)">
+                    <i class="fa-solid fa-arrow-left text-xl"></i>
+                </button>
+                <div class="text-center flex-1 mr-8">
+                    <h2 class="text-xl font-semibold">Truck Registration</h2>
+                </div>
+            </div>
+
+            <!-- Progress -->
+            <div class="mb-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm text-gray-600">Step @currentStep of @totalSteps</span>
+                    <span class="text-sm text-orange-500">
+                        @("Step " + currentStep)
+                    </span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="bg-orange-500 h-2 rounded-full" style="width:@((currentStep * 100 / totalSteps))%"></div>
+                </div>
+            </div>
+
+            <!-- Step Navigation -->
+            <div class="flex justify-between mb-6">
+                <button class="text-orange-500 font-medium flex items-center" @onclick="PreviousStep" disabled="@(currentStep == 1)">
+                    <i class="fa-solid fa-chevron-left mr-2"></i>Previous
+                </button>
+                <div class="flex space-x-2">
+                    @for (int i = 1; i <= totalSteps; i++)
+                    {
+                        <span class="h-2 w-2 rounded-full @GetDotClass(i)"></span>
+                    }
+                </div>
+                <button class="text-orange-500 font-medium flex items0-center" @onclick="NextStep" disabled="@(currentStep == totalSteps)">
+                    Next<i class="fa-solid fa-chevron-right ml-2"></i>
+                </button>
+            </div>
+
+            <!-- Step Panels -->
+            <div class="space-y-6">
+                @if (IsStepActive(1))
+                {
+                    <div id="step-1" class="step-content active">
+                        <div id="truck-info-section" class="space-y-4">
+                            <h3 class="text-lg font-medium text-gray-800">Truck Information</h3>
+                            <div class="space-y-4">
+
+                                <!-- Truck Make -->
+                                <div class="space-y-2">
+                                    <label class="block text-sm font-medium text-gray-700">Truck Make</label>
+                                    <select class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white">
+                                        <option value="" disabled selected>Select truck make</option>
+                                        <option value="ford">Ford</option>
+                                        <option value="toyota">Toyota</option>
+                                        <option value="chevrolet">Chevrolet</option>
+                                        <option value="dodge">Dodge</option>
+                                        <option value="gmc">GMC</option>
+                                        <option value="ram">RAM</option>
+                                        <option value="nissan">Nissan</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+
+                                <!-- Truck Model -->
+                                <div class="space-y-2">
+                                    <label class="block text-sm font-medium text-gray-700">Truck Model</label>
+                                    <select class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white">
+                                        <option value="" disabled selected>Select truck model</option>
+                                        <option value="f150">F-150</option>
+                                        <option value="tacoma">Tacoma</option>
+                                        <option value="silverado">Silverado</option>
+                                        <option value="ram1500">RAM 1500</option>
+                                        <option value="sierra">Sierra</option>
+                                        <option value="frontier">Frontier</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+
+                                <!-- Manufacturing Year -->
+                                <div class="space-y-2">
+                                    <label class="block text-sm font-medium text-gray-700">Manufacturing Year</label>
+                                    <select class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white">
+                                        <option value="" disabled selected>Select year</option>
+                                        <option value="2025">2025</option>
+                                        <option value="2024">2024</option>
+                                        <option value="2023">2023</option>
+                                        <option value="2022">2022</option>
+                                        <option value="2021">2021</option>
+                                        <option value="2020">2020</option>
+                                        <option value="2019">2019</option>
+                                        <option value="2018">2018</option>
+                                        <option value="2017">2017</option>
+                                        <option value="2016">2016</option>
+                                        <option value="2015">2015</option>
+                                    </select>
+                                </div>
+
+                                <!-- Plate Section -->
+                                <div id="plate-section" class="space-y-4 mt-6 bg-white rounded-lg p-4">
+                                    <button class="flex items-center justify-between w-full" onclick="return false;">
+                                        <h3 class="text-lg font-medium text-gray-800">Truck's Plate</h3>
+                                        <i class="fa-solid fa-chevron-down text-gray-500 transition-transform"></i>
+                                    </button>
+
+                                    <!-- Plate Preview -->
+                                    <div class="space-y-2">
+                                        <label class="block text-sm font-medium text-gray-700">Plate Photo Preview</label>
+                                        <div class="relative group aspect-[3/1] bg-gray-100 rounded-lg overflow-hidden">
+                                            <img class="w-full h-full object-cover"
+                                                 src="https://storage.googleapis.com/uxpilot-auth.appspot.com/e3957fab62-5c352241b3435cd72397.png"
+                                                 alt="truck plate photo preview with good lighting" />
+                                            <div class="absolute inset-0 bg-black bg-opacity-40 group-hover:bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Secondary Button Below -->
+                                    <div class="flex justify-center">
+                                        <button class="px-4 py-3 rounded-lg bg-blue-100 text-blue-700 border border-blue-200 hover:border-orange-500 hover:text-orange-500 font-medium transition-colors">
+                                            Take Photo
+                                        </button>
+                                    </div>
+
+                                    <!-- Plate Number Input -->
+                                    <div class="space-y-2">
+                                        <label class="block text-sm font-medium text-gray-700">Plate Number</label>
+                                        <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="Enter plate number" />
+                                    </div>
+                                </div>
+
+
+
+
+
+
+                            </div>
+                        </div>
+                    </div>
+                }
+
+
+                @if (IsStepActive(2))
+                {
+                    <!-- Step 2: Truck Photos -->
+                    <div id="step-2" class="step-content">
+                        <div id="truck-photos-section" class="space-y-4 bg-white rounded-lg p-4">
+                            <button class="flex items-center justify-between w-full" onclick="return false;">
+                                <h3 class="text-lg font-medium text-gray-800">Truck Photos</h3>
+                                <i class="fa-solid fa-chevron-down text-gray-500 transition-transform"></i>
+                            </button>
+                            <div class="content">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div class="space-y-2">
+                                        <label class="block text-sm font-medium text-gray-700">Front View</label>
+                                        <button class="w-full aspect-square flex flex-col items-center justify-center space-y-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500">
+                                            <i class="fa-solid fa-camera text-xl"></i>
+                                            <span class="text-xs">Add Photo</span>
+                                        </button>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="block text-sm font-medium text-gray-700">Back View</label>
+                                        <button class="w-full aspect-square flex flex-col items-center justify-center space-y-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500">
+                                            <i class="fa-solid fa-camera text-xl"></i>
+                                            <span class="text-xs">Add Photo</span>
+                                        </button>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="block text-sm font-medium text-gray-700">Left Side</label>
+                                        <button class="w-full aspect-square flex flex-col items-center justify-center space-y-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500">
+                                            <i class="fa-solid fa-camera text-xl"></i>
+                                            <span class="text-xs">Add Photo</span>
+                                        </button>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="block text-sm font-medium text-gray-700">Right Side</label>
+                                        <button class="w-full aspect-square flex flex-col items-center justify-center space-y-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500">
+                                            <i class="fa-solid fa-camera text-xl"></i>
+                                            <span class="text-xs">Add Photo</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                }
+
+                @if (IsStepActive(3))
+                {
+                    <div id="step-3" class="step-content">
+                        <div id="truck-categorization-section" class="space-y-4 bg-white rounded-lg p-4">
+                            <button class="flex items-center justify-between w-full" onclick="return false;">
+                                <h3 class="text-lg font-medium text-gray-800">Truck Categorization</h3>
+                                <i class="fa-solid fa-chevron-down text-gray-500 transition-transform"></i>
+                            </button>
+                            <div class="content space-y-6">
+                                <!-- Load Category -->
+                                <div class="space-y-3">
+                                    <h4 class="text-sm font-medium text-gray-700">Category</h4>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <button class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors">
+                                            <i class="fa-solid fa-box text-xl mb-2"></i>
+                                            <span class="text-xs">Small Load</span>
+                                        </button>
+                                        <button class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors">
+                                            <i class="fa-solid fa-boxes-stacked text-xl mb-2"></i>
+                                            <span class="text-xs">Standard Load</span>
+                                        </button>
+                                        <button class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors">
+                                            <i class="fa-solid fa-truck text-xl mb-2"></i>
+                                            <span class="text-xs">Heavy Load</span>
+                                        </button>
+                                        <button class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors">
+                                            <i class="fa-solid fa-truck-monster text-xl mb-2"></i>
+                                            <span class="text-xs">Extra Heavy Duty</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <!-- Bed Type -->
+                                <div class="space-y-3">
+                                    <h4 class="text-sm font-medium text-gray-700">Bed Type</h4>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <button class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors">
+                                            <i class="fa-solid fa-truck-pickup text-xl mb-2"></i>
+                                            <span class="text-xs">Open Bed</span>
+                                        </button>
+                                        <button class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors">
+                                            <i class="fa-solid fa-truck-ramp-box text-xl mb-2"></i>
+                                            <span class="text-xs">Covered Bed</span>
+                                        </button>
+                                        <button class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors">
+                                            <i class="fa-solid fa-truck-moving text-xl mb-2"></i>
+                                            <span class="text-xs">Box Truck/Van</span>
+                                        </button>
+                                        <button class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors">
+                                            <i class="fa-solid fa-temperature-low text-xl mb-2"></i>
+                                            <span class="text-xs">Refrigerated</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <!-- Use Tags -->
+                                <div class="space-y-3">
+                                    <h4 class="text-sm font-medium text-gray-700">Use Tags (Select Multiple)</h4>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <button class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors">
+                                            <i class="fa-solid fa-couch text-xl mb-2"></i>
+                                            <span class="text-xs">Furniture Move</span>
+                                        </button>
+                                        <button class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors">
+                                            <i class="fa-solid fa-washing-machine text-xl mb-2"></i>
+                                            <span class="text-xs">Appliance Haul</span>
+                                        </button>
+                                        <button class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors">
+                                            <i class="fa-solid fa-store text-xl mb-2"></i>
+                                            <span class="text-xs">Store Delivery</span>
+                                        </button>
+                                        <button class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors">
+                                            <i class="fa-solid fa-dumpster text-xl mb-2"></i>
+                                            <span class="text-xs">Junk Removal</span>
+                                        </button>
+                                        <button class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors">
+                                            <i class="fa-solid fa-wine-glass text-xl mb-2"></i>
+                                            <span class="text-xs">Fragile Goods</span>
+                                        </button>
+                                        <button class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors">
+                                            <i class="fa-solid fa-people-carry-box text-xl mb-2"></i>
+                                            <span class="text-xs">Helper Included</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                }
+
+                @if (IsStepActive(4))
+                {
+                    <!-- Step 4: Ownership Information -->
+                    <div id="step-4" class="step-content">
+                        <div id="ownership-section" class="space-y-4">
+                            <h3 class="text-lg font-medium text-gray-800">Ownership Information</h3>
+                            <div class="space-y-3">
+                                <div class="flex items-center space-x-3">
+                                    <input type="radio" name="ownership" id="owned" class="h-4 w-4 text-orange-500 focus:ring-orange-500">
+                                    <label for="owned" class="text-sm text-gray-700">I own this truck</label>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <input type="radio" name="ownership" id="leased" class="h-4 w-4 text-orange-500 focus:ring-orange-500">
+                                    <label for="leased" class="text-sm text-gray-700">I lease this truck</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                }
+
+                @if (IsStepActive(5))
+                {
+                    <div id="step-5" class="step-content">
+                        <div id="insurance-section" class="space-y-4">
+                            <h3 class="text-lg font-medium text-gray-800">Insurance Information</h3>
+                            <div class="space-y-4">
+                                <div class="space-y-2">
+                                    <label class="block text-sm font-medium text-gray-700">Insurance Provider</label>
+                                    <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="Enter insurance provider">
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="block text-sm font-medium text-gray-700">Policy Number</label>
+                                    <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="Enter policy number">
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="block text-sm font-medium text-gray-700">Insurance Documents</label>
+                                    <button class="w-full flex items-center justify-center px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500">
+                                        <i class="fa-solid fa-upload mr-2"></i>
+                                        <span>Upload Insurance Documents</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- Footer Action -->
+                <div class="mt-6">
+                    <button class="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600">
+                        @GetStepButtonText()
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</CenterWrapper>

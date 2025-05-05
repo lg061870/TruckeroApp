@@ -1,0 +1,515 @@
+﻿@page "/registerpaymentmethods"
+@using Truckero.Core.Interfaces
+@using Truckero.Core.Entities
+@inject IPaymentService PaymentService
+
+<CenterWrapper>
+    <div class="p-6 min-h-screen relative">
+
+        <!-- Backdrop Overlay -->
+        @if (ShowBottomSheet || ShowDeleteSheet)
+        {
+            <div class="fixed inset-0 bg-gray-400 bg-opacity-40 z-40"></div>
+        }
+
+
+        <!-- Header -->
+        <div id="payout-header" class="flex items-center mb-8">
+            <button class="text-gray-600">
+                <i class="fa-solid fa-arrow-left text-xl"></i>
+            </button>
+            <div class="text-center flex-1 mr-8">
+                <h2 class="text-xl font-semibold">Payment Accounts</h2>
+                <p class="text-sm text-gray-600 mt-1">Manage how you pay for deliveries</p>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        @if (!DisplayedPaymentMethods.Any())
+        {
+            <div id="empty-state" class="text-center py-12">
+                <div class="w-24 h-24 mx-auto mb-6 text-gray-300">
+                    <i class="fa-solid fa-wallet text-6xl"></i>
+                </div>
+                <h3 class="text-lg font-medium mb-2">No Payment Methods Yet</h3>
+                <p class="text-sm text-gray-600 mb-6">Add your first payment method to start booking deliveries</p>
+            </div>
+        }
+        else
+        {
+            <!-- Payment Method Cards -->
+            <div id="payment-accounts-list"
+                 class="overflow-y-auto mb-8 custom-scroll"
+                 style="max-height: 285px;">
+                @foreach (var method in DisplayedPaymentMethods)
+                {
+                    <div class="bg-white rounded-lg p-3 border mb-1">
+                        <div class="flex justify-between items-center mb-2">
+                            <div class="flex items-center space-x-2">
+                                <i class="@GetPaymentIcon(method.Name) text-lg"></i>
+                                <span class="font-medium text-sm">@method.Name</span>
+                            </div>
+                            <span class="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">Active</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <p class="text-xs text-gray-500">@method.Description</p>
+                            <div class="flex items-center space-x-2">
+                                <button class="text-gray-400 hover:text-gray-600" @onclick="@(() => EditPaymentMethod(method.Name))">
+                                    <i class="fa-solid fa-pen-to-square text-sm"></i>
+                                </button>
+                                <button class="text-gray-400 hover:text-red-600" @onclick="@(() => ConfirmDelete(method.Name))">
+                                    <i class="fa-solid fa-trash text-sm"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- Method Selector -->
+        <div class="mb-6">
+            <div class="grid grid-cols-2 gap-3">
+                @foreach (var method in DisplayedPaymentMethods)
+                {
+                    <div class="@GetPaymentOptionClass(method.Name)"
+                         @onclick="() => SelectPaymentMethod(method.Name)">
+                        <i class="@GetPaymentIcon(method.Name) text-2xl mb-2"></i>
+                        <p class="text-sm font-medium">@method.Name</p>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Add/Edit Bottom Sheet -->
+        <div class="fixed inset-x-0 bottom-0 transition-transform duration-300 ease-in-out z-50"
+             style="@($"transform: translateY({(ShowBottomSheet ? "0" : "100%")});")">
+            <div class="bg-white rounded-t-2xl p-6 max-h-[90vh] overflow-y-auto shadow-xl">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-semibold">
+                        @(IsEditMode ? $"Edit {SelectedPaymentMethod}" : $"Add {SelectedPaymentMethod}")
+                    </h3>
+                    <button class="text-gray-400" @onclick="ToggleBottomSheet">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+                @RenderSelectedPaymentForm()
+
+
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Bottom Sheet -->
+        <div class="fixed inset-x-0 bottom-0 transition-transform duration-300 ease-in-out z-50"
+             style="@($"transform: translateY({(ShowDeleteSheet ? "0" : "100%")});")">
+            <div class="bg-white rounded-t-2xl p-6">
+                <div class="text-center mb-6">
+                    <div class="w-12 h-12 mx-auto mb-4 text-red-500">
+                        <i class="fa-solid fa-triangle-exclamation text-4xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Delete this payment method?</h3>
+                    <p class="text-sm text-gray-600">@SelectedDeleteMethod</p>
+                    <p class="text-sm text-gray-600 mt-2">This action cannot be undone</p>
+                </div>
+                <div class="space-y-3">
+                    <button class="w-full py-3 bg-red-600 text-white rounded-lg font-medium" @onclick="DeleteConfirmed">
+                        Confirm Delete
+                    </button>
+                    <button class="w-full py-3 bg-gray-100 text-gray-600 rounded-lg font-medium" @onclick="ToggleDeleteSheet">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</CenterWrapper>
+
+@code {
+    private List<PaymentMethodType> DisplayedPaymentMethods = new();
+    private string SelectedPaymentMethod = "";
+    private string SelectedDeleteMethod = "";
+    private bool ShowBottomSheet = false;
+    private bool ShowDeleteSheet = false;
+    private bool IsEditMode = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPaymentMethodsAsync();
+    }
+
+    private async Task LoadPaymentMethodsAsync()
+    {
+        var staticMethods = new List<PaymentMethodType>
+        {
+            new() { Id = Guid.NewGuid(), Name = "CreditCard", Description = "Visa, Mastercard" },
+            new() { Id = Guid.NewGuid(), Name = "PayPal", Description = "Use your PayPal account" },
+            new() { Id = Guid.NewGuid(), Name = "GooglePay", Description = "Google Wallet" },
+            new() { Id = Guid.NewGuid(), Name = "ApplePay", Description = "Apple Wallet" }
+        };
+
+        var countryCode = "USA";
+        var dynamicMethods = await PaymentService.GetAllPaymentMethods(countryCode);
+
+        DisplayedPaymentMethods = staticMethods
+            .Concat(dynamicMethods)
+            .GroupBy(x => x.Name)
+            .Select(g => g.First())
+            .ToList();
+    }
+
+    private void SelectPaymentMethod(string methodName)
+    {
+        SelectedPaymentMethod = methodName;
+        IsEditMode = DisplayedPaymentMethods.Any(x => x.Name == methodName);
+        ShowBottomSheet = true;
+    }
+
+
+    private void SavePaymentMethod()
+    {
+        Console.WriteLine($"{(IsEditMode ? "Updated" : "Saved")} method: {SelectedPaymentMethod}");
+        ShowBottomSheet = false;
+        SelectedPaymentMethod = "";
+        IsEditMode = false;
+    }
+
+
+    private void EditPaymentMethod(string methodName)
+    {
+        SelectedPaymentMethod = methodName;
+        IsEditMode = true;
+        ShowBottomSheet = true;
+    }
+
+    private void ConfirmDelete(string methodName)
+    {
+        SelectedDeleteMethod = methodName;
+        ShowDeleteSheet = true;
+    }
+
+    private void ToggleDeleteSheet() => ShowDeleteSheet = !ShowDeleteSheet;
+
+    private void ToggleBottomSheet()
+    {
+        ShowBottomSheet = !ShowBottomSheet;
+        if (!ShowBottomSheet)
+        {
+            SelectedPaymentMethod = "";
+            IsEditMode = false;
+        }
+    }
+
+    private void DeleteConfirmed()
+    {
+        Console.WriteLine($"Deleted payment method: {SelectedDeleteMethod}");
+        ShowDeleteSheet = false;
+        _ = LoadPaymentMethodsAsync();
+    }
+
+    private string GetPaymentOptionClass(string methodName)
+    {
+        var baseClass = "border rounded-lg p-4 cursor-pointer hover:border-orange-500";
+        return SelectedPaymentMethod == methodName
+            ? $"{baseClass} border-2 border-orange-500 bg-orange-50"
+            : $"{baseClass} border-gray-300";
+    }
+
+    private string GetPaymentIcon(string methodName) => methodName switch
+    {
+        "CreditCard" => "fa-regular fa-credit-card text-gray-600",
+        "PayPal" => "fa-brands fa-paypal text-[#003087]",
+        "GooglePay" => "fa-brands fa-google text-gray-600",
+        "ApplePay" => "fa-brands fa-apple text-gray-800",
+        _ => "fa-regular fa-credit-card text-gray-600"
+    };
+
+    private RenderFragment RenderSelectedPaymentForm() => SelectedPaymentMethod switch
+    {
+        "CreditCard" => RenderCreditCardForm,
+        "PayPal" => RenderPayPalForm,
+        "GooglePay" => RenderGooglePayForm,
+        "ApplePay" => RenderApplePayForm,
+        _ => RenderGenericPaymentForm
+    };
+
+    // 🔸 Payment Method Forms
+    private RenderFragment RenderCreditCardForm => @<div>
+        <!-- Credit Card + Landing -->
+        <div id="credit-card-form" class="space-y-4">
+            <div id="card-scan-options" class="mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <p class="text-sm font-medium text-gray-700">Scan your card</p>
+                    <button class="text-orange-500 text-sm font-medium">
+                        <i class="fa-regular fa-circle-question"></i> How it works
+
+                    </button>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <button class="flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:bg-orange-50">
+                        <i class="fa-solid fa-credit-card text-2xl text-gray-500 mb-2"></i>
+                        <span class="text-sm font-medium text-gray-600">Front Side</span>
+                        <span class="text-xs text-gray-400 mt-1">Tap to scan</span>
+                    </button>
+                    <button class="flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:bg-orange-50">
+                        <i class="fa-solid fa-credit-card-back text-2xl text-gray-500 mb-2"></i>
+                        <span class="text-sm font-medium text-gray-600">Back Side</span>
+                        <span class="text-xs text-gray-400 mt-1">Tap to scan</span>
+                    </button>
+                </div>
+            </div>
+            <div class="flex items-center mb-6">
+                <div class="flex-1 h-px bg-gray-200"></div>
+                <span class="px-4 text-sm text-gray-500">or enter manually</span>
+                <div class="flex-1 h-px bg-gray-200"></div>
+            </div>
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">Card Number</label>
+                <div class="relative">
+                    <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="1234 5678 9012 3456" />
+                    <span class="absolute right-3 top-3">
+                        <i class="fa-brands fa-cc-visa text-xl text-blue-700"></i>
+                    </span>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700">Expiry Date</label>
+                    <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="MM/YY" />
+                </div>
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700">CVV</label>
+                    <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="123" />
+                </div>
+            </div>
+            <div id="billing-address" class="space-y-4 mt-6">
+                <h3 class="text-lg font-medium">Billing Address</h3>
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700">Street Address</label>
+                    <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="Enter street address" />
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">City</label>
+                        <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="City" />
+                    </div>
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">ZIP Code</label>
+                        <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="ZIP Code" />
+                    </div>
+                </div>
+            </div>
+            <div id="coupon-section" class="mt-6">
+                <div class="flex items-center space-x-2">
+                    <input type="text" class="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="Enter coupon code" />
+                    <button class="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">
+                        Apply
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Save Button -->
+            <div class="pt-4">
+                <button class="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600"
+                        @onclick="SavePaymentMethod">
+                    @(IsEditMode ? $"Update {SelectedPaymentMethod}" : $"Save {SelectedPaymentMethod}")
+                </button>
+            </div>
+        </div>
+    </div>;
+
+    private RenderFragment RenderPayPalForm => @<div>
+        <!-- PayPal -->
+        <div id="paypal-form" class="space-y-6">
+            <div class="bg-blue-50 p-4 rounded-lg border border-[#003087] mb-6">
+                <div class="flex items-center space-x-3">
+                    <i class="fa-brands fa-paypal text-2xl text-[#003087]"></i>
+                    <div>
+                        <p class="text-sm font-medium text-[#003087]">Connect with PayPal</p>
+                        <p class="text-xs text-gray-600">You'll be redirected to PayPal to link your account</p>
+                    </div>
+                </div>
+            </div>
+            <button class="w-full bg-[#003087] text-white py-3 rounded-lg font-medium hover:bg-[#002677] flex items-center justify-center space-x-2">
+                <i class="fa-brands fa-paypal"></i>
+                <span>Continue with PayPal</span>
+            </button>
+            <div id="paypal-benefits" class="mt-8 space-y-4">
+                <h3 class="text-lg font-medium text-gray-700">Benefits of PayPal</h3>
+                <div class="space-y-3">
+                    <div class="flex items-start space-x-3">
+                        <i class="fa-solid fa-shield-halved text-green-600 mt-1"></i>
+                        <div>
+                            <p class="text-sm font-medium text-gray-700">Secure Payments</p>
+                            <p class="text-xs text-gray-500">Your financial information is never shared</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <i class="fa-solid fa-arrow-rotate-left text-green-600 mt-1"></i>
+                        <div>
+                            <p class="text-sm font-medium text-gray-700">Purchase Protection</p>
+                            <p class="text-xs text-gray-500">Get a full refund if items don't arrive as described</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <i class="fa-solid fa-bolt text-green-600 mt-1"></i>
+                        <div>
+                            <p class="text-sm font-medium text-gray-700">Fast Checkout</p>
+                            <p class="text-xs text-gray-500">Pay quickly without entering your payment details</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>;
+
+    private RenderFragment RenderGooglePayForm => @<div>
+        <!-- GooglePay -->
+        <div id="google-pay-form" class="space-y-6">
+            <div class="bg-white p-6 rounded-lg border border-gray-200">
+                <div class="flex items-center space-x-4 mb-4">
+                    <i class="fa-brands fa-google text-2xl text-gray-600"></i>
+                    <div>
+                        <p class="font-medium">Google Pay</p>
+                        <p class="text-sm text-gray-500">Connect your Google Pay account</p>
+                    </div>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="text-sm text-gray-600">Selected Account</p>
+                        <button class="text-orange-500 text-sm font-medium">Change</button>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                            <i class="fa-regular fa-user text-gray-500"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium">john.doe@gmail.com</p>
+                            <p class="text-sm text-gray-500">Personal Account</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-blue-50 p-4 rounded-lg">
+                <div class="flex items-center space-x-3">
+                    <i class="fa-solid fa-shield-check text-blue-500"></i>
+                    <p class="text-sm text-blue-700">Your payment information is secure and encrypted</p>
+                </div>
+            </div>
+            <div id="coupon-section">
+                <div class="flex items-center space-x-2">
+                    <input type="text" class="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="Enter coupon code" />
+                    <button class="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">
+                        Apply
+                    </button>
+                </div>
+            </div>
+            <button class="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600 mt-8">
+                Connect Google Pay
+            </button>
+        </div>
+    </div>;
+
+    private RenderFragment RenderApplePayForm => @<div>
+        <!-- Apple Pay -->
+        <div id="apple-pay-form" class="space-y-6">
+            <div class="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-brands fa-apple text-2xl"></i>
+                        <span class="font-medium">Set up Apple Pay</span>
+                    </div>
+                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" alt="User" class="w-8 h-8 rounded-full">
+                </div>
+                <div id="setup-steps" class="space-y-4">
+                    <div class="flex items-center space-x-4 text-green-600">
+                        <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                            <i class="fa-solid fa-check text-lg"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium">Device Compatible</p>
+                            <p class="text-sm text-gray-600">Your device supports Apple Pay</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                            <span class="font-medium">2</span>
+                        </div>
+                        <div>
+                            <p class="font-medium">Add Payment Card</p>
+                            <p class="text-sm text-gray-600">Add or select a card for Apple Pay</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                            <span class="font-medium">3</span>
+                        </div>
+                        <div>
+                            <p class="font-medium">Verify Identity</p>
+                            <p class="text-sm text-gray-600">Complete verification with Face ID</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="card-options" class="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+                <h3 class="font-medium mb-4">Select Payment Card</h3>
+                <div class="space-y-3">
+                    <button class="w-full border border-gray-200 rounded-lg p-4 flex items-center justify-between hover:border-orange-500">
+                        <div class="flex items-center space-x-3">
+                            <i class="fa-regular fa-credit-card text-xl text-gray-600"></i>
+                            <span class="font-medium">Add New Card</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-gray-400"></i>
+                    </button>
+                    <div class="w-full border border-gray-200 rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center space-x-3">
+                                <i class="fa-brands fa-cc-visa text-xl text-blue-600"></i>
+                                <span class="font-medium">•••• 4589</span>
+                            </div>
+                            <div class="w-4 h-4 border-2 rounded-full"></div>
+                        </div>
+                        <p class="text-sm text-gray-600 ml-7">Expires 08/2025</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4 flex items-center">
+                <i class="fa-solid fa-shield-halved text-green-500 text-xl mr-3"></i>
+                <p class="text-sm text-gray-600">Your card details are securely encrypted</p>
+            </div>
+            <button class="w-full bg-black text-white py-4 rounded-lg font-medium hover:bg-gray-900 flex items-center justify-center space-x-2">
+                <i class="fa-brands fa-apple text-xl"></i>
+                <span>Set up Apple Pay</span>
+            </button>
+            <div class="text-center">
+                <button class="text-gray-600 text-sm">Cancel Setup</button>
+            </div>
+        </div>
+    </div>;
+
+    private RenderFragment RenderGenericPaymentForm => @<div>
+        <div class="space-y-4 text-center">
+            <i class="fa-regular fa-credit-card text-4xl text-gray-600"></i>
+            <p class="text-gray-600">Proceed to setup for @SelectedPaymentMethod.</p>
+            <button class="w-full bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600">
+                Continue
+            </button>
+        </div>
+    </div>;
+}
+
+
+<style>
+    /* Basic scrollbar visibility */
+    .custom-scroll::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .custom-scroll::-webkit-scrollbar-track {
+        background: #f3f4f6; /* gray-100 */
+    }
+
+    .custom-scroll::-webkit-scrollbar-thumb {
+        background-color: #9ca3af; /* gray-400 */
+        border-radius: 10px;
+    }
+</style>

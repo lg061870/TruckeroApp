@@ -1,168 +1,155 @@
 using Azure.Identity;
 using Azure.Extensions.AspNetCore.Configuration.Secrets;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Identity.Web;
 using Microsoft.EntityFrameworkCore;
-using Truckero.Infrastructure.Data;
-using Truckero.Core.Interfaces;
-using Truckero.Infrastructure.Services.Onboarding;
-using Truckero.Infrastructure.Services.Auth;
-using Microsoft.AspNetCore.Authentication; // ✅ Add this to use AppDbContext and DbInitializer
+using Microsoft.Identity.Web;
 using Truckero.API.TestAuth;
+using Truckero.Core.Interfaces;
+using Truckero.Infrastructure.Data;
 using Truckero.Infrastructure.Repositories;
+using Truckero.Infrastructure.Services.Auth;
+using Truckero.Infrastructure.Services.Onboarding;
 
 var builder = WebApplication.CreateBuilder(args);
 var env = builder.Environment;
 
-// 📦 Load appsettings.{env}.json + secrets
+// 📦 Load base and environment config
 builder.Configuration
     .SetBasePath(Directory.GetCurrentDirectory())
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: true)
     .AddEnvironmentVariables();
 
-// 🔐 Optional: Load Key Vault based on env
+// 🔐 Load Key Vault (optional)
 var keyVaultUrl = builder.Configuration["KeyVault:Url"];
-
 if (!string.IsNullOrEmpty(keyVaultUrl))
 {
-    builder.Configuration.AddAzureKeyVault(
-        new Uri(keyVaultUrl),
-        new DefaultAzureCredential());
+    builder.Configuration.AddAzureKeyVault(new Uri(keyVaultUrl), new DefaultAzureCredential());
 }
 
-// 🪪 Bind B2C options from final merged config
+// 🔐 Authentication / Authorization Setup
 var b2cOptions = builder.Configuration.GetSection("AzureAdB2C");
-
-if (!builder.Environment.IsEnvironment("UnitTesting"))
+if (!env.IsEnvironment("UnitTesting"))
 {
-    // 🔐 Configure Azure AD B2C Auth
     builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
-    .AddMicrosoftIdentityWebApp(options =>
-    {
-        options.ClientId = b2cOptions["ClientId"];
-        options.ClientSecret = b2cOptions["ClientSecret"];
-        options.Authority = $"{b2cOptions["Instance"]}{b2cOptions["Domain"]}/{b2cOptions["SignUpSignInPolicyId"]}";
-        options.ResponseType = "code";
-        options.SaveTokens = true;
-    });
-
-    builder.Services.AddAuthorization();
+        .AddMicrosoftIdentityWebApp(options =>
+        {
+            options.ClientId = b2cOptions["ClientId"];
+            options.ClientSecret = b2cOptions["ClientSecret"];
+            options.Authority = $"{b2cOptions["Instance"]}{b2cOptions["Domain"]}/{b2cOptions["SignUpSignInPolicyId"]}";
+            options.ResponseType = "code";
+            options.SaveTokens = true;
+        });
 }
 else
 {
-    // 🧪 Inject test auth handler — now correctly referenced inside Truckero.API
     builder.Services.AddAuthentication("Test")
-        .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", options => { });
-
-    builder.Services.AddAuthorization();
+        .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", _ => { });
 }
+builder.Services.AddAuthorization();
 
-// 📦 Load database connection string
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-
-// 🛡️ Register AppDbContext with advanced options
-builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
+// 🌐 Enable CORS
+builder.Services.AddCors(options =>
 {
-    options.UseSqlServer(connectionString, sqlOptions =>
+    options.AddDefaultPolicy(policy =>
     {
-        sqlOptions.EnableRetryOnFailure(
-            maxRetryCount: 5,
-            maxRetryDelay: TimeSpan.FromSeconds(10),
-            errorNumbersToAdd: null // Retry transient errors (like deadlocks, timeouts)
-        );
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
-        sqlOptions.CommandTimeout(30); // SQL queries timeout after 30 seconds
+// 🛢️ Register DbContext
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<AppDbContext>((sp, options) =>
+{
+    options.UseSqlServer(connectionString, sql =>
+    {
+        sql.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
+        sql.CommandTimeout(30);
     });
 
-    // 🔍 Always inject logger if available (development or production)
-    var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
-    if (loggerFactory != null)
-    {
-        options.UseLoggerFactory(loggerFactory);
-    }
+    var loggerFactory = sp.GetService<ILoggerFactory>();
+    if (loggerFactory != null) options.UseLoggerFactory(loggerFactory);
 
-    // 🔥 Dev-only detailed logging
-    var env = serviceProvider.GetRequiredService<IWebHostEnvironment>();
     if (env.IsDevelopment())
     {
-        options.EnableSensitiveDataLogging(); // ⚠️ Shows SQL parameters — avoid in prod!
-        options.EnableDetailedErrors();       // More descriptive EF Core errors
+        options.EnableSensitiveDataLogging();
+        options.EnableDetailedErrors();
     }
 });
 
-
-
-// 🧩 Repository registrations
+// 🧠 Services & Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthTokenRepository, AuthTokenRepository>();
-
-// 🧠 Service layer
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IOnboardingService, OnboardingService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
 
-// 🌐 Add Swagger/OpenAPI
+// 📖 Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = "Truckero.API", Version = "v1" });
-    c.CustomSchemaIds(type => type.FullName); // Helps avoid name collisions
+    c.CustomSchemaIds(t => t.FullName); // Avoid name collisions
 });
 
+// 📡 MVC
 builder.Services.AddControllers();
 
+// 🪵 Logging
 builder.Logging.AddConsole();
 builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
-Console.WriteLine("ENV: " + env.EnvironmentName);
-Console.WriteLine("DB: " + builder.Configuration.GetConnectionString("DefaultConnection"));
+// 🏁 Print env info
+Console.WriteLine($"ENV: {env.EnvironmentName}");
+Console.WriteLine($"DB: {connectionString}");
 
 var app = builder.Build();
 
-
-// ✅ Seed database using DbInitializer
+// 🔧 Initialize DB (if needed)
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await DbInitializer.InitializeAsync(db);
 }
 
-// 🔁 Enable Swagger for Dev only
-if (env.IsDevelopment())
+// 🧪 Swagger only in dev/test
+if (env.IsDevelopment() || env.IsEnvironment("UnitTesting"))
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// 🌍 CORS before auth
+app.UseCors();
+
+//app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// ✅ Test endpoint
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+app.MapControllers();
 
+// 🔁 Sample endpoint
 app.MapGet("/weatherforecast", () =>
 {
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
+    var summaries = new[]
+    {
+        "Freezing", "Bracing", "Chilly", "Cool", "Mild",
+        "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
+    };
+
+    var forecast = Enumerable.Range(1, 5).Select(i =>
+        new WeatherForecast(
+            DateOnly.FromDateTime(DateTime.Now.AddDays(i)),
             Random.Shared.Next(-20, 55),
             summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
+        )).ToArray();
 
     return forecast;
 })
 .RequireAuthorization()
 .WithName("GetWeatherForecast");
-
-app.MapControllers();
 
 app.Run();
 
