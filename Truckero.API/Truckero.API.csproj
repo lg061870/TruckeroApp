@@ -22,7 +22,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Truckero.Core\Truckero.Core.csproj" />
-    <ProjectReference Include="..\Truckero.Contracts\Truckero.Contracts.csproj" />
     <ProjectReference Include="..\Truckero.Infrastructure\Truckero.Infrastructure.csproj" />
   </ItemGroup>
 
@@ -32,5 +31,7 @@
     <Folder Include="Extensions\" />
     <Folder Include="Models\" />
   </ItemGroup>
+
+  <ProjectExtensions><VisualStudio><UserProperties properties_4launchsettings_1json__JsonSchema="{" /></VisualStudio></ProjectExtensions>
 
 </Project>

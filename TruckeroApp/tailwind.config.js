@@ -13,5 +13,7 @@ tailwind.config = {
             textColor: ['active', 'group-hover'],
         },
     },
-    plugins: [],
+    plugins: [
+        require('tailwind-scrollbar'),
+    ],
 };

@@ -1,0 +1,9 @@
+﻿<div class="min-h-screen bg-gray-50 flex justify-center p-4">
+  <div class="w-full max-w-md md:max-w-lg lg:max-w-xl">
+        @ChildContent
+  </div>
+</div>
+
+@code {
+    [Parameter] public RenderFragment ChildContent { get; set; }
+}

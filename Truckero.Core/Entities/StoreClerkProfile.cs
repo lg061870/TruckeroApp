@@ -5,12 +5,12 @@ public class StoreClerkProfile
     // 🔑 Primary Key and FK to User
     public Guid UserId { get; set; }
 
-    public Guid StoreId { get; set; }
     public string CorporateEmail { get; set; } = null!;
     public bool Verified { get; set; } = false;
 
-    // 🔁 Navigation properties
+    // 🔁 Navigation
     public User User { get; set; } = null!;
-    public Store Store { get; set; } = null!;
-}
 
+    // 🔁 Many-to-many: Clerk can belong to many Stores
+    public ICollection<StoreClerkAssignment> StoreAssignments { get; set; } = new List<StoreClerkAssignment>();
+}

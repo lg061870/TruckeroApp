@@ -17,6 +17,8 @@ public class AppDbContext : DbContext
     public DbSet<PayoutAccount> PayoutAccounts => Set<PayoutAccount>();
     public DbSet<Store> Stores => Set<Store>();
     public DbSet<StoreClerkProfile> StoreClerkProfiles => Set<StoreClerkProfile>();
+    public DbSet<StoreClerkAssignment> StoreClerkAssignments => Set<StoreClerkAssignment>();
+
     public DbSet<PaymentMethod> PaymentMethods => Set<PaymentMethod>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
@@ -62,6 +64,7 @@ public class AppDbContext : DbContext
             .HasForeignKey<CustomerProfile>(c => c.UserId);
 
 
+        // StoreClerkProfile Configuration
         modelBuilder.Entity<StoreClerkProfile>()
             .HasKey(scp => scp.UserId);
 
@@ -70,10 +73,20 @@ public class AppDbContext : DbContext
             .WithOne()
             .HasForeignKey<StoreClerkProfile>(scp => scp.UserId);
 
-        modelBuilder.Entity<StoreClerkProfile>()
-            .HasOne(scp => scp.Store)
+        // StoreClerkAssignment (many-to-many between ClerkProfile and Store)
+        modelBuilder.Entity<StoreClerkAssignment>()
+            .HasKey(sca => new { sca.ClerkUserId, sca.StoreId });
+
+        modelBuilder.Entity<StoreClerkAssignment>()
+            .HasOne(sca => sca.ClerkProfile)
+            .WithMany(cp => cp.StoreAssignments)
+            .HasForeignKey(sca => sca.ClerkUserId);
+
+        modelBuilder.Entity<StoreClerkAssignment>()
+            .HasOne(sca => sca.Store)
             .WithMany(s => s.Clerks)
-            .HasForeignKey(scp => scp.StoreId);
+            .HasForeignKey(sca => sca.StoreId);
+
 
         modelBuilder.Entity<AuthToken>()
             .HasOne(t => t.User)
@@ -126,6 +139,7 @@ public class AppDbContext : DbContext
             .HasOne(v => v.DriverProfile)
             .WithMany(dp => dp.Vehicles)
             .HasForeignKey(v => v.DriverProfileId);
+
 
         // 🌱 Seed initial roles
         modelBuilder.Entity<Role>().HasData(

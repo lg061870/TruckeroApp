@@ -1,6 +1,7 @@
-﻿namespace Truckero.Core.Entities;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
-using System.ComponentModel.DataAnnotations;
+namespace Truckero.Core.Entities;
 
 public class AuthToken
 {
@@ -17,7 +18,8 @@ public class AuthToken
 
     public DateTime ExpiresAt { get; set; }
 
-    // 🔧 Fix: Add navigation property
+    public DateTime? RevokedAt { get; set; } // ✅ Optional but useful
+
+    [ForeignKey(nameof(UserId))]
     public User User { get; set; } = null!;
 }
-

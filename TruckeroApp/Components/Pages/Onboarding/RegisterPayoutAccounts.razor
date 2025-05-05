@@ -1,0 +1,334 @@
+﻿@page "/registerpayoutaccounts"
+@using Microsoft.AspNetCore.Components
+@using Truckero.Core.Interfaces
+@using Truckero.Core.Entities
+@inject IPaymentService PaymentService
+
+<CenterWrapper>
+    <div class="h-full text-base-content">
+        <div id="app" class="min-h-screen bg-gray-50">
+            <div id="payout-screen" class="p-6">
+                <!-- Header -->
+                <div id="payout-header" class="flex items-center mb-8">
+                    <button class="text-gray-600">
+                        <i class="fa-solid fa-arrow-left text-xl"></i>
+                    </button>
+                    <div class="text-center flex-1 mr-8">
+                        <h2 class="text-xl font-semibold">Payout Accounts</h2>
+                        <p class="text-sm text-gray-600 mt-1">Manage how you receive earnings from your deliveries</p>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                @if (!ExistingPayoutMethods.Any())
+                {
+                    <div id="empty-state" class="text-center py-12">
+                        <div class="w-24 h-24 mx-auto mb-6 text-gray-300">
+                            <i class="fa-solid fa-wallet text-6xl"></i>
+                        </div>
+                        <h3 class="text-lg font-medium mb-2">No Payout Methods Yet</h3>
+                        <p class="text-sm text-gray-600 mb-6">Add your first payout method to start receiving earnings</p>
+                    </div>
+                }
+
+                <!-- Payout Account Cards -->
+                <div id="payout-accounts-list"
+                     class="overflow-y-scroll space-y-1 mb-8 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100"
+                     style="max-height: 285px;">
+                    @foreach (var method in ExistingPayoutMethods)
+                    {
+                        <div class="bg-white rounded-lg p-3 border">
+                            <div class="flex justify-between items-center mb-2">
+                                <div class="flex items-center space-x-2">
+                                    <i class="@GetPayoutIcon(method.Name) text-lg"></i>
+                                    <span class="font-medium text-sm">@method.Name</span>
+                                </div>
+                                <span class="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">Active</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <p class="text-xs text-gray-500">@method.Description</p>
+                                <div class="flex items-center space-x-2">
+                                    <button class="text-gray-400 hover:text-gray-600" @onclick="() => EditPayoutMethod(method.Name)">
+                                        <i class="fa-solid fa-pen-to-square text-sm"></i>
+                                    </button>
+                                    <button class="text-gray-400 hover:text-red-600" @onclick="() => ConfirmDelete(method.Name)">
+                                        <i class="fa-solid fa-trash text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Payment Method Selector -->
+                <div class="mb-6">
+                    <div class="grid grid-cols-2 gap-3">
+                        @foreach (var method in AvailablePayoutOptions)
+                        {
+                            <div class="@GetPaymentOptionClass(method.Name)"
+                                 @onclick="() => SelectPayoutMethod(method.Name)">
+                                <i class="@GetPayoutIcon(method.Name) text-2xl mb-2"></i>
+                                <p class="text-sm font-medium">@method.Name</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Backdrop Overlay -->
+            @if (ShowAddSheet || ShowDeleteSheet)
+            {
+                <div class="fixed inset-0 bg-gray-400 bg-opacity-40 z-40"></div>
+            }
+
+            <!-- Add/Edit Bottom Sheet -->
+            <div class="fixed inset-x-0 bottom-0 transition-transform duration-300 ease-in-out z-50"
+                 style="@(ShowAddSheet ? "transform: translateY(0);" : "transform: translateY(100%);")">
+                <div class="bg-white rounded-t-2xl p-6 max-h-[90vh] overflow-y-auto">
+
+                    <!-- FLEX CONTAINER to align title and close button -->
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-semibold">
+                            @(IsEditMode ? $"Edit {SelectedPayoutMethod}" : $"Add {SelectedPayoutMethod}")
+                        </h3>
+                        <button class="text-gray-400" @onclick="ToggleAddSheet">
+                            <i class="fa-solid fa-xmark text-xl"></i>
+                        </button>
+                    </div>
+
+                    @RenderSelectedPayoutForm()
+                </div>
+            </div>
+
+
+
+            <!-- Delete Confirmation Bottom Sheet -->
+            <div class="fixed inset-x-0 bottom-0 transition-transform duration-300 ease-in-out z-50"
+                 style="@($"transform: translateY({(ShowDeleteSheet ? "0" : "100%")});")">
+                <div class="bg-white rounded-t-2xl p-6">
+                    <div class="text-center mb-6">
+                        <div class="w-12 h-12 mx-auto mb-4 text-red-500">
+                            <i class="fa-solid fa-triangle-exclamation text-4xl"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold mb-2">Delete this payout account?</h3>
+                        <p class="text-sm text-gray-600">@MethodToDelete</p>
+                    </div>
+                    <div class="space-y-3">
+                        <button class="w-full py-3 bg-red-600 text-white rounded-lg font-medium">
+                            Confirm Delete
+                        </button>
+                        <button class="w-full py-3 bg-gray-100 text-gray-600 rounded-lg font-medium"
+                                @onclick="ToggleDeleteSheet">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</CenterWrapper>
+
+@code {
+    private List<PaymentMethodType> ExistingPayoutMethods = new();
+    private List<PaymentMethodType> AvailablePayoutOptions = new();
+    private string? SelectedPayoutMethod;
+    private string MethodToDelete;
+    private bool ShowAddSheet = false;
+    private bool ShowDeleteSheet = false;
+    private bool IsEditMode = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPayoutMethodsAsync();
+    }
+
+    private async Task LoadPayoutMethodsAsync()
+    {
+        var countryCode = "USA"; // Replace with dynamic user setting if needed
+        ExistingPayoutMethods = await PaymentService.GetAllPayoutMethods(countryCode);
+        AvailablePayoutOptions = new()
+            {
+            new() { Id = Guid.NewGuid(), Name = "BankAccount", Description = "Bank Account" },
+            new() { Id = Guid.NewGuid(), Name = "SINPE", Description = "SINPE Móvil" },
+            new() { Id = Guid.NewGuid(), Name = "PayPal", Description = "PayPal" },
+            };
+    }
+
+    private void SelectPayoutMethod(string methodName)
+    {
+        SelectedPayoutMethod = methodName;
+        IsEditMode = false;
+        ShowAddSheet = true;
+    }
+
+    private void EditPayoutMethod(string methodName)
+    {
+        SelectedPayoutMethod = methodName;
+        IsEditMode = true;
+        ShowAddSheet = true;
+    }
+
+
+    private void ConfirmDelete(string methodName)
+    {
+        MethodToDelete = methodName;
+        ShowDeleteSheet = true;
+    }
+
+    private void ToggleAddSheet()
+    {
+        ShowAddSheet = !ShowAddSheet;
+        if (!ShowAddSheet)
+        {
+            SelectedPayoutMethod = null; // reset selection on close
+        }
+    }
+
+    private void ToggleDeleteSheet() => ShowDeleteSheet = !ShowDeleteSheet;
+
+
+    private string GetPayoutIcon(string methodName) => methodName switch
+    {
+        "BankAccount" => "fa-solid fa-building-columns text-gray-600",
+        "SINPE" => "fa-solid fa-mobile-screen text-green-600",
+        "PayPal" => "fa-brands fa-paypal text-[#003087]",
+        _ => "fa-solid fa-wallet text-gray-500"
+    };
+
+    private string GetPaymentOptionClass(string methodName)
+    {
+        var baseClass = "border rounded-lg p-4 cursor-pointer hover:border-orange-500";
+        return SelectedPayoutMethod == methodName
+        ? $"{baseClass} border-2 border-orange-500 bg-orange-50"
+        : $"{baseClass} border-gray-300";
+    }
+
+    private void SavePayoutMethod()
+    {
+        // Stub logic: extend this for actual persistence logic
+        Console.WriteLine($"{(IsEditMode ? "Updating" : "Saving")} {SelectedPayoutMethod}");
+
+        // Reset + close
+        ToggleAddSheet();
+    }
+
+
+    private RenderFragment RenderSelectedPayoutForm() => SelectedPayoutMethod switch
+    {
+        "BankAccount" => RenderBankAccountForm,
+        "SINPE" => RenderSinpeForm,
+        "PayPal" => RenderPayPalForm,
+        _ => RenderGenericPayoutForm
+    };
+
+    private RenderFragment RenderBankAccountForm => @<div>
+        <!-- Bank Account Form -->
+        <div id="bank-account-form" class="space-y-4">
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">Full Name</label>
+                <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300" placeholder="Enter account holder name">
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">Bank Name</label>
+                <select class="w-full px-4 py-3 rounded-lg border border-gray-300">
+                    <option>Select your bank</option>
+                    <option>Banco Nacional</option>
+                    <option>BAC Credomatic</option>
+                    <option>Banco de Costa Rica</option>
+                </select>
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">Account Number</label>
+                <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300" placeholder="Enter account number">
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">Confirm Account Number</label>
+                <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300" placeholder="Re-enter account number">
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">Routing Number (Optional)</label>
+                <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300" placeholder="Enter routing number">
+            </div>
+
+            <!-- Save Button -->
+            <div class="pt-4">
+                <button class="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600"
+                        @onclick="SavePayoutMethod">
+                    @(IsEditMode ? $"Update {SelectedPayoutMethod}" : $"Save {SelectedPayoutMethod}")
+                </button>
+            </div>
+
+        </div>
+    </div>;
+
+    private RenderFragment RenderSinpeForm => @<div>
+        <!-- SINPE Account Form -->
+        <div id="sinpe-form" class="space-y-4">
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">Full Name</label>
+                <input type="text" required class="w-full px-4 py-3 rounded-lg border border-gray-300" placeholder="Enter full name">
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">Mobile Number</label>
+                <input type="tel" required pattern="[0-9]{8}" class="w-full px-4 py-3 rounded-lg border border-gray-300" placeholder="Enter 8-digit SINPE mobile number">
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">Bank Name (Optional)</label>
+                <select class="w-full px-4 py-3 rounded-lg border border-gray-300">
+                    <option>Select your bank</option>
+                    <option>Banco Nacional</option>
+                    <option>BAC Credomatic</option>
+                    <option>Banco de Costa Rica</option>
+                </select>
+            </div>
+
+            <!-- Save Button -->
+            <div class="pt-4">
+                <button class="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600"
+                        @onclick="SavePayoutMethod">
+                    @(IsEditMode ? $"Update {SelectedPayoutMethod}" : $"Save {SelectedPayoutMethod}")
+                </button>
+            </div>
+
+        </div>
+    </div>;
+
+    private RenderFragment RenderPayPalForm => @<div>
+        <!-- PAYPAL Account Form -->
+        <div id="paypal-form" class="space-y-4">
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">Full Name</label>
+                <input type="text" required class="w-full px-4 py-3 rounded-lg border border-gray-300" placeholder="Enter full name">
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">PayPal Email</label>
+                <input type="email" id="paypalEmail" required class="w-full px-4 py-3 rounded-lg border border-gray-300" placeholder="Enter PayPal email">
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">Confirm PayPal Email</label>
+                <input type="email" id="confirmPaypalEmail" required class="w-full px-4 py-3 rounded-lg border border-gray-300" placeholder="Confirm PayPal email">
+            </div>
+
+            <!-- Save Button -->
+            <div class="pt-4">
+                <button class="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600"
+                        @onclick="SavePayoutMethod">
+                    @(IsEditMode ? $"Update {SelectedPayoutMethod}" : $"Save {SelectedPayoutMethod}")
+                </button>
+            </div>
+
+        </div>
+    </div>;
+
+    private RenderFragment RenderGenericPayoutForm => @<div>
+        <p>Generic Form Placeholder</p>
+    </div>;
+}
