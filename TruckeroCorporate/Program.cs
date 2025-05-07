@@ -1,4 +1,4 @@
-using TruckeroCorpWebsite.Components;
+using TruckeroCorporate.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 

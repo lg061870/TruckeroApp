@@ -5,4 +5,7 @@
     public string? Description { get; set; }
 
     public ICollection<PaymentMethod> PaymentMethods { get; set; } = new List<PaymentMethod>();
+    public bool IsForPayment { get; set; } = true;
+    public bool IsForPayout { get; set; } = false;
+
 }

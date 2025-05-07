@@ -10,6 +10,8 @@ using Truckero.Infrastructure.Data;
 using Truckero.Infrastructure.Repositories;
 using Truckero.Infrastructure.Services.Auth;
 using Truckero.Infrastructure.Services.Onboarding;
+using Truckero.Core.Interfaces.Repositories;
+using Truckero.Core.Interfaces.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 var env = builder.Environment;
@@ -83,8 +85,10 @@ builder.Services.AddDbContext<AppDbContext>((sp, options) =>
 // 🧠 Services & Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthTokenRepository, AuthTokenRepository>();
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IOnboardingService, OnboardingService>();
+builder.Services.AddScoped<IAuthService, AuthMockService>();
+builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
+builder.Services.AddScoped<IDriverRepository, DriverRepository>();
+
 
 // 📖 Swagger
 builder.Services.AddEndpointsApiExplorer();

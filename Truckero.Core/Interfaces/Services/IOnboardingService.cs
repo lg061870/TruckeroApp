@@ -1,7 +1,7 @@
 ﻿using Truckero.Core.DTOs;
 using Truckero.Core.DTOs.Onboarding;
 
-namespace Truckero.Core.Interfaces;
+namespace Truckero.Core.Interfaces.Services;
 
 public interface IOnboardingService
 {

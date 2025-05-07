@@ -1,5 +1,5 @@
 ﻿using System.Text.Json;
-using Truckero.Core.Interfaces;
+using Truckero.Core.Interfaces.Services;
 
 namespace TruckeroApp.ServiceClients;
 

@@ -3,7 +3,7 @@ using Truckero.Core.Interfaces;
 
 namespace Truckero.Infrastructure.Services.Auth;
 
-public class AuthService : IAuthService
+public class AuthMockService : IAuthService
 {
     public Task<AuthResponse> LoginAsync(AuthLoginRequest request)
     {
