@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Truckero.Core.Entities;
+using Truckero.Infrastructure.Data;
 
 namespace Truckero.API.Controllers;
 
@@ -8,63 +10,39 @@ namespace Truckero.API.Controllers;
 [Route("api/[controller]")]
 public class PaymentMethodsController : ControllerBase
 {
+    private readonly AppDbContext _db;
+
+    public PaymentMethodsController(AppDbContext db)
+    {
+        _db = db;
+    }
+
+    /// <summary>
+    /// Returns all payment method types (e.g., Card, PayPal) supported by the platform.
+    /// These are the options users can use to pay.
+    /// </summary>
     [HttpGet("GetAllPaymentMethods")]
     [AllowAnonymous]
-    public IActionResult GetAll(string countryCode)
+    public async Task<IActionResult> GetAll([FromQuery] string? countryCode = null)
     {
-        var result = GetMethodList(countryCode);
-        return Ok(result);
+        var methods = await _db.PaymentMethodTypes
+            .Where(m => m.IsForPayment)
+            .ToListAsync();
+
+        return Ok(methods);
     }
 
+    /// <summary>
+    /// Returns all payout method types (e.g., Bank, PayPal) supported for drivers.
+    /// </summary>
     [HttpGet("GetAllPayoutMethods")]
     [AllowAnonymous]
-    public IActionResult GetAllPayoutMethods(string countryCode)
+    public async Task<IActionResult> GetAllPayoutMethods([FromQuery] string? countryCode = null)
     {
-        var result = GetPayoutMethodList(countryCode);
-        return Ok(result);
-    }
+        var methods = await _db.PaymentMethodTypes
+            .Where(m => m.IsForPayout)
+            .ToListAsync();
 
-    private static List<PaymentMethodType> GetMethodList(string countryCode)
-    {
-        var result = new List<PaymentMethodType>
-        {
-            new() { Id = Guid.NewGuid(), Name = "CreditCard", Description = "Visa, Mastercard, Amex" },
-            new() { Id = Guid.NewGuid(), Name = "PayPal", Description = "Connect your PayPal account" },
-            new() { Id = Guid.NewGuid(), Name = "GooglePay", Description = "Use Google Wallet" },
-            new() { Id = Guid.NewGuid(), Name = "ApplePay", Description = "Use Apple Wallet" }
-        };
-
-        if (countryCode.ToUpper() == "CRI")
-        {
-            result.Add(new PaymentMethodType
-            {
-                Id = Guid.NewGuid(),
-                Name = "SINPE",
-                Description = "Costa Rica bank transfer via SINPE"
-            });
-        }
-
-        return result;
-    }
-
-    private static List<PaymentMethodType> GetPayoutMethodList(string countryCode)
-    {
-        var result = new List<PaymentMethodType>
-        {
-            new() { Id = Guid.NewGuid(), Name = "BankAccount", Description = "Standard bank transfer" },
-            new() { Id = Guid.NewGuid(), Name = "PayPal", Description = "Payout to your PayPal account" }
-        };
-
-        if (countryCode.ToUpper() == "CRI")
-        {
-            result.Add(new PaymentMethodType
-            {
-                Id = Guid.NewGuid(),
-                Name = "SINPE",
-                Description = "Costa Rica payout via SINPE"
-            });
-        }
-
-        return result;
+        return Ok(methods);
     }
 }

@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Truckero.Core.DTOs;
 using Truckero.Core.DTOs.Onboarding;
-using Truckero.Core.Interfaces;
+using Truckero.Core.Interfaces.Services;
 
 namespace Truckero.API.Controllers;
 

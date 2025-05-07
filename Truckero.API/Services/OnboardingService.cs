@@ -1,10 +1,10 @@
 ﻿using Truckero.Core.DTOs;
 using Truckero.Core.DTOs.Onboarding;
-using Truckero.Core.Interfaces;
+using Truckero.Core.Interfaces.Services;
 
 namespace Truckero.Infrastructure.Services.Onboarding;
 
-public class OnboardingService : IOnboardingService
+public class OnboardingMockService : IOnboardingService
 {
     public async Task StartAsync(StartOnboardingRequest request, Guid userId)
     {

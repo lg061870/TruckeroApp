@@ -1,6 +1,6 @@
 ﻿namespace Truckero.API.Services;
 
-using Truckero.Core.Interfaces;
+using Truckero.Core.Interfaces.Services;
 
 public class MockPaymentService : IPaymentService
 {

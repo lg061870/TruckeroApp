@@ -2,6 +2,7 @@
 using Truckero.Core.Entities;
 using Truckero.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Truckero.Infrastructure.Repositories;
 
 namespace Truckero.Infrastructure.Tests;
 

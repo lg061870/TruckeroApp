@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
 using TruckeroApp.ServiceClients;
 using Microsoft.Extensions.DependencyInjection;
-using Truckero.Core.Interfaces;
 using System.Net.Http;
+using Truckero.Core.Interfaces.Services;
 
 namespace TruckeroApp;
 
@@ -53,6 +53,63 @@ public static class MauiProgram
             client.Timeout = TimeSpan.FromSeconds(10);
         });
 #endif
+
+        // ✅ Configure HttpClient for Customer API
+#if ANDROID
+        builder.Services.AddHttpClient<ICustomerService, CustomerApiClientService>(client =>
+        {
+            client.BaseAddress = new Uri(apiBase);
+            client.Timeout = TimeSpan.FromSeconds(10);
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+        });
+#else
+        builder.Services.AddHttpClient<ICustomerService, CustomerApiClientService>(client =>
+        {
+            client.BaseAddress = new Uri(apiBase);
+            client.Timeout = TimeSpan.FromSeconds(10);
+        });
+#endif
+
+        // ✅ Configure HttpClient for Driver API
+#if ANDROID
+        builder.Services.AddHttpClient<IDriverService, DriverApiClientService>(client =>
+        {
+            client.BaseAddress = new Uri(apiBase);
+            client.Timeout = TimeSpan.FromSeconds(10);
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+        });
+#else
+        builder.Services.AddHttpClient<IDriverService, DriverApiClientService>(client =>
+        {
+            client.BaseAddress = new Uri(apiBase);
+            client.Timeout = TimeSpan.FromSeconds(10);
+        });
+#endif
+
+#if ANDROID
+        builder.Services.AddHttpClient<IUserService, UserApiClientService>(client =>
+        {
+            client.BaseAddress = new Uri(apiBase);
+            client.Timeout = TimeSpan.FromSeconds(10);
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+        })
+#else
+        builder.Services.AddHttpClient<IUserService, UserApiClientService>(client =>
+        {
+            client.BaseAddress = new Uri(apiBase);
+            client.Timeout = TimeSpan.FromSeconds(10);
+        });
+#endif
+;
 
 
         // ✅ DI service abstraction

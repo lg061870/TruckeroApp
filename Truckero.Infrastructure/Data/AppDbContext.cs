@@ -162,12 +162,55 @@ public class AppDbContext : DbContext
         );
 
         modelBuilder.Entity<PaymentMethodType>().HasData(
-            new PaymentMethodType { Id = Guid.Parse("00000000-0000-0000-0000-000000000301"), Name = "Card" },
-            new PaymentMethodType { Id = Guid.Parse("00000000-0000-0000-0000-000000000302"), Name = "Wallet" },
-            new PaymentMethodType { Id = Guid.Parse("00000000-0000-0000-0000-000000000303"), Name = "PayPal" },
-            new PaymentMethodType { Id = Guid.Parse("00000000-0000-0000-0000-000000000304"), Name = "Bank" },
-            new PaymentMethodType { Id = Guid.Parse("00000000-0000-0000-0000-000000000305"), Name = "Cash" },
-            new PaymentMethodType { Id = Guid.Parse("00000000-0000-0000-0000-000000000306"), Name = "Crypto" }
+            new PaymentMethodType
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000301"),
+                Name = "Card",
+                Description = "Credit or debit card",
+                IsForPayment = true,
+                IsForPayout = false
+            },
+            new PaymentMethodType
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000302"),
+                Name = "Wallet",
+                Description = "Mobile wallet",
+                IsForPayment = true,
+                IsForPayout = false
+            },
+            new PaymentMethodType
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000303"),
+                Name = "PayPal",
+                Description = "PayPal account",
+                IsForPayment = true,
+                IsForPayout = true
+            },
+            new PaymentMethodType
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000304"),
+                Name = "Bank",
+                Description = "Bank transfer",
+                IsForPayment = false,
+                IsForPayout = true
+            },
+            new PaymentMethodType
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000305"),
+                Name = "Cash",
+                Description = "Cash on delivery",
+                IsForPayment = true,
+                IsForPayout = false
+            },
+            new PaymentMethodType
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000306"),
+                Name = "Crypto",
+                Description = "Cryptocurrency payment",
+                IsForPayment = true,
+                IsForPayout = false
+            }
         );
+
     }
 }
