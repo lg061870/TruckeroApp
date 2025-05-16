@@ -11,5 +11,7 @@ public interface IAuthTokenRepository
     Task AddAsync(AuthToken token);
     Task UpdateAsync(AuthToken token);
     Task DeleteAsync(AuthToken token);
+    Task<AuthToken?> GetLatestAsync();
+    Task RevokeAsync(string refreshToken);
 }
 

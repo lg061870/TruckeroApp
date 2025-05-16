@@ -3,6 +3,8 @@
 @using Microsoft.AspNetCore.Components.Routing
 @using System.ComponentModel
 
+@inject NavigationManager NavManager
+
 <!-- Full screen layout (no max-width constraint) -->
 <CenterWrapper>
     <!-- Logo Section -->
@@ -113,12 +115,18 @@
 
                                     <!-- Action Buttons -->
                                     <div class="space-y-4">
-                                        <button class="w-full bg-[#FF6B00] text-white py-4 rounded-xl font-semibold text-lg hover:bg-[#e65100] transition duration-300">
+                                        <button @onclick="() => NavManager.NavigateTo(AppRoutes.RegisterCustomer)"
+                                                class="w-full bg-[#FF6B00] text-white py-4 rounded-xl font-semibold text-lg hover:bg-[#e65100] transition duration-300">
                                             Register as Customer
                                         </button>
+
                                         <p class="text-center text-gray-600">
-                                            Already have an account?
-                                            <span class="text-[#FF6B00] font-semibold cursor-pointer">Log in</span>
+                                        Already have an account?
+                                        <span class="text-[#FF6B00] font-semibold cursor-pointer"
+                                              @onclick="() => NavManager.NavigateTo(AppRoutes.Login)">
+                                            Log in
+                                        </span>
+
                                         </p>
                                         <p class="text-center text-gray-500 text-sm mt-2">
                                             <span class="cursor-pointer text-[#FF6B00] font-medium hover:underline">
@@ -168,7 +176,8 @@
 
                                     <!-- Action Buttons -->
                                     <div class="space-y-4">
-                                        <button class="w-full bg-[#FF6B00] text-white py-4 rounded-xl font-semibold text-lg hover:bg-[#e65100] transition duration-300">
+                                        <button @onclick="() => NavManager.NavigateTo(AppRoutes.RegisterDriver)"
+                                                class="w-full bg-[#FF6B00] text-white py-4 rounded-xl font-semibold text-lg hover:bg-[#e65100] transition duration-300">
                                             Register as Driver
                                         </button>
                                         <p class="text-center text-gray-600">
@@ -223,7 +232,8 @@
 
                                     <!-- Action Buttons -->
                                     <div class="space-y-4">
-                                        <button class="w-full bg-[#FF6B00] text-white py-4 rounded-xl font-semibold text-lg hover:bg-[#e65100] transition duration-300">
+                                        <button @onclick="() => NavManager.NavigateTo(AppRoutes.RegisterStoreClerk)"
+                                                class="w-full bg-[#FF6B00] text-white py-4 rounded-xl font-semibold text-lg hover:bg-[#e65100] transition duration-300">
                                             Register as Store
                                         </button>
                                         <p class="text-center text-gray-600">

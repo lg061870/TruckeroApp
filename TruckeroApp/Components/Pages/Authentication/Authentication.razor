@@ -1,0 +1,29 @@
+﻿@page "/authentication/{action}"
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using TruckeroApp.Interfaces
+
+<RemoteAuthenticatorView Action="login" />
+
+@inject IAccessTokenProvider TokenProvider
+@inject ITokenStorageService TokenStorage
+@inject NavigationManager Nav
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var result = await TokenProvider.RequestAccessToken();
+
+            if (result.TryGetToken(out var token))
+            {
+                await TokenStorage.SaveAccessTokenAsync(token.Value); // ✅ Use correct method
+                Nav.NavigateTo("/", forceLoad: true); // ✅ Triggers StartupRouter.razor
+            }
+            else
+            {
+                Nav.NavigateTo("/login?tokenStatus=missing");
+            }
+        }
+    }
+}

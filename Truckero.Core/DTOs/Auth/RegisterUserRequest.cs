@@ -16,5 +16,6 @@ public class RegisterUserRequest
 
     [Required]
     public string Name { get; set; } = null!;
-}
+    public string? PaymentMetadataJson { get; set; }
 
+}

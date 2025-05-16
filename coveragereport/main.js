@@ -211,21 +211,40 @@ for (i = 0, l = charts.length; i < l; i++) {
 
 var assemblies = [
   {
+    "name": "Truckero.Admin",
+    "classes": [
+      { "name": "Program", "rp": "Truckero.Admin_Program.html", "cl": 0, "ucl": 15, "cal": 15, "tl": 27, "cb": 0, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+    ]},
+  {
     "name": "Truckero.API",
     "classes": [
-      { "name": "Program", "rp": "Truckero.API_Program.html", "cl": 48, "ucl": 35, "cal": 83, "tl": 135, "cb": 3, "tb": 8, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Truckero.API.Controllers.AuthController", "rp": "Truckero.API_AuthController.html", "cl": 33, "ucl": 3, "cal": 36, "tl": 106, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Truckero.API.Controllers.OnboardingController", "rp": "Truckero.API_OnboardingController.html", "cl": 0, "ucl": 24, "cal": 24, "tl": 52, "cb": 0, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Program", "rp": "Truckero.API_Program.html", "cl": 78, "ucl": 32, "cal": 110, "tl": 164, "cb": 8, "tb": 12, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.API.Controllers.AuthController", "rp": "Truckero.API_AuthController.html", "cl": 33, "ucl": 25, "cal": 58, "tl": 157, "cb": 0, "tb": 6, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.API.Controllers.BlobStorageController", "rp": "Truckero.API_BlobStorageController.html", "cl": 0, "ucl": 12, "cal": 12, "tl": 38, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.API.Controllers.CustomerController", "rp": "Truckero.API_CustomerController.html", "cl": 0, "ucl": 13, "cal": 13, "tl": 32, "cb": 0, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.API.Controllers.DriverController", "rp": "Truckero.API_DriverController.html", "cl": 0, "ucl": 27, "cal": 27, "tl": 55, "cb": 0, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.API.Controllers.OnboardingController", "rp": "Truckero.API_OnboardingController.html", "cl": 26, "ucl": 14, "cal": 40, "tl": 93, "cb": 10, "tb": 16, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.API.Controllers.PaymentMethodsController", "rp": "Truckero.API_PaymentMethodsController.html", "cl": 0, "ucl": 16, "cal": 16, "tl": 48, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.API.Controllers.UsersController", "rp": "Truckero.API_UsersController.html", "cl": 0, "ucl": 17, "cal": 17, "tl": 39, "cb": 0, "tb": 4, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.API.Controllers.VehicleController", "rp": "Truckero.API_VehicleController.html", "cl": 0, "ucl": 26, "cal": 26, "tl": 53, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.API.Models.BlobSasUrlResponse", "rp": "Truckero.API_BlobSasUrlResponse.html", "cl": 0, "ucl": 1, "cal": 1, "tl": 7, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.API.Models.BlobUploadRequest", "rp": "Truckero.API_BlobUploadRequest.html", "cl": 0, "ucl": 2, "cal": 2, "tl": 7, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Truckero.API.TestAuth.TestAuthHandler", "rp": "Truckero.API_TestAuthHandler.html", "cl": 14, "ucl": 0, "cal": 14, "tl": 32, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Truckero.Infrastructure.Services.Auth.AuthService", "rp": "Truckero.API_AuthService.html", "cl": 34, "ucl": 9, "cal": 43, "tl": 75, "cb": 5, "tb": 6, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Truckero.Infrastructure.Services.Onboarding.OnboardingService", "rp": "Truckero.API_OnboardingService.html", "cl": 0, "ucl": 15, "cal": 15, "tl": 32, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "WeatherForecast", "rp": "Truckero.API_WeatherForecast.html", "cl": 0, "ucl": 2, "cal": 2, "tl": 135, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "WeatherForecast", "rp": "Truckero.API_WeatherForecast.html", "cl": 0, "ucl": 2, "cal": 2, "tl": 164, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+    ]},
+  {
+    "name": "Truckero.API.Tests",
+    "classes": [
+      { "name": "AutoGeneratedProgram", "rp": "Truckero.API.Tests_AutoGeneratedProgram.html", "cl": 0, "ucl": 1, "cal": 1, "tl": 4, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.API.Tests.AuthControllerTests", "rp": "Truckero.API.Tests_AuthControllerTests.html", "cl": 122, "ucl": 0, "cal": 122, "tl": 256, "cb": 4, "tb": 8, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.API.Tests.Mocks.OnboardingMockService", "rp": "Truckero.API.Tests_OnboardingMockService.html", "cl": 15, "ucl": 6, "cal": 21, "tl": 39, "cb": 1, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.API.Tests.OnboardingControllerTests", "rp": "Truckero.API.Tests_OnboardingControllerTests.html", "cl": 78, "ucl": 0, "cal": 78, "tl": 145, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
     ]},
   {
     "name": "Truckero.Core",
     "classes": [
       { "name": "PaymentMethod", "rp": "Truckero.Core_PaymentMethod.html", "cl": 0, "ucl": 8, "cal": 8, "tl": 15, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "PaymentMethodType", "rp": "Truckero.Core_PaymentMethodType.html", "cl": 3, "ucl": 1, "cal": 4, "tl": 8, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "PaymentMethodType", "rp": "Truckero.Core_PaymentMethodType.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 11, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "PayoutAccount", "rp": "Truckero.Core_PayoutAccount.html", "cl": 0, "ucl": 9, "cal": 9, "tl": 17, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Truckero.Core.DTOs.Auth.AuthLoginRequest", "rp": "Truckero.Core_AuthLoginRequest.html", "cl": 2, "ucl": 0, "cal": 2, "tl": 7, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Truckero.Core.DTOs.Auth.AuthResponse", "rp": "Truckero.Core_AuthResponse.html", "cl": 2, "ucl": 0, "cal": 2, "tl": 7, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
@@ -234,30 +253,66 @@ var assemblies = [
       { "name": "Truckero.Core.DTOs.Auth.RefreshTokenRequest", "rp": "Truckero.Core_RefreshTokenRequest.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 9, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Truckero.Core.DTOs.Auth.RegisterUserRequest", "rp": "Truckero.Core_RegisterUserRequest.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 20, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Truckero.Core.DTOs.Auth.TokenRequest", "rp": "Truckero.Core_TokenRequest.html", "cl": 0, "ucl": 2, "cal": 2, "tl": 12, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Truckero.Core.DTOs.Onboarding.OnboardingProgressResponse", "rp": "Truckero.Core_OnboardingProgressResponse.html", "cl": 0, "ucl": 4, "cal": 4, "tl": 9, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Truckero.Core.DTOs.Onboarding.StartOnboardingRequest", "rp": "Truckero.Core_StartOnboardingRequest.html", "cl": 0, "ucl": 3, "cal": 3, "tl": 8, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Truckero.Core.DTOs.Onboarding.VerifyCodeRequest", "rp": "Truckero.Core_VerifyCodeRequest.html", "cl": 0, "ucl": 2, "cal": 2, "tl": 7, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Truckero.Core.Entities.AuditLog", "rp": "Truckero.Core_AuditLog.html", "cl": 0, "ucl": 9, "cal": 9, "tl": 25, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Truckero.Core.Entities.AuthToken", "rp": "Truckero.Core_AuthToken.html", "cl": 0, "ucl": 8, "cal": 8, "tl": 14, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Truckero.Core.Entities.DriverProfile", "rp": "Truckero.Core_DriverProfile.html", "cl": 0, "ucl": 6, "cal": 6, "tl": 18, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Truckero.Core.Entities.OnboardingProgress", "rp": "Truckero.Core_OnboardingProgress.html", "cl": 0, "ucl": 5, "cal": 5, "tl": 11, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Core.DTOs.CustomerProfileRequest", "rp": "Truckero.Core_CustomerProfileRequest.html", "cl": 0, "ucl": 2, "cal": 2, "tl": 9, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Core.DTOs.DriverProfileRequest", "rp": "Truckero.Core_DriverProfileRequest.html", "cl": 0, "ucl": 5, "cal": 5, "tl": 10, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Core.DTOs.Onboarding.OnboardingProgressResponse", "rp": "Truckero.Core_OnboardingProgressResponse.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 9, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Core.DTOs.Onboarding.StartOnboardingRequest", "rp": "Truckero.Core_StartOnboardingRequest.html", "cl": 2, "ucl": 0, "cal": 2, "tl": 12, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Core.DTOs.Onboarding.VerifyCodeRequest", "rp": "Truckero.Core_VerifyCodeRequest.html", "cl": 3, "ucl": 0, "cal": 3, "tl": 10, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Core.Entities.AuditLog", "rp": "Truckero.Core_AuditLog.html", "cl": 0, "ucl": 10, "cal": 10, "tl": 25, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Core.Entities.AuthToken", "rp": "Truckero.Core_AuthToken.html", "cl": 6, "ucl": 2, "cal": 8, "tl": 25, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Core.Entities.CustomerProfile", "rp": "Truckero.Core_CustomerProfile.html", "cl": 0, "ucl": 7, "cal": 7, "tl": 27, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Core.Entities.DriverProfile", "rp": "Truckero.Core_DriverProfile.html", "cl": 0, "ucl": 7, "cal": 7, "tl": 29, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Core.Entities.MediaAsset", "rp": "Truckero.Core_MediaAsset.html", "cl": 0, "ucl": 10, "cal": 10, "tl": 19, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Core.Entities.OnboardingProgress", "rp": "Truckero.Core_OnboardingProgress.html", "cl": 0, "ucl": 5, "cal": 5, "tl": 18, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Truckero.Core.Entities.Role", "rp": "Truckero.Core_Role.html", "cl": 3, "ucl": 1, "cal": 4, "tl": 17, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Truckero.Core.Entities.Store", "rp": "Truckero.Core_Store.html", "cl": 0, "ucl": 5, "cal": 5, "tl": 14, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Truckero.Core.Entities.StoreClerkProfile", "rp": "Truckero.Core_StoreClerkProfile.html", "cl": 0, "ucl": 6, "cal": 6, "tl": 16, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Core.Entities.Store", "rp": "Truckero.Core_Store.html", "cl": 0, "ucl": 14, "cal": 14, "tl": 41, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Core.Entities.StoreClerkAssignment", "rp": "Truckero.Core_StoreClerkAssignment.html", "cl": 0, "ucl": 6, "cal": 6, "tl": 15, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Core.Entities.StoreClerkProfile", "rp": "Truckero.Core_StoreClerkProfile.html", "cl": 0, "ucl": 5, "cal": 5, "tl": 16, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Truckero.Core.Entities.SystemSetting", "rp": "Truckero.Core_SystemSetting.html", "cl": 0, "ucl": 3, "cal": 3, "tl": 10, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Truckero.Core.Entities.User", "rp": "Truckero.Core_User.html", "cl": 0, "ucl": 15, "cal": 15, "tl": 32, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Truckero.Core.Entities.Vehicle", "rp": "Truckero.Core_Vehicle.html", "cl": 0, "ucl": 11, "cal": 11, "tl": 19, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Truckero.Core.Entities.VehicleType", "rp": "Truckero.Core_VehicleType.html", "cl": 3, "ucl": 1, "cal": 4, "tl": 11, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Core.Entities.User", "rp": "Truckero.Core_User.html", "cl": 13, "ucl": 5, "cal": 18, "tl": 36, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Core.Entities.Vehicle", "rp": "Truckero.Core_Vehicle.html", "cl": 0, "ucl": 11, "cal": 11, "tl": 30, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Core.Entities.VehicleType", "rp": "Truckero.Core_VehicleType.html", "cl": 3, "ucl": 1, "cal": 4, "tl": 19, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+    ]},
+  {
+    "name": "Truckero.Diagnostics",
+    "classes": [
+      { "name": "Truckero.Diagnostics.Mocks.Services.AuthMockService", "rp": "Truckero.Diagnostics_AuthMockService.html", "cl": 34, "ucl": 14, "cal": 48, "tl": 80, "cb": 5, "tb": 6, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Diagnostics.Mocks.Services.OnboardingMockService", "rp": "Truckero.Diagnostics_OnboardingMockService.html", "cl": 0, "ucl": 21, "cal": 21, "tl": 45, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Diagnostics.Mocks.Services.PaymentMockService", "rp": "Truckero.Diagnostics_PaymentMockService.html", "cl": 0, "ucl": 22, "cal": 22, "tl": 36, "cb": 0, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Diagnostics.Seeders.TestSeedHelpers", "rp": "Truckero.Diagnostics_TestSeedHelpers.html", "cl": 14, "ucl": 1, "cal": 15, "tl": 27, "cb": 5, "tb": 6, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
     ]},
   {
     "name": "Truckero.Infrastructure",
     "classes": [
-      { "name": "Truckero.Infrastructure.Data.AppDbContext", "rp": "Truckero.Infrastructure_AppDbContext.html", "cl": 94, "ucl": 14, "cal": 108, "tl": 147, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Infrastructure.Data.AppDbContext", "rp": "Truckero.Infrastructure_AppDbContext.html", "cl": 151, "ucl": 13, "cal": 164, "tl": 216, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Infrastructure.Data.AppDbContextFactory", "rp": "Truckero.Infrastructure_AppDbContextFactory.html", "cl": 0, "ucl": 7, "cal": 7, "tl": 22, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Truckero.Infrastructure.Data.DbInitializer", "rp": "Truckero.Infrastructure_DbInitializer.html", "cl": 3, "ucl": 0, "cal": 3, "tl": 13, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Infrastructure.Migrations.AddAccessTokenField", "rp": "Truckero.Infrastructure_AddAccessTokenField.html", "cl": 0, "ucl": 650, "cal": 650, "tl": 725, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Infrastructure.Migrations.AddCustomerProfileAndDriverProfileFields", "rp": "Truckero.Infrastructure_AddCustomerProfileAndDriverProfileFields.html", "cl": 0, "ucl": 700, "cal": 700, "tl": 775, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Infrastructure.Migrations.AddEpic1SchemaUpdates", "rp": "Truckero.Infrastructure_AddEpic1SchemaUpdates.html", "cl": 0, "ucl": 924, "cal": 924, "tl": 1035, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Infrastructure.Migrations.AddPaymentMethodUsageFlags", "rp": "Truckero.Infrastructure_AddPaymentMethodUsageFlags.html", "cl": 0, "ucl": 848, "cal": 848, "tl": 938, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Truckero.Infrastructure.Migrations.AddPayoutAccountFix", "rp": "Truckero.Infrastructure_AddPayoutAccountFix.html", "cl": 0, "ucl": 784, "cal": 784, "tl": 880, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Truckero.Infrastructure.Migrations.AppDbContextModelSnapshot", "rp": "Truckero.Infrastructure_AppDbContextModelSnapshot.html", "cl": 616, "ucl": 0, "cal": 616, "tl": 666, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Infrastructure.Migrations.AddPendingModelChanges", "rp": "Truckero.Infrastructure_AddPendingModelChanges.html", "cl": 0, "ucl": 771, "cal": 771, "tl": 846, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Infrastructure.Migrations.AppDbContextModelSnapshot", "rp": "Truckero.Infrastructure_AppDbContextModelSnapshot.html", "cl": 758, "ucl": 0, "cal": 758, "tl": 814, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Truckero.Infrastructure.Migrations.InitialCreate", "rp": "Truckero.Infrastructure_InitialCreate.html", "cl": 0, "ucl": 718, "cal": 718, "tl": 812, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Truckero.Infrastructure.Migrations.SyncWithModel", "rp": "Truckero.Infrastructure_SyncWithModel.html", "cl": 0, "ucl": 498, "cal": 498, "tl": 575, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Infrastructure.Repositories.AuditLogRepository", "rp": "Truckero.Infrastructure_AuditLogRepository.html", "cl": 0, "ucl": 20, "cal": 20, "tl": 38, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Infrastructure.Repositories.AuthTokenRepository", "rp": "Truckero.Infrastructure_AuthTokenRepository.html", "cl": 24, "ucl": 8, "cal": 32, "tl": 57, "cb": 0, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Infrastructure.Repositories.CustomerRepository", "rp": "Truckero.Infrastructure_CustomerRepository.html", "cl": 0, "ucl": 14, "cal": 14, "tl": 32, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Infrastructure.Repositories.DriverRepository", "rp": "Truckero.Infrastructure_DriverRepository.html", "cl": 0, "ucl": 48, "cal": 48, "tl": 80, "cb": 0, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Infrastructure.Repositories.OnboardingProgressRepository", "rp": "Truckero.Infrastructure_OnboardingProgressRepository.html", "cl": 0, "ucl": 24, "cal": 24, "tl": 44, "cb": 0, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Infrastructure.Repositories.PaymentMethodRepository", "rp": "Truckero.Infrastructure_PaymentMethodRepository.html", "cl": 0, "ucl": 28, "cal": 28, "tl": 46, "cb": 0, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Infrastructure.Repositories.PayoutAccountRepository", "rp": "Truckero.Infrastructure_PayoutAccountRepository.html", "cl": 0, "ucl": 28, "cal": 28, "tl": 46, "cb": 0, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Infrastructure.Repositories.UserRepository", "rp": "Truckero.Infrastructure_UserRepository.html", "cl": 22, "ucl": 0, "cal": 22, "tl": 42, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Infrastructure.Repositories.VehicleRepository", "rp": "Truckero.Infrastructure_VehicleRepository.html", "cl": 0, "ucl": 89, "cal": 89, "tl": 132, "cb": 0, "tb": 8, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Infrastructure.Storage.AzureBlobStorageService", "rp": "Truckero.Infrastructure_AzureBlobStorageService.html", "cl": 0, "ucl": 66, "cal": 66, "tl": 102, "cb": 0, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+    ]},
+  {
+    "name": "Truckero.Infrastructure.Tests",
+    "classes": [
+      { "name": "AutoGeneratedProgram", "rp": "Truckero.Infrastructure.Tests_AutoGeneratedProgram.html", "cl": 0, "ucl": 1, "cal": 1, "tl": 4, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Infrastructure.Tests.AuthTokenRepositoryTests", "rp": "Truckero.Infrastructure.Tests_AuthTokenRepositoryTests.html", "cl": 67, "ucl": 0, "cal": 67, "tl": 103, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Truckero.Infrastructure.Tests.UserRepositoryTests", "rp": "Truckero.Infrastructure.Tests_UserRepositoryTests.html", "cl": 42, "ucl": 0, "cal": 42, "tl": 81, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
     ]},
 ];
 
@@ -266,9 +321,17 @@ var metrics = [{ "name": "Crap Score", "abbreviation": "crp", "explanationUrl": 
 var historicCoverageExecutionTimes = [];
 
 var riskHotspotMetrics = [
+      { "name": "Crap Score", "explanationUrl": "https://googletesting.blogspot.de/2011/02/this-code-is-crap.html" },
+      { "name": "Cyclomatic complexity", "explanationUrl": "https://en.wikipedia.org/wiki/Cyclomatic_complexity" },
 ];
 
 var riskHotspots = [
+  {
+    "assembly": "Truckero.Infrastructure", "class": "Truckero.Infrastructure.Repositories.VehicleRepository", "reportPath": "Truckero.Infrastructure_VehicleRepository.html", "methodName": "AddAsync()", "methodShortName": "AddAsync()", "fileIndex": 0, "line": 40,
+    "metrics": [
+      { "value": 42, "exceeded": true },
+      { "value": 6, "exceeded": false },
+    ]},
 ];
 
 var branchCoverageAvailable = true;

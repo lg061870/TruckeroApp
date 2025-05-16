@@ -21,4 +21,5 @@ public class AuditLog
 
     [ForeignKey(nameof(UserId))]
     public User User { get; set; } = null!;
+    public string Description { get; set; }
 }

@@ -1,0 +1,107 @@
+﻿@page "/"
+@using Truckero.Core.DTOs.Auth
+@using Truckero.Core.Enums
+@using Truckero.Core.Interfaces
+@using TruckeroApp.Interfaces
+@using Truckero.Core.Interfaces.Services
+@using TruckeroApp.DebugTools
+
+@inject NavigationManager NavManager
+@inject ITokenStorageService TokenStorage
+@inject IAuthService AuthService
+@inject IAuthSessionContext Session
+@inject IAuthTokenRepository TokenRepository
+
+
+<h3>Loading...</h3>
+
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+    #if DEBUG
+        // PASSED: await StartupTestPaths.TokenWithExceptionOnRefresh(TokenStorage);
+        // PASSED: await StartupTestPaths.TokenWithNoRefreshToken(TokenStorage); 
+        // PASSED: await StartupTestPaths.TokenWithBadRefreshToken(TokenStorage);
+        await StartupTestPaths.InvalidToken(TokenStorage);
+        // PASSED: await StartupTestPaths.NoToken(TokenStorage);
+        // PASSED: await StartupTestPaths.ValidTokenCustomer(TokenStorage, AuthService, TokenRepository);
+        // PASSED: await StartupTestPaths.ValidTokenStoreClerk(TokenStorage, AuthService, TokenRepository);
+        // PASSED: await StartupTestPaths.ValidTokenDriver(TokenStorage, AuthService, TokenRepository);
+         
+    #endif
+
+        // 🧪 Step 1: Try reading token from secure local storage
+        var token = await TokenStorage.GetAccessTokenAsync();
+
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            NavManager.NavigateTo(AppRoutes.RoleSwitcher, forceLoad: true);
+            return;
+        }
+
+        // 🧪 Step 2: Validate token via API call (AuthController -> AuthService)
+        var isValid = await AuthService.ValidateTokenAsync(token);
+        if (!isValid)
+        {
+            // 🌀 Try refresh token flow — Note: this *should* call Azure B2C in real impl
+            var refreshToken = await TokenStorage.GetRefreshTokenAsync();
+
+            if (string.IsNullOrWhiteSpace(refreshToken))
+            {
+                NavManager.NavigateTo($"{AppRoutes.LoginExpired}?reason=no-refresh-token", forceLoad: true);
+                return;
+            }
+
+            try
+            {
+                var refreshResult = await AuthService.RefreshTokenAsync(new RefreshTokenRequest
+                {
+                    RefreshToken = refreshToken
+                });
+
+                if (!string.IsNullOrWhiteSpace(refreshResult.AccessToken))
+                {
+                    await TokenStorage.SaveAccessTokenAsync(refreshResult.AccessToken);
+                    await TokenStorage.SaveRefreshTokenAsync(refreshResult.RefreshToken);
+                    token = refreshResult.AccessToken;
+                }
+                else
+                {
+                    NavManager.NavigateTo($"{AppRoutes.LoginExpired}?reason=refresh-failed", forceLoad: true);
+                    return;
+                }
+            }
+            catch
+            {
+                NavManager.NavigateTo($"{AppRoutes.LoginExpired}?reason=refresh-error", forceLoad: true);
+                return;
+            }
+        }
+
+        // ✅ Step 3: Token is valid (initial or refreshed) — retrieve session info
+        try
+        {
+            var role = await AuthService.GetActiveRoleAsync();
+            var roles = await AuthService.GetAllRolesAsync(); // Real implementation uses repo
+
+            Session.Set(token, roles, role);
+
+            var redirect = role switch
+            {
+                "Customer" => AppRoutes.RequestFreight,
+                "Driver" => AppRoutes.PickupQueue,
+                "StoreClerk" => AppRoutes.RegisterStoreClerk,
+                _ => AppRoutes.LoginExpired
+            };
+
+            NavManager.NavigateTo(redirect, forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠️ Session setup failed: {ex.Message}");
+            NavManager.NavigateTo(AppRoutes.Login, forceLoad: true);
+        }
+    }
+}
+

@@ -9,5 +9,6 @@ public class PasswordResetConfirmRequest
 
     [Required]
     [MinLength(6)]
-    public string NewPassword { get; set; } = null!;
+    public string? NewPassword { get; set; } = null!;
+    public string? Email { get; set; }
 }

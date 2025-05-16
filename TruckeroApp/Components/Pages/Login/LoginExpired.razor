@@ -1,0 +1,48 @@
+﻿@page "/login-expired"
+@using Microsoft.AspNetCore.WebUtilities
+@inject NavigationManager NavigationManager
+
+<CenterWrapper>
+    <div class="text-center p-8">
+        <i class="fa-solid fa-key text-5xl text-red-500 mb-4"></i>
+        <h2 class="text-2xl font-bold text-[#1a237e] mb-2">Session Expired</h2>
+
+        <p class="text-gray-600 mb-4">
+            Your authentication token is no longer valid. Please log in again to continue.
+        </p>
+
+        @if (!string.IsNullOrWhiteSpace(FailureReason))
+        {
+            <p class="text-sm text-red-500 italic mb-4">
+                (@FailureReason)
+            </p>
+        }
+
+        <button class="bg-[#FF6B00] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#e65100]"
+                @onclick="@(() => NavigationManager.NavigateTo("/login", true))">
+            Login Again
+        </button>
+    </div>
+</CenterWrapper>
+
+@code {
+    private string? FailureReason;
+
+    protected override void OnInitialized()
+    {
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        var reason = query.Get("reason");
+
+        if (!string.IsNullOrWhiteSpace(reason))
+        {
+            FailureReason = reason switch
+            {
+                "no-refresh-token" => "No refresh token was found. Please log in again.",
+                "refresh-failed" => "Your session could not be refreshed. Please log in again.",
+                "refresh-error" => "Something went wrong during token refresh. Please log in again.",
+                _ => reason
+            };
+        }
+    }
+}

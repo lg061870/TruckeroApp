@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-
-namespace Truckero.Core.Entities;
+using Truckero.Core.Entities;
 
 public class CustomerProfile
 {
@@ -11,6 +10,9 @@ public class CustomerProfile
     [Required]
     public Guid UserId { get; set; }
 
+    [ForeignKey(nameof(UserId))]
+    public User User { get; set; } = null!;
+
     [Required]
     public string FullName { get; set; } = null!;
 
@@ -18,10 +20,7 @@ public class CustomerProfile
     public string Address { get; set; } = null!;
 
     public string? PhoneNumber { get; set; }
-
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    // Navigation
-    [ForeignKey(nameof(UserId))]
-    public User User { get; set; } = null!;
+    public ICollection<PaymentMethod> PaymentMethods { get; set; } = new List<PaymentMethod>();
 }

@@ -66,12 +66,13 @@ public class AppDbContext : DbContext
 
         // StoreClerkProfile Configuration
         modelBuilder.Entity<StoreClerkProfile>()
-            .HasKey(scp => scp.UserId);
+            .HasKey(scp => scp.Id);
 
         modelBuilder.Entity<StoreClerkProfile>()
             .HasOne(scp => scp.User)
-            .WithOne()
+            .WithOne(u => u.StoreClerkProfile)
             .HasForeignKey<StoreClerkProfile>(scp => scp.UserId);
+
 
         // StoreClerkAssignment (many-to-many between ClerkProfile and Store)
         modelBuilder.Entity<StoreClerkAssignment>()
@@ -143,11 +144,11 @@ public class AppDbContext : DbContext
 
         // 🌱 Seed initial roles
         modelBuilder.Entity<Role>().HasData(
-            new Role { Id = Guid.Parse("00000000-0000-0000-0000-000000000001"), Name = RoleType.Guest },
-            new Role { Id = Guid.Parse("00000000-0000-0000-0000-000000000002"), Name = RoleType.Customer },
-            new Role { Id = Guid.Parse("00000000-0000-0000-0000-000000000003"), Name = RoleType.Driver },
-            new Role { Id = Guid.Parse("00000000-0000-0000-0000-000000000004"), Name = RoleType.StoreClerk },
-            new Role { Id = Guid.Parse("00000000-0000-0000-0000-000000000005"), Name = RoleType.Admin }
+            new Role { Id = Guid.Parse("00000000-0000-0000-0000-000000000001"), Name = RoleType.Guest.ToString() },
+            new Role { Id = Guid.Parse("00000000-0000-0000-0000-000000000002"), Name = RoleType.Customer.ToString() },
+            new Role { Id = Guid.Parse("00000000-0000-0000-0000-000000000003"), Name = RoleType.Driver.ToString() },
+            new Role { Id = Guid.Parse("00000000-0000-0000-0000-000000000004"), Name = RoleType.StoreClerk.ToString() },
+            new Role { Id = Guid.Parse("00000000-0000-0000-0000-000000000005"), Name = RoleType.Admin.ToString() }
         );
 
         modelBuilder.Entity<VehicleType>().HasData(

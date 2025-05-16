@@ -39,4 +39,9 @@ public class UserRepository : IUserRepository
     {
         await _context.SaveChangesAsync();
     }
+
+    public Task GetByEmailAsync(object email)
+    {
+        throw new NotImplementedException();
+    }
 }

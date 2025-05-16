@@ -1,8 +1,12 @@
 ﻿using Microsoft.Extensions.Logging;
-using TruckeroApp.ServiceClients;
+using TruckeroApp;
 using Microsoft.Extensions.DependencyInjection;
-using System.Net.Http;
-using Truckero.Core.Interfaces.Services;
+using TruckeroApp.Interfaces;
+using TruckeroApp.Session;
+using TruckeroApp.Services;
+using Truckero.Core.Interfaces;
+using Truckero.Infrastructure.Repositories;
+
 
 namespace TruckeroApp;
 
@@ -26,94 +30,28 @@ public static class MauiProgram
 
         builder.Services.AddMauiBlazorWebView();
 
-        // ✅ Platform-specific base URL
+        // 🌐 Platform-specific API base URL
 #if ANDROID
         var apiBase = "http://10.0.2.2:5200";
 #elif IOS
-        var apiBase = "http://localhost:5200"; // iOS Simulator
+        var apiBase = "http://localhost:5200";
 #else
-        var apiBase = "https://localhost:7224"; // Windows/macOS
+        var apiBase = "https://localhost:7224";
 #endif
 
-        // ✅ Configure HttpClient for Payment API
-#if ANDROID
-        builder.Services.AddHttpClient<IPaymentService, PaymentApiClientService>(client =>
-        {
-            client.BaseAddress = new Uri(apiBase);
-            client.Timeout = TimeSpan.FromSeconds(10);
-        })
-        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-        {
-            ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-        });
-#else
-        builder.Services.AddHttpClient<IPaymentService, PaymentApiClientService>(client =>
-        {
-            client.BaseAddress = new Uri(apiBase);
-            client.Timeout = TimeSpan.FromSeconds(10);
-        });
-#endif
+        // 🔌 Modular API client registration
+        builder.Services
+            .AddPaymentClient(apiBase)
+            .AddCustomerClient(apiBase)
+            .AddDriverClient(apiBase)
+            .AddUserClient(apiBase)
+            .AddVehicleClient(apiBase)
+            .AddOnboardingClient(apiBase)
+            .AddAuthClient(apiBase)
+            .AddAuthTokenClient(apiBase);
 
-        // ✅ Configure HttpClient for Customer API
-#if ANDROID
-        builder.Services.AddHttpClient<ICustomerService, CustomerApiClientService>(client =>
-        {
-            client.BaseAddress = new Uri(apiBase);
-            client.Timeout = TimeSpan.FromSeconds(10);
-        })
-        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-        {
-            ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-        });
-#else
-        builder.Services.AddHttpClient<ICustomerService, CustomerApiClientService>(client =>
-        {
-            client.BaseAddress = new Uri(apiBase);
-            client.Timeout = TimeSpan.FromSeconds(10);
-        });
-#endif
-
-        // ✅ Configure HttpClient for Driver API
-#if ANDROID
-        builder.Services.AddHttpClient<IDriverService, DriverApiClientService>(client =>
-        {
-            client.BaseAddress = new Uri(apiBase);
-            client.Timeout = TimeSpan.FromSeconds(10);
-        })
-        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-        {
-            ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-        });
-#else
-        builder.Services.AddHttpClient<IDriverService, DriverApiClientService>(client =>
-        {
-            client.BaseAddress = new Uri(apiBase);
-            client.Timeout = TimeSpan.FromSeconds(10);
-        });
-#endif
-
-#if ANDROID
-        builder.Services.AddHttpClient<IUserService, UserApiClientService>(client =>
-        {
-            client.BaseAddress = new Uri(apiBase);
-            client.Timeout = TimeSpan.FromSeconds(10);
-        })
-        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-        {
-            ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-        })
-#else
-        builder.Services.AddHttpClient<IUserService, UserApiClientService>(client =>
-        {
-            client.BaseAddress = new Uri(apiBase);
-            client.Timeout = TimeSpan.FromSeconds(10);
-        });
-#endif
-;
-
-
-        // ✅ DI service abstraction
-        //builder.Services.AddScoped<IPaymentService, PaymentApiClientService>();
+        builder.Services.AddSingleton<ITokenStorageService, SecureTokenStorageService>();
+        builder.Services.AddSingleton<IAuthSessionContext, AuthSessionContextService>();
 
         return builder.Build();
     }
