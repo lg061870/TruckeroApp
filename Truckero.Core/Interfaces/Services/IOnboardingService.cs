@@ -1,4 +1,5 @@
 ﻿using Truckero.Core.DTOs;
+using Truckero.Core.DTOs.Auth;
 using Truckero.Core.DTOs.Onboarding;
 
 namespace Truckero.Core.Interfaces.Services;
@@ -11,4 +12,6 @@ public interface IOnboardingService
 
     Task CompleteCustomerOnboardingAsync(CustomerProfileRequest request, Guid userId);
     Task CompleteDriverOnboardingAsync(DriverProfileRequest request, Guid userId);
+    Task CompleteCustomerOnboarding(CustomerOnboardingRequest request);
+
 }

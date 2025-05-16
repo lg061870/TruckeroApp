@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <OutputDirectory>./TestResults</OutputDirectory>
+          <ExcludeByFile>
+            <!-- Exclude boilerplate files -->
+            **/Program.cs
+            **/Startup.cs
+            **/*Migrations/*.cs
+          </ExcludeByFile>
+          <Exclude>
+            <!-- Exclude diagnostics and test-only libraries -->
+            [Truckero.Diagnostics*]* 
+            [*Tests]* 
+            [xunit.*]* 
+            [System.*]* 
+            [Microsoft.*]* 
+          </Exclude>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>
+

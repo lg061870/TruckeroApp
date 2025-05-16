@@ -6,8 +6,14 @@ public static class DbInitializer
 {
     public static async Task InitializeAsync(AppDbContext context)
     {
-        await context.Database.MigrateAsync();
+        var provider = context.Database.ProviderName;
 
-        // Optional: Add tenant-specific or dynamic bootstrap logic here in the future
+        // Only run migrations if using a relational provider
+        if (provider != "Microsoft.EntityFrameworkCore.InMemory")
+        {
+            await context.Database.MigrateAsync();
+        }
+
+        // Optionally seed data here...
     }
 }

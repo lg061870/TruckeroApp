@@ -1,0 +1,91 @@
+﻿@page "/confirm-reset"
+@using Truckero.Core.DTOs.Auth
+@using Truckero.Core.Interfaces.Services
+@inject IAuthService AuthService
+@inject NavigationManager Nav
+
+<h3 class="text-xl font-semibold mb-4">Reset Your Password</h3>
+
+@if (!string.IsNullOrWhiteSpace(errorMessage))
+{
+    <div class="text-red-600 text-sm mb-4">@errorMessage</div>
+}
+@if (!string.IsNullOrWhiteSpace(successMessage))
+{
+    <div class="text-green-600 text-sm mb-4">@successMessage</div>
+}
+
+<div class="space-y-4">
+    <input type="password" placeholder="New Password" class="w-full px-4 py-3 border rounded"
+           @bind="newPassword" />
+    <input type="password" placeholder="Confirm Password" class="w-full px-4 py-3 border rounded"
+           @bind="confirmPassword" />
+
+    <button class="bg-orange-500 text-white px-6 py-2 rounded hover:bg-orange-600"
+            @onclick="ResetAsync" disabled="@isLoading">
+        @if (isLoading)
+        {
+            <span>Processing...</span>
+        }
+        else
+        {
+            <span>Reset Password</span>
+        }
+    </button>
+</div>
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "token")]
+    public string? ResetToken { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "email")]
+    public string? Email { get; set; }
+
+    private string newPassword = "";
+    private string confirmPassword = "";
+    private string? errorMessage;
+    private string? successMessage;
+    private bool isLoading;
+
+    private async Task ResetAsync()
+    {
+        errorMessage = successMessage = null;
+
+        if (string.IsNullOrWhiteSpace(ResetToken) || string.IsNullOrWhiteSpace(Email))
+        {
+            errorMessage = "Invalid or missing reset token.";
+            return;
+        }
+
+        if (newPassword != confirmPassword)
+        {
+            errorMessage = "Passwords do not match.";
+            return;
+        }
+
+        isLoading = true;
+
+        try
+        {
+            var request = new PasswordResetConfirmRequest
+                {
+                    Email = Email!,
+                    Token = ResetToken!,
+                    NewPassword = newPassword
+                };
+
+            await AuthService.ConfirmPasswordResetAsync(request);
+            successMessage = "Your password has been reset successfully. You may now log in.";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Reset failed: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

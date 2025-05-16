@@ -1,0 +1,243 @@
+﻿@page "/registerdriver-old"
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Routing
+
+
+<div class="h-full text-base-content">
+    <div id="app" class="min-h-screen bg-gray-50">
+        <div id="registration-screen" class="p-6 min-h-screen">
+            <div id="registration-header" class="flex items-center mb-8">
+                <button class="text-gray-600">
+                    <i class="fa-solid fa-arrow-left text-xl"></i>
+                </button>
+                <div class="text-center flex-1 mr-8">
+                    <h2 class="text-xl font-semibold">Driver Registration</h2>
+                </div>
+            </div>
+
+            <div id="registration-progress" class="mb-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm text-gray-600">Step 2 of 3</span>
+                    <span class="text-sm text-orange-500">Driver Details</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="bg-orange-500 h-2 rounded-full w-2/3"></div>
+                </div>
+            </div>
+
+            <div id="role-indicator" class="bg-orange-100 p-3 rounded-lg mb-6 flex items-center">
+                <i class="fa-solid fa-truck text-orange-500 mr-3"></i>
+                <span class="text-sm text-orange-700">Registering as: <strong>DRIVER</strong></span>
+            </div>
+
+            <div id="registration-form" class="space-y-4">
+                <div id="personal-info-section" class="space-y-4">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">Full Name</label>
+                        <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="Enter your full name">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">User ID</label>
+                        <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="Choose a unique user ID">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">Email Address</label>
+                        <input type="email" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="Enter your email address">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">Phone Number</label>
+                        <input type="tel" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="Enter your phone number">
+                    </div>
+                </div>
+
+                <div id="license-section" class="space-y-4 mt-6">
+                    <h3 class="text-lg font-medium text-gray-800">Driver's License</h3>
+
+                    <div id="license-warning" class="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
+                        <i class="fa-solid fa-triangle-exclamation text-red-500 mt-1"></i>
+                        <p class="text-sm text-red-600">The name on your driver's license doesn't match your registration name. Please ensure both names match exactly.</p>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">License Number</label>
+                        <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="Enter license number">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">Front Side</label>
+                            <button class="w-full flex flex-col items-center justify-center space-y-2 border-2 border-dashed border-gray-300 p-4 rounded-lg hover:border-orange-500 hover:text-orange-500">
+                                <i class="fa-solid fa-camera text-xl"></i>
+                                <span class="text-sm">Front Photo</span>
+                            </button>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">Back Side</label>
+                            <button class="w-full flex flex-col items-center justify-center space-y-2 border-2 border-dashed border-gray-300 p-4 rounded-lg hover:border-orange-500 hover:text-orange-500">
+                                <i class="fa-solid fa-camera text-xl"></i>
+                                <span class="text-sm">Back Photo</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="license-preview" class="space-y-4">
+                        <h4 class="text-sm font-medium text-gray-700">License Photos Preview</h4>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="relative group">
+                                <div class="aspect-[1.6/1] bg-gray-100 rounded-lg overflow-hidden">
+                                    <img class="w-full h-full object-cover" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/e3957fab62-5c352241b3435cd72397.png" alt="driver license front side photo preview with good lighting">
+                                    <div class="absolute inset-0 bg-black bg-opacity-40 group-hover:bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button class="text-white">
+                                            <i class="fa-solid fa-camera-rotate text-xl"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <span class="block text-xs text-gray-500 mt-1 text-center">Front Side</span>
+                            </div>
+                            <div class="relative group">
+                                <div class="aspect-[1.6/1] bg-gray-100 rounded-lg overflow-hidden">
+                                    <img class="w-full h-full object-cover" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/186d45ce04-753aac84a2d2ecbf2640.png" alt="driver license back side photo preview with good lighting">
+                                    <div class="absolute inset-0 bg-black bg-opacity-40 group-hover:bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button class="text-white">
+                                            <i class="fa-solid fa-camera-rotate text-xl"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <span class="block text-xs text-gray-500 mt-1 text-center">Back Side</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="truck-info-section" class="space-y-4 mt-6">
+                    <h3 class="text-lg font-medium text-gray-800">Truck Information</h3>
+
+                    <div id="registered-trucks" class="space-y-3">
+                        <!-- Registered Truck Item -->
+                        <div class="bg-white rounded-lg border border-gray-200 p-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <i class="fa-solid fa-truck-moving text-gray-600"></i>
+                                    <div>
+                                        <h4 class="font-medium">ABC-1234</h4>
+                                        <p class="text-sm text-gray-500">Ford F-150 • 2023</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <i class="fa-solid fa-circle-check text-green-500"></i>
+                                    <button class="text-gray-400 hover:text-gray-600">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </button>
+                                    <button class="text-gray-400 hover:text-red-500">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Another Truck with Warning -->
+                        <div class="bg-white rounded-lg border border-gray-200 p-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <i class="fa-solid fa-truck-moving text-gray-600"></i>
+                                    <div>
+                                        <h4 class="font-medium">XYZ-5678</h4>
+                                        <p class="text-sm text-gray-500">Toyota Tundra • 2024</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <i class="fa-solid fa-circle-xmark text-red-500" title="Registered to another driver"></i>
+                                    <button class="text-gray-400 hover:text-gray-600">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </button>
+                                    <button class="text-gray-400 hover:text-red-500">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="w-full flex items-center justify-center px-4 py-3 bg-orange-50 text-orange-600 rounded-lg border border-orange-200 hover:bg-orange-100">
+                        <i class="fa-solid fa-plus mr-2"></i>
+                        <span>Add New Truck</span>
+                    </button>
+                </div>
+
+                <div id="service-area-section" class="space-y-4 mt-6">
+                    <h3 class="text-lg font-medium text-gray-800">Service Area</h3>
+                    <button class="w-full flex items-center justify-between px-4 py-3 bg-gray-50 rounded-lg border border-gray-300 hover:border-orange-500">
+                        <span class="text-gray-600">Set Availability &amp; Service Areas</span>
+                        <i class="fa-solid fa-chevron-right text-gray-400"></i>
+                    </button>
+                </div>
+
+                <div id="password-section" class="space-y-4 mt-6">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">Password</label>
+                        <div class="relative">
+                            <input type="password" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="Create password">
+                            <button class="absolute right-3 top-3 text-gray-400">
+                                <i class="fa-regular fa-eye text-lg"></i>
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Must be at least 8 characters long</p>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">Confirm Password</label>
+                        <div class="relative">
+                            <input type="password" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="Confirm password">
+                            <button class="absolute right-3 top-3 text-gray-400">
+                                <i class="fa-regular fa-eye text-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-start space-x-3 mt-6">
+                    <input type="checkbox" id="terms" class="mt-1 h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500">
+                    <label for="terms" class="text-sm text-gray-600">
+                        I agree to Truckeo's <span class="text-orange-600 cursor-pointer">Terms of Service</span> and <span class="text-orange-600 cursor-pointer">Privacy Policy</span>
+                    </label>
+                </div>
+
+                <button class="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600 mt-6">
+                    Continue
+                </button>
+
+                <div class="relative my-6">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-2 bg-gray-50 text-gray-500">Or continue with</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <button class="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50">
+                        <i class="fa-brands fa-google text-xl text-gray-600"></i>
+                        <span class="ml-2">Google</span>
+                    </button>
+                    <button class="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50">
+                        <i class="fa-brands fa-facebook text-xl text-blue-600"></i>
+                        <span class="ml-2">Facebook</span>
+                    </button>
+                </div>
+
+                <p class="text-sm text-center text-gray-600 mt-6">
+                    Already have an account? <span class="text-orange-600 font-medium cursor-pointer">Log In</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@code {
+
+}

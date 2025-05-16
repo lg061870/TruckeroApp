@@ -1,7 +1,16 @@
 ﻿@inherits LayoutComponentBase
 
-<div class="page">
-    <main>
-        @Body
-    </main>
-</div>
+@using TruckeroApp.Components.Pages.Shared
+
+@inject NavigationManager Nav
+
+@if (!Nav.Uri.Contains("/login"))
+{
+    <HeaderBar />
+}
+
+<main class="pt-0">
+    @Body
+</main>
+
+

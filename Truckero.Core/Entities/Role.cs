@@ -6,12 +6,11 @@ public class Role
 {
     public Guid Id { get; set; }
 
-    // ✅ Strongly typed enum instead of string
-    public RoleType Name { get; set; } = RoleType.Guest;
+    // 🔄 Change from Enum to string
+    public string? Name { get; set; }
 
-    // ✅ Optional description (nullable is fine)
     public string? Description { get; set; }
 
-    // ✅ Navigation: a role may have many users
     public ICollection<User> Users { get; set; } = new List<User>();
 }
+

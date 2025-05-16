@@ -1,0 +1,63 @@
+﻿@using Truckero.Core.Interfaces
+@using TruckeroApp.Interfaces
+
+@inject IAuthSessionContext Session
+@inject NavigationManager Nav
+
+<div class="w-full bg-[#f5f5f5] px-4 py-0 flex justify-between items-center border-b border-gray-300 h-[40px]">
+    <div>
+        @if (Session.IsAuthenticated)
+        {
+            <span class="text-sm text-gray-700">
+                Logged in as: <b>@Session.ActiveRole</b>
+                <span class="cursor-pointer ml-2 text-blue-600" @onclick="ToggleRoleDropdown">▼</span>
+            </span>
+        }
+        else
+        {
+            <span class="text-sm text-gray-500 italic">Not logged in</span>
+        }
+    </div>
+
+    <div class="flex gap-4 text-sm">
+        <span class="cursor-pointer text-gray-700">🔔 Messages</span>
+        <span class="cursor-pointer text-red-600" @onclick="Logout">⎋ Logout</span>
+    </div>
+</div>
+
+@if (ShowRoleDropdown && Session.IsAuthenticated)
+{
+    <div class="absolute mt-2 bg-white shadow rounded p-2 z-50">
+        @foreach (var role in Session.AvailableRoles)
+        {
+            <div class="cursor-pointer hover:bg-gray-100 p-1"
+            @onclick="@(() => SwitchRole(role))">
+                @role
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private bool ShowRoleDropdown = false;
+
+    void ToggleRoleDropdown() => ShowRoleDropdown = !ShowRoleDropdown;
+
+    void SwitchRole(string role)
+    {
+        Session.SwitchRole(role);
+        ShowRoleDropdown = false;
+        Nav.NavigateTo(Nav.Uri, forceLoad: true);
+    }
+
+    void Logout()
+    {
+        Session.Clear();
+        Nav.NavigateTo("/login", forceLoad: true);
+    }
+
+    protected override Task OnInitializedAsync()
+    {
+        return base.OnInitializedAsync();
+    }
+}

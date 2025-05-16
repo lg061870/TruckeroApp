@@ -1,6 +1,6 @@
 ﻿using System.Net.Http.Json;
 using System.Text.Json;
-using Truckero.Core.DTOs;
+using Truckero.Core.DTOs.Auth;
 using Truckero.Core.Entities;
 using Truckero.Core.Interfaces.Services;
 
