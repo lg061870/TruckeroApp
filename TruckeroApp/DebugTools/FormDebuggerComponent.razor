@@ -1,0 +1,295 @@
+@using System.Text.Json
+@using Microsoft.AspNetCore.Components.Forms
+
+@if (IsVisible)
+{
+    <div class="form-debugger @(IsExpanded ? "expanded" : "collapsed")">
+        <div class="form-debugger-header" @onclick="ToggleExpand">
+            <span>Form Debugger</span>
+            <span class="toggle-icon">@(IsExpanded ? "▼" : "▲")</span>
+        </div>
+        
+        @if (IsExpanded)
+        {
+            <div class="form-debugger-content">
+                <div class="form-debugger-actions">
+                    <button class="btn-capture" @onclick="CaptureCurrentValues">Capture Current Values</button>
+                    
+                    <div class="save-section">
+                        <input type="text" @bind="NewProfileName" placeholder="Profile name" />
+                        <button class="btn-save" @onclick="SaveProfile" disabled="@string.IsNullOrWhiteSpace(NewProfileName)">Save</button>
+                    </div>
+                    
+                    <div class="load-section">
+                        <select @bind="SelectedProfileId">
+                            <option value="">-- Select Profile --</option>
+                            @foreach (var profile in SavedProfiles)
+                            {
+                                <option value="@profile.Id">@profile.Name</option>
+                            }
+                        </select>
+                        <button class="btn-load" @onclick="LoadProfile" disabled="@string.IsNullOrWhiteSpace(SelectedProfileId)">Load</button>
+                        <button class="btn-delete" @onclick="DeleteProfile" disabled="@string.IsNullOrWhiteSpace(SelectedProfileId)">Delete</button>
+                    </div>
+                </div>
+                
+                @if (CurrentValues != null && CurrentValues.Count > 0)
+                {
+                    <div class="form-data-preview">
+                        <h4>Current Values:</h4>
+                        <pre>@JsonSerializer.Serialize(CurrentValues, new JsonSerializerOptions { WriteIndented = true })</pre>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+<style>
+    .form-debugger {
+        position: fixed;
+        bottom: 0;
+        right: 20px;
+        width: 400px;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 5px 5px 0 0;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        z-index: 1000;
+        transition: height 0.3s ease;
+    }
+    
+    .form-debugger.collapsed {
+        height: 40px;
+    }
+    
+    .form-debugger.expanded {
+        height: auto;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+    
+    .form-debugger-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 15px;
+        background-color: #343a40;
+        color: white;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    
+    .form-debugger-content {
+        padding: 15px;
+    }
+    
+    .form-debugger-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+    
+    .save-section, .load-section {
+        display: flex;
+        gap: 5px;
+    }
+    
+    .btn-capture, .btn-save, .btn-load, .btn-delete {
+        padding: 8px 12px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    
+    .btn-capture {
+        background-color: #007bff;
+        color: white;
+    }
+    
+    .btn-save {
+        background-color: #28a745;
+        color: white;
+    }
+    
+    .btn-load {
+        background-color: #17a2b8;
+        color: white;
+    }
+    
+    .btn-delete {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    input, select {
+        padding: 8px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        flex-grow: 1;
+    }
+    
+    .form-data-preview {
+        margin-top: 15px;
+        border-top: 1px solid #dee2e6;
+        padding-top: 15px;
+    }
+    
+    pre {
+        background-color: #f1f1f1;
+        padding: 10px;
+        border-radius: 4px;
+        overflow-x: auto;
+        font-size: 12px;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public bool IsVisible { get; set; } = true;
+    
+    [Parameter]
+    public string StorageKeyPrefix { get; set; } = "FormDebugger";
+    
+    [Parameter]
+    public EventCallback<Dictionary<string, string>> OnLoadProfile { get; set; }
+    
+    [CascadingParameter]
+    private EditContext CurrentEditContext { get; set; }
+    
+    private bool IsExpanded { get; set; } = false;
+    private Dictionary<string, string> CurrentValues { get; set; } = new Dictionary<string, string>();
+    private List<SavedProfile> SavedProfiles { get; set; } = new List<SavedProfile>();
+    private string NewProfileName { get; set; } = "";
+    private string SelectedProfileId { get; set; } = "";
+    
+    protected override void OnInitialized()
+    {
+        // Load any saved profiles from session storage when available
+        var savedProfilesJson = SessionStorage.GetItem($"{StorageKeyPrefix}_Profiles");
+        if (!string.IsNullOrEmpty(savedProfilesJson))
+        {
+            try
+            {
+                SavedProfiles = JsonSerializer.Deserialize<List<SavedProfile>>(savedProfilesJson);
+            }
+            catch
+            {
+                SavedProfiles = new List<SavedProfile>();
+            }
+        }
+    }
+    
+    private void ToggleExpand()
+    {
+        IsExpanded = !IsExpanded;
+    }
+    
+    private void CaptureCurrentValues()
+    {
+        if (CurrentEditContext != null)
+        {
+            var model = CurrentEditContext.Model;
+            var properties = model.GetType().GetProperties();
+            
+            CurrentValues = new Dictionary<string, string>();
+            
+            foreach (var prop in properties)
+            {
+                if (prop.CanRead)
+                {
+                    var value = prop.GetValue(model);
+                    CurrentValues[prop.Name] = value?.ToString() ?? string.Empty;
+                }
+            }
+            
+            StateHasChanged();
+        }
+    }
+    
+    private void SaveProfile()
+    {
+        if (string.IsNullOrWhiteSpace(NewProfileName) || CurrentValues == null || CurrentValues.Count == 0)
+            return;
+        
+        var profile = new SavedProfile
+        {
+            Id = Guid.NewGuid().ToString(),
+            Name = NewProfileName,
+            Values = new Dictionary<string, string>(CurrentValues),
+            CreatedAt = DateTime.Now
+        };
+        
+        SavedProfiles.Add(profile);
+        SaveProfilesToStorage();
+        
+        NewProfileName = "";
+        StateHasChanged();
+    }
+    
+    private async Task LoadProfile()
+    {
+        if (string.IsNullOrWhiteSpace(SelectedProfileId))
+            return;
+        
+        var profile = SavedProfiles.FirstOrDefault(p => p.Id == SelectedProfileId);
+        if (profile == null)
+            return;
+        
+        CurrentValues = new Dictionary<string, string>(profile.Values);
+        
+        // Notify parent component to load these values
+        await OnLoadProfile.InvokeAsync(profile.Values);
+    }
+    
+    private void DeleteProfile()
+    {
+        if (string.IsNullOrWhiteSpace(SelectedProfileId))
+            return;
+        
+        SavedProfiles.RemoveAll(p => p.Id == SelectedProfileId);
+        SaveProfilesToStorage();
+        
+        SelectedProfileId = "";
+        StateHasChanged();
+    }
+    
+    private void SaveProfilesToStorage()
+    {
+        var profilesJson = JsonSerializer.Serialize(SavedProfiles);
+        SessionStorage.SetItem($"{StorageKeyPrefix}_Profiles", profilesJson);
+    }
+    
+    // Simple static class to simulate session storage in memory
+    private static class SessionStorage
+    {
+        private static Dictionary<string, string> _storage = new Dictionary<string, string>();
+        
+        public static void SetItem(string key, string value)
+        {
+            _storage[key] = value;
+        }
+        
+        public static string GetItem(string key)
+        {
+            if (_storage.TryGetValue(key, out var value))
+                return value;
+            return null;
+        }
+    }
+    
+    public class SavedProfile
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public Dictionary<string, string> Values { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+}

@@ -1,34 +1,21 @@
-﻿using Microsoft.Maui.Storage;
-using System.Threading.Tasks;
-using TruckeroApp.Interfaces;
+﻿using TruckeroApp.Interfaces;
+
+namespace TruckeroApp.Services;
 
 public class SecureTokenStorageService : ITokenStorageService
 {
     private const string AccessTokenKey = "access_token";
     private const string RefreshTokenKey = "refresh_token";
+    private const string TokenExpirationKey = "token_expiration";
 
     public async Task<string?> GetAccessTokenAsync()
     {
-        try
-        {
-            return await SecureStorage.GetAsync(AccessTokenKey);
-        }
-        catch
-        {
-            return null;
-        }
+        return await GetAsync(AccessTokenKey);
     }
 
     public async Task SaveAccessTokenAsync(string token)
     {
-        try
-        {
-            await SecureStorage.SetAsync(AccessTokenKey, token);
-        }
-        catch
-        {
-            // log or handle error
-        }
+        await SetAsync(AccessTokenKey, token);
     }
 
     public Task ClearAccessTokenAsync()
@@ -39,26 +26,12 @@ public class SecureTokenStorageService : ITokenStorageService
 
     public async Task<string?> GetRefreshTokenAsync()
     {
-        try
-        {
-            return await SecureStorage.GetAsync(RefreshTokenKey);
-        }
-        catch
-        {
-            return null;
-        }
+        return await GetAsync(RefreshTokenKey);
     }
 
     public async Task SaveRefreshTokenAsync(string refreshToken)
     {
-        try
-        {
-            await SecureStorage.SetAsync(RefreshTokenKey, refreshToken);
-        }
-        catch
-        {
-            // log or handle error
-        }
+        await SetAsync(RefreshTokenKey, refreshToken);
     }
 
     public Task ClearRefreshTokenAsync()
@@ -67,4 +40,57 @@ public class SecureTokenStorageService : ITokenStorageService
         return Task.CompletedTask;
     }
 
+    public async Task SaveTokenExpirationAsync(DateTime expiresAt)
+    {
+        await SetAsync(TokenExpirationKey, expiresAt.ToString("o")); // ISO 8601 format
+    }
+
+    public async Task<DateTime?> GetTokenExpirationAsync()
+    {
+        var value = await GetAsync(TokenExpirationKey);
+        return DateTime.TryParse(value, out var dt) ? dt : null;
+    }
+
+    public Task ClearTokenExpirationAsync()
+    {
+        SecureStorage.Remove(TokenExpirationKey);
+        return Task.CompletedTask;
+    }
+
+    public async Task ClearAllAsync()
+    {
+        SecureStorage.Remove(AccessTokenKey);
+        SecureStorage.Remove(RefreshTokenKey);
+        SecureStorage.Remove(TokenExpirationKey);
+        await Task.CompletedTask;
+    }
+
+    // --- Internal helpers ---
+
+    private async Task<string?> GetAsync(string key)
+    {
+        try
+        {
+            return await SecureStorage.GetAsync(key);
+        }
+        catch (Exception ex)
+        {
+            // TODO: Log error
+            Console.WriteLine($"[SecureStorage] Error getting key '{key}': {ex.Message}");
+            return null;
+        }
+    }
+
+    private async Task SetAsync(string key, string value)
+    {
+        try
+        {
+            await SecureStorage.SetAsync(key, value);
+        }
+        catch (Exception ex)
+        {
+            // TODO: Log error
+            Console.WriteLine($"[SecureStorage] Error setting key '{key}': {ex.Message}");
+        }
+    }
 }

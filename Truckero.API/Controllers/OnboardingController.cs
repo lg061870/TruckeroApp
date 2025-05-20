@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Truckero.Core.DTOs.Auth;
+using Truckero.Core.DTOs.Common;
 using Truckero.Core.DTOs.Onboarding;
 using Truckero.Core.Interfaces.Services;
 
@@ -66,15 +67,31 @@ public class OnboardingController : ControllerBase
     /// Completes onboarding for a customer user.
     /// </summary>
     [HttpPost("customer")]
-    public async Task<IActionResult> CompleteCustomerOnboarding(
-        [FromQuery] Guid userId,
-        [FromBody] CustomerProfileRequest request)
+    public async Task<IActionResult> CompleteCustomerOnboarding([FromBody] CustomerOnboardingRequest request)
     {
-        if (userId == Guid.Empty)
-            return BadRequest(new { message = "Missing or invalid userId" });
-
-        await _onboardingService.CompleteCustomerOnboardingAsync(request, userId);
-        return Ok(new { message = "Customer onboarding complete" });
+        try
+        {
+            var token = await _onboardingService.CompleteCustomerOnboardingAsync(request);
+            return Ok(token); // Returns AuthTokenResponse
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("already exists"))
+        {
+            // Return a 409 Conflict for duplicate email
+            return Conflict(new { error = ex.Message, code = "duplicate_email" });
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Return a 400 Bad Request for validation errors
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            // Log the exception
+            _logger.LogError(ex, "Error during customer onboarding");
+            
+            // Return a 500 Internal Server Error for unexpected errors
+            return StatusCode(500, new { error = "An unexpected error occurred during registration." });
+        }
     }
 
     /// <summary>
@@ -86,17 +103,36 @@ public class OnboardingController : ControllerBase
         [FromBody] DriverProfileRequest request)
     {
         if (userId == Guid.Empty)
-            return BadRequest(new { message = "Missing or invalid userId" });
+            return BadRequest(new { error = "Missing or invalid userId" });
 
         try
         {
-            await _onboardingService.CompleteDriverOnboardingAsync(request, userId);
-            return Ok(new { message = "Driver onboarding complete" });
+            var result = await _onboardingService.CompleteDriverOnboardingAsync(request, userId);
+            
+            if (result.Success)
+            {
+                return Ok(new { message = result.Message ?? "Driver onboarding complete" });
+            }
+            else
+            {
+                // Return a 400 Bad Request with the specific error message from the operation result
+                return BadRequest(new { error = result.Message ?? "Failed to complete driver onboarding" });
+            }
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("already exists"))
+        {
+            // Return a 409 Conflict for duplicate driver
+            return Conflict(new { error = ex.Message, code = "duplicate_driver" });
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Return a 400 Bad Request for validation errors
+            return BadRequest(new { error = ex.Message });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error completing driver onboarding for userId {UserId}", userId);
-            return StatusCode(500, new { message = "Unexpected server error during onboarding." });
+            return StatusCode(500, new { error = "An unexpected error occurred during driver registration." });
         }
     }
 }
