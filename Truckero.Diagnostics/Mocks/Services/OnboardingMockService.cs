@@ -1,5 +1,6 @@
-﻿using Truckero.Core.DTOs;
+using Truckero.Core.DTOs;
 using Truckero.Core.DTOs.Auth;
+using Truckero.Core.DTOs.Common;
 using Truckero.Core.DTOs.Onboarding;
 using Truckero.Core.Interfaces.Services;
 
@@ -36,13 +37,19 @@ public class OnboardingMockService : IOnboardingService
         await Task.CompletedTask;
     }
 
-    public async Task CompleteDriverOnboardingAsync(DriverProfileRequest request, Guid userId)
+    public async Task<OperationResult> CompleteDriverOnboardingAsync(DriverProfileRequest request, Guid userId)
     {
         // TODO: Save driver-specific info, create DriverProfile entity, etc.
         await Task.CompletedTask;
+        return OperationResult.Succeeded("Driver onboarding completed successfully");
     }
 
     public Task CompleteCustomerOnboarding(CustomerOnboardingRequest request)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<AuthTokenResponse> CompleteCustomerOnboardingAsync(CustomerOnboardingRequest request)
     {
         throw new NotImplementedException();
     }

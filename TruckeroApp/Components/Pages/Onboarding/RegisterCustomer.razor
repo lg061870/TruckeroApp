@@ -4,12 +4,18 @@
 @using Microsoft.AspNetCore.Components.Forms
 @using System.ComponentModel.DataAnnotations
 @using Truckero.Core.DTOs.Auth
+@using Truckero.Core.DTOs.Common
 @using Truckero.Core.DataAnnotations
 @using Truckero.Core.Interfaces.Services
 @using TruckeroApp.ServiceClients
+@using TruckeroApp.Interfaces
+@using TruckeroApp.DebugTools
+@using System.Net
+@using System.Net.Http
 
 @inject IOnboardingService OnboardingService
 @inject NavigationManager NavigationManager
+@inject ITokenStorageService TokenStorage
 
 <CenterWrapper>
     <div id="registration-screen" class="p-6 min-h-screen">
@@ -28,6 +34,15 @@
         </div>
 
         <EditForm Model="@CustomerProfile" OnValidSubmit="SubmitAsync" id="registration-form" class="space-y-4">
+            @if (ShowError)
+            {
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                    <span class="block sm:inline">@ErrorMessage</span>
+                    <span class="absolute top-0 bottom-0 right-0 px-4 py-3" @onclick="() => ShowError = false">
+                        <i class="fa-solid fa-times"></i>
+                    </span>
+                </div>
+            }
             <DataAnnotationsValidator />
             <ValidationSummary class="text-red-500 text-sm mb-4" />
 
@@ -48,6 +63,12 @@
                     <label class="block text-sm font-medium text-gray-700">Phone Number</label>
                     <InputText @bind-Value="CustomerProfile.PhoneNumber" type="tel" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter your phone number" />
                     <ValidationMessage For="@(() => CustomerProfile.PhoneNumber)" class="text-red-500 text-xs" />
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700">Address</label>
+                    <InputText @bind-Value="CustomerProfile.Address" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter your address" />
+                    <ValidationMessage For="@(() => CustomerProfile.Address)" class="text-red-500 text-xs" />
                 </div>
             </div>
 
@@ -102,47 +123,16 @@
             }
 
 
-            <button type="submit" class="w-full bg-[#FF6B00] text-white py-3 rounded-lg font-medium hover:bg-[#E65C00] mt-6 @(IsLoading ? "opacity-70 cursor-not-allowed" : "")" disabled="@IsLoading">
-                
-@if
- 
-(
-IsLoading
-)
-
-                
-{
-
-                    
-<
-span
->
-Processing...
-</
-span
->
-
-                
-}
-
-                
-else
-
-                
-{
-
-                    
-<
-span
->
-Create Account
-</
-span
->
-
-                
-}
-
+            <button type="submit" class="w-full bg-[#FF6B00] text-white py-3 rounded-lg font-medium hover:bg-[#E05A00] focus:outline-none focus:ring-2 focus:ring-[#FF6B00] focus:ring-opacity-50 mt-6" disabled="@IsLoading">
+                @if (IsLoading)
+                {
+                    <span class="inline-block animate-spin mr-2"><i class="fa-solid fa-circle-notch"></i></span>
+                    <span>Processing...</span>
+                }
+                else
+                {
+                    <span>Create Account</span>
+                }
             </button>
 
             <div class="relative my-6">
@@ -172,6 +162,9 @@ span
     </div>
 </CenterWrapper>
 
+<FormDebuggerComponent IsVisible="true" StorageKeyPrefix="CustomerRegistration" OnLoadProfile="LoadDebugProfile" />
+
+
 @code {
 
     private CustomerProfileRequest CustomerProfile { get; set; } = new CustomerProfileRequest();
@@ -191,10 +184,14 @@ span
     private bool ShowPassword { get; set; } = false;
     private bool ShowConfirmPassword { get; set; } = false;
     private bool HasPaymentMethod { get; set; } = false;
+    private string ErrorMessage { get; set; } = string.Empty;
+    private bool ShowError { get; set; } = false;
 
     private async Task SubmitAsync()
     {
         FormSubmitted = true;
+        ShowError = false;
+        ErrorMessage = string.Empty;
 
         if (!AcceptTerms)
             return;
@@ -208,18 +205,46 @@ span
                     FullName = CustomerProfile.FullName,
                     Email = CustomerProfile.Email,
                     PhoneNumber = CustomerProfile.PhoneNumber,
+                    Address = CustomerProfile.Address,
                     Password = Password,
                     HasPaymentMethod = HasPaymentMethod
                 };
 
-            await OnboardingService.CompleteCustomerOnboarding(completeProfile);
-
+            // Capture the AuthTokenResponse returned from the API
+            var authTokenResponse = await OnboardingService.CompleteCustomerOnboardingAsync(completeProfile);
+            
+            // Store the tokens using the SecureTokenStorageService
+            await TokenStorage.SaveAccessTokenAsync(authTokenResponse.AccessToken);
+            await TokenStorage.SaveRefreshTokenAsync(authTokenResponse.RefreshToken);
+            
+            // Navigate to dashboard after successful registration and authentication
             NavigationManager.NavigateTo("/customer/dashboard");
+        }
+        catch (HttpRequestException ex)
+        {
+            ShowError = true;
+            
+            // Handle specific status codes
+            if (ex.StatusCode == HttpStatusCode.Conflict)
+            {
+                ErrorMessage = "An account with this email already exists. Please use a different email or login.";
+            }
+            else if (ex.StatusCode == HttpStatusCode.BadRequest)
+            {
+                ErrorMessage = $"Validation error: {ex.Message}";
+            }
+            else
+            {
+                ErrorMessage = $"Error during registration: {ex.Message}";
+            }
+            
+            Console.WriteLine($"Error submitting profile: {ex.Message} (Status: {ex.StatusCode})");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error submitting profile: {ex.Message}");
-            // Optionally show error UI
+            ShowError = true;
+            ErrorMessage = "An unexpected error occurred. Please try again later.";
+            Console.WriteLine($"Unexpected error: {ex.Message}");
         }
         finally
         {
@@ -272,5 +297,32 @@ span
     private void SignInWithFacebook()
     {
         // Implement Facebook authentication
+    }
+    
+    private void LoadDebugProfile(Dictionary<string, string> values)
+    {
+        // Fill in form fields from the debug profile
+        if (values.TryGetValue(nameof(CustomerProfile.FullName), out var fullName))
+            CustomerProfile.FullName = fullName;
+            
+        if (values.TryGetValue(nameof(CustomerProfile.Email), out var email))
+            CustomerProfile.Email = email;
+            
+        if (values.TryGetValue(nameof(CustomerProfile.PhoneNumber), out var phoneNumber))
+            CustomerProfile.PhoneNumber = phoneNumber;
+            
+        if (values.TryGetValue(nameof(CustomerProfile.Address), out var address))
+            CustomerProfile.Address = address;
+            
+        if (values.TryGetValue(nameof(Password), out var password))
+            Password = password;
+            
+        if (values.TryGetValue(nameof(ConfirmPassword), out var confirmPassword))
+            ConfirmPassword = confirmPassword;
+            
+        if (values.TryGetValue(nameof(AcceptTerms), out var acceptTerms))
+            AcceptTerms = bool.TryParse(acceptTerms, out var result) && result;
+            
+        StateHasChanged();
     }
 }

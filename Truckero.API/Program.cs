@@ -87,28 +87,30 @@ builder.Services.AddDbContext<AppDbContext>((sp, options) =>
     }
 });
 
-// Register Repositories (AddAuthTokenRepository will inject in-memory if DEBUG)
+// Register Repositories
 builder.Services.AddAuthTokenRepository();
 builder.Services.AddRoleRepository();
-//builder.Services.AddUserRepository();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-
-
-
-builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<IDriverRepository, DriverRepository>();
-builder.Services.AddScoped<IBlobStorageService, AzureBlobStorageService>();
 builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
+builder.Services.AddScoped<IOnboardingProgressRepository, OnboardingProgressRepository>();
 
+// Register Services
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IOnboardingService, OnboardingService>();
+builder.Services.AddScoped<IBlobStorageService, AzureBlobStorageService>();
+builder.Services.AddScoped<IMediaService, MediaService>();
 builder.Services.AddSingleton<IHashService, HashService>();
 
+// Register Email Service per environment
 #if DEBUG
 builder.Services.AddScoped<IEmailService, DevEmailService>();
 #else
 builder.Services.AddScoped<IEmailService, EmailService>();
 #endif
 
+// Register Azure Confidential Client for Production
 #if !DEBUG
 builder.Services.AddSingleton<IConfidentialClientApplication>(provider =>
 {
@@ -119,6 +121,7 @@ builder.Services.AddSingleton<IConfidentialClientApplication>(provider =>
         .Build();
 });
 #endif
+
 
 
 // Swagger (Dev/Test only)

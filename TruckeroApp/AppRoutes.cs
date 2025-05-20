@@ -15,6 +15,7 @@ public static class AppRoutes
     public const string PickupQueue = "/pickupqueue";
     public const string LoginExpired = "/login-expired";
     public const string ConfirmReset = "/confirm-reset";
+    public const string DriverServiceAreas = "/driver-serviceareas"; // ***
 }
 
 

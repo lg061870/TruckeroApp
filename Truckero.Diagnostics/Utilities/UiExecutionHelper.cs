@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 
 namespace Truckero.Diagnostics.Utilities;
 
@@ -25,14 +25,26 @@ public static class UiExecutionHelper
         }
         catch (HttpRequestException httpEx)
         {
+            // First check if we have a detailed error message from the server
+            if (!string.IsNullOrWhiteSpace(httpEx.Message) && 
+                !httpEx.Message.StartsWith("Error ") && 
+                !httpEx.Message.StartsWith("Response status code does not indicate success"))
+            {
+                // Use the detailed error message from the server
+                setError?.Invoke(httpEx.Message);
+                return;
+            }
+
+            // Fall back to generic messages based on status code
             setError?.Invoke(httpEx.StatusCode switch
             {
                 HttpStatusCode.BadRequest => "Invalid input provided.",
                 HttpStatusCode.NotFound => "Resource not found.",
                 HttpStatusCode.Unauthorized => "Unauthorized. Please log in again.",
+                HttpStatusCode.Conflict => "This record already exists.",
                 HttpStatusCode.InternalServerError => "Internal server error.",
                 _ when httpEx.StatusCode.HasValue =>
-                    $"Unexpected HTTP error: {(int)httpEx.StatusCode.Value} {httpEx.Message}",
+                    $"Unexpected HTTP error: {(int)httpEx.StatusCode.Value}",
                 _ => "Unexpected HTTP error occurred."
             });
         }
