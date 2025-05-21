@@ -93,4 +93,20 @@ public class SecureTokenStorageService : ITokenStorageService
             Console.WriteLine($"[SecureStorage] Error setting key '{key}': {ex.Message}");
         }
     }
+
+    public async Task SaveValueAsync(string key, string value)
+    {
+        await SetAsync(key, value);
+    }
+
+    public async Task<string?> GetValueAsync(string key)
+    {
+        return await GetAsync(key);
+    }
+
+    public async Task RemoveValueAsync(string key)
+    {
+        SecureStorage.Remove(key);
+        await Task.CompletedTask;
+    }
 }

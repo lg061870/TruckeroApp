@@ -8,6 +8,6 @@ public class AuthResponse
     public bool Success { get; set; }
     public string? ErrorMessage { get; set; }
     public Guid UserId { get; set; }
-    public object ExpiresIn { get; set; }
+    public DateTime ExpiresIn { get; set; }
 
 }
