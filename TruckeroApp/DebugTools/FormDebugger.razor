@@ -1,0 +1,186 @@
+@typeparam TModel
+
+@using System.Text.Json
+@using Microsoft.AspNetCore.Components.Forms
+@using TruckeroApp.Interfaces
+
+<div class="form-filler-sheet @(IsExpanded ? "expanded" : "collapsed")">
+    <button @bind="IsExpanded" class="px-4 py-2 font-semibold bg-blue-600 text-white w-full">
+        @(IsExpanded ? "Hide Form Filler" : "Show Form Filler")
+    </button>
+
+    @if (IsExpanded)
+    {
+        <div class="p-4">
+            <textarea @bind="JsonInput" rows="5" class="w-full border p-2 mb-2" placeholder="Paste JSON here..."></textarea>
+
+            <div class="flex gap-2 mb-4">
+                <button class="bg-green-600 text-white px-3 py-1" @onclick="ApplyJson">Apply</button>
+                <button class="bg-gray-500 text-white px-3 py-1" @onclick="CaptureCurrentValues">Capture</button>
+                <button class="bg-blue-600 text-white px-3 py-1" @onclick="SaveProfileAsync" disabled="@string.IsNullOrWhiteSpace(NewProfileName)">Save</button>
+                <input type="text" @bind="NewProfileName" placeholder="Profile name" class="border p-1" />
+            </div>
+
+            <select @bind="SelectedProfileId" class="w-full border p-2 mb-2">
+                <option value="">-- Select Saved Profile --</option>
+                @foreach (var profile in SavedProfiles)
+                {
+                    <option value="@profile.Id">@profile.Name</option>
+                }
+            </select>
+
+            <div class="flex gap-2">
+                <button class="bg-blue-600 text-white px-3 py-1" @onclick="LoadProfileAsync" disabled="@string.IsNullOrWhiteSpace(SelectedProfileId)">Load</button>
+                <button class="bg-red-600 text-white px-3 py-1" @onclick="DeleteProfileAsync" disabled="@string.IsNullOrWhiteSpace(SelectedProfileId)">Delete</button>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .form-filler-sheet {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #f9f9f9;
+    border-top: 1px solid #ccc;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease-in-out;
+    z-index: 9999;
+    max-height: 75vh;
+    overflow-y: auto;
+    }
+
+    .form-filler-sheet.collapsed {
+    transform: translateY(90%);
+    }
+
+    .form-filler-sheet.expanded {
+    transform: translateY(0);
+    }
+</style>
+
+@code {
+
+    [Parameter] public TModel Model { get; set; }
+    [Parameter] public string StorageKeyPrefix { get; set; } = "FormDebugger";
+    [Inject] private ITokenStorageService TokenStorageService { get; set; }
+
+    private bool IsExpanded { get; set; } = false;
+    private string JsonInput { get; set; } = "";
+    private string NewProfileName { get; set; } = "";
+    private string SelectedProfileId { get; set; } = "";
+    private List<SavedProfile> SavedProfiles { get; set; } = new();
+    private Dictionary<string, string> CurrentValues { get; set; } = new();
+
+    private string FormProfilesKey => $"{StorageKeyPrefix}_{Model?.GetType().Name}_Profiles";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProfilesFromStorageAsync();
+    }
+
+    private void ToggleExpand()
+    {
+        IsExpanded = !IsExpanded;
+
+    }
+
+    private void CaptureCurrentValues()
+    {
+        if (Model is null) return;
+
+        CurrentValues = Model
+            .GetType()
+            .GetProperties()
+            .Where(p => p.CanRead)
+            .ToDictionary(p => p.Name, p => p.GetValue(Model)?.ToString() ?? "");
+
+        JsonInput = JsonSerializer.Serialize(CurrentValues, new JsonSerializerOptions { WriteIndented = true });
+    }
+
+    private void ApplyJson()
+    {
+        if (string.IsNullOrWhiteSpace(JsonInput) || Model == null)
+            return;
+
+        try
+        {
+            var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(JsonInput);
+            if (dict == null) return;
+
+            foreach (var prop in Model.GetType().GetProperties())
+            {
+                if (prop.CanWrite && dict.TryGetValue(prop.Name, out var value))
+                {
+                    try
+                    {
+                        var typedVal = Convert.ChangeType(value, prop.PropertyType);
+                        prop.SetValue(Model, typedVal);
+                    }
+                    catch { }
+                }
+            }
+        }
+        catch { }
+    }
+
+    private async Task SaveProfileAsync()
+    {
+        if (string.IsNullOrWhiteSpace(NewProfileName) || CurrentValues.Count == 0)
+            return;
+
+        var profile = new SavedProfile
+            {
+                Id = Guid.NewGuid().ToString(),
+                Name = NewProfileName,
+                Values = new(CurrentValues),
+                CreatedAt = DateTime.Now
+            };
+
+        SavedProfiles.Add(profile);
+        await SaveProfilesToStorageAsync();
+        NewProfileName = "";
+    }
+
+    private async Task LoadProfileAsync()
+    {
+        var profile = SavedProfiles.FirstOrDefault(p => p.Id == SelectedProfileId);
+        if (profile is null || Model is null) return;
+
+        CurrentValues = new(profile.Values);
+        JsonInput = JsonSerializer.Serialize(CurrentValues, new JsonSerializerOptions { WriteIndented = true });
+        ApplyJson();
+    }
+
+    private async Task DeleteProfileAsync()
+    {
+        SavedProfiles.RemoveAll(p => p.Id == SelectedProfileId);
+        SelectedProfileId = "";
+        await SaveProfilesToStorageAsync();
+    }
+
+    private async Task SaveProfilesToStorageAsync()
+    {
+        var json = JsonSerializer.Serialize(SavedProfiles);
+        await TokenStorageService.SaveValueAsync(FormProfilesKey, json);
+    }
+
+    private async Task LoadProfilesFromStorageAsync()
+    {
+        var json = await TokenStorageService.GetValueAsync(FormProfilesKey);
+        if (!string.IsNullOrWhiteSpace(json))
+        {
+            SavedProfiles = JsonSerializer.Deserialize<List<SavedProfile>>(json) ?? new();
+        }
+    }
+
+    public class SavedProfile
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public Dictionary<string, string> Values { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+}

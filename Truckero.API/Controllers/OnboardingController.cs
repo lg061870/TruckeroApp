@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Truckero.Core.DTOs.Auth;
 using Truckero.Core.DTOs.Common;
 using Truckero.Core.DTOs.Onboarding;
+using Truckero.Core.Exceptions;
 using Truckero.Core.Interfaces.Services;
 
 namespace Truckero.API.Controllers;
@@ -63,33 +64,29 @@ public class OnboardingController : ControllerBase
         return Ok(progress);
     }
 
-    /// <summary>
-    /// Completes onboarding for a customer user.
-    /// </summary>
     [HttpPost("customer")]
     public async Task<IActionResult> CompleteCustomerOnboarding([FromBody] CustomerOnboardingRequest request)
     {
         try
         {
             var token = await _onboardingService.CompleteCustomerOnboardingAsync(request);
-            return Ok(token); // Returns AuthTokenResponse
+            return Ok(token);
         }
         catch (InvalidOperationException ex) when (ex.Message.Contains("already exists"))
         {
-            // Return a 409 Conflict for duplicate email
             return Conflict(new { error = ex.Message, code = "duplicate_email" });
+        }
+        catch (OnboardingStepException ex)
+        {
+            return BadRequest(new { error = ex.Message, code = ex.Step });
         }
         catch (InvalidOperationException ex)
         {
-            // Return a 400 Bad Request for validation errors
-            return BadRequest(new { error = ex.Message });
+            return BadRequest(new { error = ex.Message, code = "invalid_operation" });
         }
         catch (Exception ex)
         {
-            // Log the exception
             _logger.LogError(ex, "Error during customer onboarding");
-            
-            // Return a 500 Internal Server Error for unexpected errors
             return StatusCode(500, new { error = "An unexpected error occurred during registration." });
         }
     }
@@ -108,7 +105,7 @@ public class OnboardingController : ControllerBase
         try
         {
             var result = await _onboardingService.CompleteDriverOnboardingAsync(request, userId);
-            
+
             if (result.Success)
             {
                 return Ok(new { message = result.Message ?? "Driver onboarding complete" });

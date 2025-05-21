@@ -1,10 +1,14 @@
+using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using Truckero.Core.DTOs.Auth;
 using Truckero.Core.DTOs.Common;
 using Truckero.Core.DTOs.Onboarding;
 using Truckero.Core.Entities;
+using Truckero.Core.Exceptions;
 using Truckero.Core.Interfaces;
 using Truckero.Core.Interfaces.Repositories;
 using Truckero.Core.Interfaces.Services;
+using Truckero.Infrastructure.Data;
 
 
 namespace Truckero.Infrastructure.Services;
@@ -16,6 +20,7 @@ public class OnboardingService : IOnboardingService
     private readonly IUserRepository _userRepo;
     private readonly IAuthService _authService;
     private readonly IHashService _hashService;
+    private readonly AppDbContext _dbContext;
 
 
     public OnboardingService(
@@ -23,61 +28,99 @@ public class OnboardingService : IOnboardingService
         IOnboardingProgressRepository progressRepo,
         IUserRepository userRepo,
         IAuthService authService,
-        IHashService hashService)
+        IHashService hashService,
+        AppDbContext dbContext)
     {
         _customerRepo = customerRepo;
         _progressRepo = progressRepo;
         _userRepo = userRepo;
         _authService = authService;
         _hashService = hashService;
+        _dbContext = dbContext;
     }
 
     public async Task<AuthTokenResponse> CompleteCustomerOnboardingAsync(CustomerOnboardingRequest request)
     {
-        // 1. Register user via AuthService
-        var registerResult = await _authService.RegisterAsync(new RegisterUserRequest
+        Validator.ValidateObject(request, new ValidationContext(request), validateAllProperties: true);
+
+        var strategy = _dbContext.Database.CreateExecutionStrategy();
+
+        return await strategy.ExecuteAsync(async () =>
         {
-            Email = request.Email,
-            Password = request.Password,
-            Role = "Customer"
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync();
+
+            try
+            {
+                var registerResult = await _authService.RegisterAsync(new RegisterUserRequest
+                {
+                    Email = request.Email,
+                    Password = request.Password,
+                    Role = "Customer",
+                    PhoneNumber = request.PhoneNumber
+                });
+
+                if (string.IsNullOrWhiteSpace(registerResult.AccessToken) || string.IsNullOrWhiteSpace(registerResult.RefreshToken))
+                    throw new OnboardingStepException("Registration failed: token not generated.", "auth_register_failed");
+
+                var profile = new CustomerProfile
+                {
+                    UserId = registerResult.UserId,
+                    FullName = request.FullName,
+                    PhoneNumber = request.PhoneNumber ?? string.Empty,
+                    Address = request.Address,
+                    Email = request.Email
+                };
+
+                try
+                {
+                    await _customerRepo.AddAsync(profile);
+                    await _customerRepo.SaveChangesAsync();
+                }
+                catch (Exception ex)
+                {
+                    throw new OnboardingStepException("Failed to create customer profile.", "profile_creation_failed", ex);
+                }
+
+                try
+                {
+                    var progress = new OnboardingProgress
+                    {
+                        UserId = registerResult.UserId,
+                        StepCurrent = "ProfileCreated",
+                        Completed = false,
+                        LastUpdated = DateTime.UtcNow
+                    };
+
+                    await _progressRepo.AddOrUpdateAsync(progress);
+                    await _progressRepo.SaveChangesAsync();
+                }
+                catch (Exception ex)
+                {
+                    throw new OnboardingStepException("Failed to save onboarding progress.", "progress_save_failed", ex);
+                }
+
+                await transaction.CommitAsync();
+
+                return new AuthTokenResponse
+                {
+                    AccessToken = registerResult.AccessToken,
+                    RefreshToken = registerResult.RefreshToken,
+                    ExpiresIn = registerResult.ExpiresIn,
+                    Success = true,
+                    UserId = registerResult.UserId
+                };
+            }
+            catch (OnboardingStepException oex)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                throw new OnboardingStepException("Unexpected onboarding failure.", "unhandled_exception", ex);
+            }
         });
-
-        if (!registerResult.Success)
-            throw new InvalidOperationException(registerResult.ErrorMessage ?? "Registration failed.");
-
-        var userId = registerResult.UserId;
-
-        // 2. Create customer profile
-        var profile = new CustomerProfile
-        {
-            UserId = userId,
-            FullName = request.FullName,
-            PhoneNumber = request.PhoneNumber ?? string.Empty,
-            Address = request.Address
-        };
-
-        await _customerRepo.AddAsync(profile);
-        await _customerRepo.SaveChangesAsync();
-
-        // 3. Save onboarding progress
-        var progress = new OnboardingProgress
-        {
-            UserId = userId,
-            StepCurrent = "ProfileCreated",
-            Completed = false,
-            LastUpdated = DateTime.UtcNow
-        };
-
-        await _progressRepo.AddOrUpdateAsync(progress);
-        await _progressRepo.SaveChangesAsync();
-
-        // 4. Return the auth token
-        return new AuthTokenResponse
-        {
-            AccessToken = registerResult.AccessToken,
-            RefreshToken = registerResult.RefreshToken,
-            ExpiresIn = registerResult.ExpiresIn
-        };
     }
 
     public Task StartAsync(StartOnboardingRequest request, Guid userId)

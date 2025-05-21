@@ -78,13 +78,37 @@ public class AuthService : IAuthService
             RoleId = defaultRoleId,
             CreatedAt = DateTime.UtcNow,
             IsActive = true,
-            EmailVerified = false
+            EmailVerified = false,
+            PhoneNumber = request.PhoneNumber
         };
 
         await _userRepo.AddAsync(newUser);
         await _userRepo.SaveChangesAsync();
 
-        return await LoginAsync(new AuthLoginRequest { Email = request.Email, Password = request.Password });
+        // Issue token manually (same as LoginAsync does)
+        var token = new AuthToken
+        {
+            Id = Guid.NewGuid(),
+            UserId = newUser.Id,
+            AccessToken = $"token-{Guid.NewGuid()}",
+            RefreshToken = $"refresh-{Guid.NewGuid()}",
+            Role = RoleType.Customer.ToString(),
+            IssuedAt = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddHours(1),
+        };
+
+        await _tokenRepo.AddAsync(token);
+
+        _logger.LogInformation("Registered and issued token for new user: {Email}", request.Email);
+
+        return new AuthResponse
+        {
+            AccessToken = token.AccessToken,
+            RefreshToken = token.RefreshToken,
+            Success = true, // ✅ Important!
+            UserId = newUser.Id,
+            ExpiresIn = token.ExpiresAt
+        };
     }
 
     public async Task LogoutAsync(Guid userId)
