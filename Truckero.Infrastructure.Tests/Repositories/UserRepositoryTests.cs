@@ -42,11 +42,11 @@ public class UserRepositoryTests
         };
 
         // Act
-        await _repo.AddAsync(user);
-        await _repo.SaveChangesAsync();
+        await _repo.AddUserAsync(user);
+        await _repo.SaveUserChangesAsync();
 
         // Assert
-        var found = await _repo.GetByEmailAsync("test@example.com");
+        var found = await _repo.GetUserByEmailAsync("test@example.com");
 
         Assert.NotNull(found);
         Assert.Equal("test@example.com", found!.Email);
@@ -65,11 +65,11 @@ public class UserRepositoryTests
             CreatedAt = DateTime.UtcNow
         };
 
-        await _repo.AddAsync(user);
-        await _repo.SaveChangesAsync();
+        await _repo.AddUserAsync(user);
+        await _repo.SaveUserChangesAsync();
 
         // Act
-        var found = await _repo.GetByIdAsync(user.Id);
+        var found = await _repo.GetUserByIdAsync(user.Id);
 
         // Assert
         Assert.NotNull(found);

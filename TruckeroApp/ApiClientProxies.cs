@@ -160,4 +160,21 @@ public static class ApiClientProxies
 #endif
         return services;
     }
+    public static IServiceCollection AddMediaClient(this IServiceCollection services, string apiBase)
+    {
+#if ANDROID
+        services.AddHttpClient<MediaApiClientService>(c =>
+        {
+            c.BaseAddress = new Uri(apiBase);
+            c.Timeout = TimeSpan.FromSeconds(30);
+        }).ConfigurePrimaryHttpMessageHandler(CreateUnsafeHandler);
+#else
+        services.AddHttpClient<MediaApiClientService>(c =>
+        {
+            c.BaseAddress = new Uri(apiBase);
+            c.Timeout = TimeSpan.FromSeconds(30);
+        });
+#endif
+        return services;
+    }
 }

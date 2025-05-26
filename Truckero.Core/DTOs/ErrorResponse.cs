@@ -1,18 +1,12 @@
-namespace Truckero.Core.DTOs
+using System.Text.Json.Serialization;
+
+namespace Truckero.Core.DTOs;
+
+public class ErrorResponse
 {
-    /// <summary>
-    /// Represents an error response from the API
-    /// </summary>
-    public class ErrorResponse
-    {
-        /// <summary>
-        /// The error message
-        /// </summary>
-        public string? Error { get; set; }
-        
-        /// <summary>
-        /// Optional error code for specific error handling
-        /// </summary>
-        public string? Code { get; set; }
-    }
+    [JsonPropertyName("error")]
+    public string? Error { get; set; }
+
+    [JsonPropertyName("code")]
+    public string? Code { get; set; }
 }

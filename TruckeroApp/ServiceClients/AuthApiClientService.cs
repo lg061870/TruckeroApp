@@ -1,5 +1,7 @@
-﻿using System.Net.Http.Json;
+﻿using System.Net;
+using System.Net.Http.Json;
 using Truckero.Core.DTOs.Auth;
+using Truckero.Core.Entities;
 using Truckero.Core.Interfaces.Services;
 
 namespace TruckeroApp.ServiceClients;
@@ -16,7 +18,7 @@ public class AuthApiClientService : IAuthService
         _http = http;
     }
 
-    public async Task<AuthResponse> LoginAsync(AuthLoginRequest request)
+    public async Task<AuthResponse> LoginUserAsync(AuthLoginRequest request)
     {
         var response = await _http.PostAsJsonAsync("auth/login", request);
         if (!response.IsSuccessStatusCode)
@@ -25,14 +27,41 @@ public class AuthApiClientService : IAuthService
         return await response.Content.ReadFromJsonAsync<AuthResponse>() ?? throw new InvalidOperationException("Empty login response");
     }
 
-    public async Task<AuthResponse> RegisterAsync(RegisterUserRequest request)
+    public async Task<(User NewUser, AuthToken Token)> RegisterUserAsync(RegisterUserRequest request)
     {
         var response = await _http.PostAsJsonAsync("auth/register", request);
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<AuthResponse>() ?? throw new InvalidOperationException("Empty register response");
+
+        var authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
+
+        if (authResponse == null)
+            throw new InvalidOperationException("Empty register response");
+
+        // You’ll need to map or retrieve the `User` object (if it's not included in the response)
+        var user = new User
+        {
+            Id = authResponse.UserId,
+            Email = request.Email,
+            PhoneNumber = request.PhoneNumber ?? "",
+            EmailVerified = false,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var token = new AuthToken
+        {
+            AccessToken = authResponse.AccessToken,
+            RefreshToken = authResponse.RefreshToken,
+            Role = "Customer",
+            IssuedAt = DateTime.UtcNow,
+            ExpiresAt = authResponse.ExpiresIn
+        };
+
+        return (user, token);
     }
 
-    public async Task LogoutAsync(Guid userId)
+
+    public async Task LogoutUserAsync(Guid userId)
     {
         await _http.PostAsJsonAsync("auth/logout", userId);
     }
@@ -44,7 +73,7 @@ public class AuthApiClientService : IAuthService
         return await response.Content.ReadFromJsonAsync<AuthResponse>() ?? throw new InvalidOperationException("Exchange failed");
     }
 
-    public async Task<AuthResponse> RefreshTokenAsync(RefreshTokenRequest request)
+    public async Task<AuthResponse> RefreshAccessTokenAsync(RefreshTokenRequest request)
     {
         var response = await _http.PostAsJsonAsync("auth/refresh", request);
         if (!response.IsSuccessStatusCode)
@@ -96,5 +125,32 @@ public class AuthApiClientService : IAuthService
     {
         var role = await _http.GetStringAsync("auth/role/active");
         return string.IsNullOrWhiteSpace(role) ? "Unknown" : role;
+    }
+
+    public async Task<User?> GetUserByEmailAsync(string email)
+    {
+        var response = await _http.GetAsync($"auth/user/by-email?email={Uri.EscapeDataString(email)}");
+
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        return await response.Content.ReadFromJsonAsync<User>();
+    }
+
+    public async Task<User?> GetUserByIdAsync(Guid userId)
+    {
+        return await _http.GetFromJsonAsync<User?>($"auth/user/by-id?userId={userId}");
+    }
+
+    public async Task<User?> GetCurrentUserAsync()
+    {
+        try
+        {
+            return await _http.GetFromJsonAsync<User?>("auth/user/me");
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
     }
 }

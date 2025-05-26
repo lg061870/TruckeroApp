@@ -14,18 +14,18 @@ public class CustomerRepository : ICustomerRepository
         _context = context;
     }
 
-    public async Task<CustomerProfile?> GetByUserIdAsync(Guid userId)
+    public async Task<CustomerProfile?> GetCustomerProfileByUserIdAsync(Guid userId)
     {
         return await _context.CustomerProfiles
             .FirstOrDefaultAsync(p => p.UserId == userId);
     }
 
-    public async Task AddAsync(CustomerProfile profile)
+    public async Task AddCustomerProfileAsync(CustomerProfile profile)
     {
         await _context.CustomerProfiles.AddAsync(profile);
     }
 
-    public async Task SaveChangesAsync()
+    public async Task SaveCustomerProfileChangesAsync()
     {
         await _context.SaveChangesAsync();
     }

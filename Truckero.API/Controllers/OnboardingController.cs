@@ -132,4 +132,41 @@ public class OnboardingController : ControllerBase
             return StatusCode(500, new { error = "An unexpected error occurred during driver registration." });
         }
     }
+
+    /// <summary>
+    /// Sends a new confirmation email to the user.
+    /// </summary>
+    [HttpPost("send-confirmation-email")]
+    public async Task<IActionResult> SendConfirmationEmail([FromQuery] Guid userId)
+    {
+        if (userId == Guid.Empty)
+            return BadRequest(new { message = "Missing or invalid userId" });
+
+        var result = await _onboardingService.SendConfirmationEmailAsync(userId);
+        if (result.Success)
+            return Ok(new { message = result.Message });
+        else
+            return BadRequest(new { error = result.Message });
+    }
+
+    [HttpPost("confirm-email")]
+    public async Task<IActionResult> ConfirmEmail([FromQuery] string token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            return BadRequest(new { error = "Missing or invalid token." });
+
+        try
+        {
+            var result = await _onboardingService.ConfirmEmailAsync(token);
+            if (result.Success)
+                return Ok(new { message = "Email confirmed successfully." });
+            else
+                return BadRequest(new { error = result.Message ?? "Invalid or expired confirmation token." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error confirming email with token {Token}", token);
+            return StatusCode(500, new { error = "An unexpected error occurred during email confirmation." });
+        }
+    }
 }

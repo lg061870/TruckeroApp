@@ -18,6 +18,7 @@ public class AppDbContext : DbContext
     public DbSet<Store> Stores => Set<Store>();
     public DbSet<StoreClerkProfile> StoreClerkProfiles => Set<StoreClerkProfile>();
     public DbSet<StoreClerkAssignment> StoreClerkAssignments => Set<StoreClerkAssignment>();
+    public DbSet<ConfirmationToken> ConfirmationTokens => Set<ConfirmationToken>();
 
     public DbSet<PaymentMethod> PaymentMethods => Set<PaymentMethod>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();

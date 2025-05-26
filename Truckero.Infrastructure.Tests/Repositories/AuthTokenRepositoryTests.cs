@@ -34,9 +34,9 @@ public class AuthTokenRepositoryTests
             ExpiresAt = DateTime.UtcNow.AddDays(7)
         };
 
-        await _repo.AddAsync(token);
+        await _repo.AddTokenAsync(token);
 
-        var result = await _repo.GetByRefreshTokenAsync("token-123");
+        var result = await _repo.GetByRefreshTokenByRefreshTokenKeyAsync("token-123");
         Assert.NotNull(result);
         Assert.Equal("token-123", result!.RefreshToken);
     }
@@ -53,11 +53,11 @@ public class AuthTokenRepositoryTests
             ExpiresAt = DateTime.UtcNow.AddDays(1)
         };
 
-        await _repo.AddAsync(token);
+        await _repo.AddTokenAsync(token);
         token.RefreshToken = "new-token";
-        await _repo.UpdateAsync(token);
+        await _repo.UpdateTokenAsync(token);
 
-        var result = await _repo.GetByRefreshTokenAsync("new-token");
+        var result = await _repo.GetByRefreshTokenByRefreshTokenKeyAsync("new-token");
         Assert.NotNull(result);
         Assert.Equal("new-token", result!.RefreshToken);
     }
@@ -74,10 +74,10 @@ public class AuthTokenRepositoryTests
             ExpiresAt = DateTime.UtcNow.AddDays(1)
         };
 
-        await _repo.AddAsync(token);
-        await _repo.DeleteAsync(token);
+        await _repo.AddTokenAsync(token);
+        await _repo.DeleteTokenAsync(token);
 
-        var result = await _repo.GetByRefreshTokenAsync("del-token");
+        var result = await _repo.GetByRefreshTokenByRefreshTokenKeyAsync("del-token");
         Assert.Null(result);
     }
 
@@ -94,9 +94,9 @@ public class AuthTokenRepositoryTests
             ExpiresAt = DateTime.UtcNow.AddDays(1)
         };
 
-        await _repo.AddAsync(token);
+        await _repo.AddTokenAsync(token);
 
-        var result = await _repo.GetByUserIdAsync(userId);
+        var result = await _repo.GetByTokenByUserIdAsync(userId);
         Assert.NotNull(result);
         Assert.Equal(userId, result!.UserId);
     }

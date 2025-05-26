@@ -4,7 +4,7 @@ namespace Truckero.Core.Interfaces.Repositories;
 
 public interface ICustomerRepository
 {
-    Task<CustomerProfile?> GetByUserIdAsync(Guid userId);
-    Task AddAsync(CustomerProfile profile);
-    Task SaveChangesAsync();
+    Task<CustomerProfile?> GetCustomerProfileByUserIdAsync(Guid userId);
+    Task AddCustomerProfileAsync(CustomerProfile profile);
+    Task SaveCustomerProfileChangesAsync();
 }

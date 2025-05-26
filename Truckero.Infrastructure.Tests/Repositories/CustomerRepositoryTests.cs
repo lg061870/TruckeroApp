@@ -33,8 +33,8 @@ public class CustomerRepositoryTests
             PhoneNumber = "+15551112222"
         };
 
-        await _repo.AddAsync(profile);
-        await _repo.SaveChangesAsync();
+        await _repo.AddCustomerProfileAsync(profile);
+        await _repo.SaveCustomerProfileChangesAsync();
 
         var found = await _dbContext.CustomerProfiles.FindAsync(profile.Id);
 
@@ -59,7 +59,7 @@ public class CustomerRepositoryTests
         await _dbContext.CustomerProfiles.AddAsync(profile);
         await _dbContext.SaveChangesAsync();
 
-        var result = await _repo.GetByUserIdAsync(userId);
+        var result = await _repo.GetCustomerProfileByUserIdAsync(userId);
 
         Assert.NotNull(result);
         Assert.Equal("Carlos Rivera", result!.FullName);
@@ -68,7 +68,7 @@ public class CustomerRepositoryTests
     [Fact]
     public async Task GetByUserIdAsync_Should_Return_Null_When_NotFound()
     {
-        var result = await _repo.GetByUserIdAsync(Guid.NewGuid());
+        var result = await _repo.GetCustomerProfileByUserIdAsync(Guid.NewGuid());
         Assert.Null(result);
     }
 }

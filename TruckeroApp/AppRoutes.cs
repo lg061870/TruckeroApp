@@ -16,6 +16,8 @@ public static class AppRoutes
     public const string LoginExpired = "/login-expired";
     public const string ConfirmReset = "/confirm-reset";
     public const string DriverServiceAreas = "/driver-serviceareas"; // ***
+    public const string AccountNotAvailable = "/accountnotavailable";
+    public const string EmailNotVerified = "/emailnotverified";
 }
 
 

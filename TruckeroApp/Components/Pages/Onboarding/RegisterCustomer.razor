@@ -6,12 +6,14 @@
 @using Truckero.Core.DTOs.Auth
 @using Truckero.Core.DTOs.Common
 @using Truckero.Core.DataAnnotations
+@using Truckero.Core.Exceptions
 @using Truckero.Core.Interfaces.Services
 @using TruckeroApp.ServiceClients
 @using TruckeroApp.Interfaces
 @using TruckeroApp.DebugTools
 @using System.Net
 @using System.Net.Http
+@using TruckeroApp.Components.BottomSheets
 
 @inject IOnboardingService OnboardingService
 @inject NavigationManager NavigationManager
@@ -32,17 +34,8 @@
             <i class="fa-solid fa-box text-[#FF6B00] mr-3"></i>
             <span class="text-sm text-[#FF6B00]">Registering as: <strong>CUSTOMER</strong></span>
         </div>
-        
-        <EditForm Model="@CustomerProfile" OnValidSubmit="SubmitAsync">
-            @if (ShowError)
-            {
-                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-                    <span class="block sm:inline">@ErrorMessage</span>
-                    <span class="absolute top-0 bottom-0 right-0 px-4 py-3" @onclick="() => ShowError = false">
-                        <i class="fa-solid fa-times"></i>
-                    </span>
-                </div>
-            }
+
+        <EditForm EditContext="_editContext" OnValidSubmit="SubmitAsync" OnInvalidSubmit="HandleInvalidSubmit">
             <DataAnnotationsValidator />
             <ValidationSummary class="text-red-500 text-sm mb-4" />
 
@@ -108,7 +101,7 @@
                 <p class="text-sm text-[#444444]">You'll only be charged when booking a trip</p>
             </div>
 
-            <div class="flex items-start space-x-3 mt-6">
+            <div class="flex items-start space-x-3 mt-6 mb-4">
                 <InputCheckbox @bind-Value="AcceptTerms" id="terms" class="mt-1 h-4 w-4 rounded border-gray-300 text-[#FF6B00] focus:ring-[#FF6B00]" />
                 <label for="terms" class="text-xs text-gray-600">
                     I agree to Truckeo's <span class="text-[#FF6B00] cursor-pointer" @onclick="ShowTermsOfService">Terms of Service</span> and <span class="text-[#FF6B00] cursor-pointer" @onclick="ShowPrivacyPolicy">Privacy Policy</span>
@@ -162,13 +155,70 @@
                 Already have an account? <span class="text-[#FF6B00] font-medium cursor-pointer" @onclick="NavigateToLogin">Log In</span>
             </p>
         </EditForm>
+
+        @using System.Text.Json
+
+        @if (!String.IsNullOrEmpty(ActiveBottomSheet))
+        {
+            @switch (ActiveBottomSheet)
+            {
+                case "validation_failed":
+                    <ValidationFailedBottomSheet ValidationErrors="@ValidationErrors"
+                                                 OnDismiss="@(() => ActiveBottomSheet = null)" />
+                    break;
+
+                case "weak_password":
+                    <WeakPasswordBottomSheet OnDismiss="@(() => ActiveBottomSheet = null)" />
+                    break;
+
+                case "invalid_phone_format":
+                    <PhoneFormatErrorBottomSheet OnDismiss="@(() => ActiveBottomSheet = null)" />
+                    break;
+
+                case "profile_creation_failed":
+                    <ProfileCreationErrorBottomSheet OnDismiss="@(() => ActiveBottomSheet = null)" />
+                    break;
+
+                case "progress_save_failed":
+                    <ProgressSaveErrorBottomSheet OnDismiss="@(() => ActiveBottomSheet = null)" />
+                    break;
+
+                case "auth_register_failed":
+                    <AuthRegisterErrorBottomSheet OnDismiss="@(() => ActiveBottomSheet = null)" />
+                    break;
+
+                case "failure_send_confirmationemail":
+                    <EmailResendBottomSheet Email="@CustomerProfile.Email"
+                                            IsResendingEmail="@IsResendingEmail"
+                                            ResendEmailMessage="@ResendEmailMessage"
+                                            ResendToOriginalEmail="@ResendToOriginalEmailAsync"
+                                            SendToNewEmail="@SendToNewEmailAsync"
+                                            OnDismiss="@(() => ActiveBottomSheet = null)" />
+                    break;
+
+                case "generic_error":
+                    <GenericErrorBottomSheet Message="@ErrorMessage"
+                                             OnDismiss="@(() => ActiveBottomSheet = null)" />
+                    break;
+                case "email_already_exist":
+                    <UserExistsBottomSheet Email="@CustomerProfile.Email"
+                                           OnDismiss="@(() => ActiveBottomSheet = null)" />
+                    break;
+                case "email_confirmation":
+                    <EmailConfirmationBottomSheet Email="@CustomerProfile.Email"
+                                                  RegisteredUserId="@RegisteredUserId"
+                                                   />
+                    break;
+            }
+        }
     </div>
 </CenterWrapper>
 
 
 @code {
-
     private CustomerProfileRequest CustomerProfile { get; set; } = new CustomerProfileRequest();
+
+    private string? ActiveBottomSheet { get; set; } = null;
 
     [Required]
     [MinLength(8, ErrorMessage = "Password must be at least 8 characters long")]
@@ -186,71 +236,139 @@
     private bool ShowConfirmPassword { get; set; } = false;
     private bool HasPaymentMethod { get; set; } = false;
     private string ErrorMessage { get; set; } = string.Empty;
-    private bool ShowError { get; set; } = false;
+    private EditContext? _editContext;
+    private List<string> ValidationErrors { get; set; } = new();
+    private string ResendEmailMessage = string.Empty;
+    private bool IsResendingEmail = false;
+    private string NewEmailForResend = string.Empty;
+    private Guid RegisteredUserId; // Set this after registration
+
+    protected override void OnInitialized()
+    {
+        _editContext = new EditContext(CustomerProfile);
+        _editContext.OnFieldChanged += (sender, args) => StateHasChanged();
+    }
 
     private async Task SubmitAsync()
     {
         FormSubmitted = true;
-        ShowError = false;
+        ActiveBottomSheet = null;
         ErrorMessage = string.Empty;
 
-        if (!AcceptTerms)
+        if (!AcceptTerms || !IsFormValid)
+        {
+            Console.WriteLine("❌ Form invalid or terms not accepted.");
+            ActiveBottomSheet = "validation_failed";
             return;
+        }
 
         IsLoading = true;
 
         try
         {
-            var completeProfile = new CustomerOnboardingRequest
-                {
-                    FullName = CustomerProfile.FullName,
-                    Email = CustomerProfile.Email,
-                    PhoneNumber = CustomerProfile.PhoneNumber,
-                    Address = CustomerProfile.Address,
-                    Password = Password,
-                    HasPaymentMethod = HasPaymentMethod
-                };
+            Console.WriteLine("🚀 Submitting CustomerOnboardingRequest...");
 
-            // Capture the AuthTokenResponse returned from the API
+            var completeProfile = new CustomerOnboardingRequest
+            {
+                FullName = CustomerProfile.FullName,
+                Email = CustomerProfile.Email,
+                PhoneNumber = CustomerProfile.PhoneNumber,
+                Address = CustomerProfile.Address,
+                Password = Password,
+                HasPaymentMethod = HasPaymentMethod
+            };
+
             var authTokenResponse = await OnboardingService.CompleteCustomerOnboardingAsync(completeProfile);
-            
-            // Store the tokens using the SecureTokenStorageService
-            await TokenStorage.SaveAccessTokenAsync(authTokenResponse.AccessToken);
-            await TokenStorage.SaveRefreshTokenAsync(authTokenResponse.RefreshToken);
-            
-            // Navigate to dashboard after successful registration and authentication
-            NavigationManager.NavigateTo("/customer/dashboard");
+
+            if (authTokenResponse == null)
+            {
+                Console.WriteLine("❌ AuthTokenResponse is null.");
+                ErrorMessage = "Unexpected error: no token received.";
+                ActiveBottomSheet = "generic_error";
+                return;
+            }
+
+            Console.WriteLine($"✅ Token received. Access: {authTokenResponse.AccessToken}, Refresh: {authTokenResponse.RefreshToken}");
+
+            if (string.IsNullOrWhiteSpace(authTokenResponse.AccessToken))
+            {
+                Console.WriteLine("❌ Access token is missing.");
+                ErrorMessage = "Access token was not issued.";
+                ActiveBottomSheet = "generic_error";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(authTokenResponse.RefreshToken))
+            {
+                Console.WriteLine("⚠️ Refresh token is missing.");
+                ErrorMessage = "Refresh token was not issued.";
+                ActiveBottomSheet = "generic_error";
+                return;
+            }
+
+            try
+            {
+                await TokenStorage.SaveAccessTokenAsync(authTokenResponse.AccessToken);
+                await TokenStorage.SaveRefreshTokenAsync(authTokenResponse.RefreshToken);
+                Console.WriteLine("💾 Tokens saved successfully.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Token storage failed: {ex.Message}");
+                ErrorMessage = "Failed to store login session.";
+                ActiveBottomSheet = "generic_error";
+                return;
+            }
+
+            // 🎉 Show confirmation
+            RegisteredUserId = authTokenResponse.UserId;
+            ActiveBottomSheet = "email_confirmation";
+        }
+        catch (OnboardingClientValidationException ex)
+        {
+            ValidationErrors = ex.Errors;
+            Console.WriteLine($"❌ Validation failed with {ValidationErrors.Count} error(s).");
+            ActiveBottomSheet = "validation_failed";
+        }
+        catch (OnboardingClientException ex)
+        {
+            ActiveBottomSheet = ex.StepCode;
+
+            // Optionally assign structured error content
+            if (ActiveBottomSheet == "generic_error")
+                ErrorMessage = ex.Message;
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Conflict)
+        {
+            Console.WriteLine($"⚠️ Conflict: {ex.Message}");
+            ActiveBottomSheet = "user_exists";
         }
         catch (HttpRequestException ex)
         {
-            ShowError = true;
-            
-            // Handle specific status codes
-            if (ex.StatusCode == HttpStatusCode.Conflict)
-            {
-                ErrorMessage = "An account with this email already exists. Please use a different email or login.";
-            }
-            else if (ex.StatusCode == HttpStatusCode.BadRequest)
-            {
-                ErrorMessage = $"Validation error: {ex.Message}";
-            }
-            else
-            {
-                ErrorMessage = $"Error during registration: {ex.Message}";
-            }
-            
-            Console.WriteLine($"Error submitting profile: {ex.Message} (Status: {ex.StatusCode})");
+            Console.WriteLine($"❌ HTTP Error: {ex.StatusCode}, {ex.Message}");
+            ErrorMessage = $"Server error: {ex.Message}";
+            ActiveBottomSheet = "generic_error";
         }
         catch (Exception ex)
         {
-            ShowError = true;
-            ErrorMessage = "An unexpected error occurred. Please try again later.";
-            Console.WriteLine($"Unexpected error: {ex.Message}");
+            Console.WriteLine($"❌ Unexpected error: {ex.Message}");
+            ErrorMessage = "An unknown error occurred during registration.";
+            ActiveBottomSheet = "generic_error";
         }
         finally
         {
             IsLoading = false;
         }
+    }
+
+    private void HandleInvalidSubmit(EditContext context)
+    {
+        ValidationErrors = context
+            .GetValidationMessages()
+            .Take(5) // Limit displayed errors
+            .ToList();
+
+        ActiveBottomSheet = "validation_failed";
     }
 
     private void NavigateBack()
@@ -299,31 +417,31 @@
     {
         // Implement Facebook authentication
     }
-    
+
     private void LoadDebugProfile(Dictionary<string, string> values)
     {
         // Fill in form fields from the debug profile
         if (values.TryGetValue(nameof(CustomerProfile.FullName), out var fullName))
             CustomerProfile.FullName = fullName;
-            
+
         if (values.TryGetValue(nameof(CustomerProfile.Email), out var email))
             CustomerProfile.Email = email;
-            
+
         if (values.TryGetValue(nameof(CustomerProfile.PhoneNumber), out var phoneNumber))
             CustomerProfile.PhoneNumber = phoneNumber;
-            
+
         if (values.TryGetValue(nameof(CustomerProfile.Address), out var address))
             CustomerProfile.Address = address;
-            
+
         if (values.TryGetValue(nameof(Password), out var password))
             Password = password;
-            
+
         if (values.TryGetValue(nameof(ConfirmPassword), out var confirmPassword))
             ConfirmPassword = confirmPassword;
-            
+
         if (values.TryGetValue(nameof(AcceptTerms), out var acceptTerms))
             AcceptTerms = bool.TryParse(acceptTerms, out var result) && result;
-            
+
         StateHasChanged();
     }
 
@@ -362,4 +480,111 @@
             ? "w-full bg-gray-300 text-white py-3 rounded-lg font-medium cursor-not-allowed"
             : "w-full bg-[#FF6B00] text-white py-3 rounded-lg font-medium hover:bg-[#E05A00]";
 
+    #region BottomSheets Methods
+
+    private Task ReportToSupport(MouseEventArgs args)
+    {
+        // TODO: Implement support reporting — open chat, pre-fill email, or submit error log
+        throw new NotImplementedException();
+    }
+
+    private async Task ResendToOriginalEmailAsync()
+    {
+        IsResendingEmail = true;
+        ResendEmailMessage = string.Empty;
+        try
+        {
+            var result = await OnboardingService.SendConfirmationEmailAsync(RegisteredUserId);
+            ResendEmailMessage = result.Success
+                ? "Confirmation email sent. Please check your inbox."
+                : result.Message ?? "Failed to resend confirmation email.";
+        }
+        catch (Exception ex)
+        {
+            ResendEmailMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            IsResendingEmail = false;
+        }
+    }
+
+    private async Task SendToNewEmailAsync(string newEmail)
+    {
+
+        var result = await OnboardingService.SendConfirmationEmailAsync(RegisteredUserId);
+
+        ResendEmailMessage = result.Message;
+        IsResendingEmail = false;
+
+        if (!result.Success)
+        {
+            throw new Exception("Failed to send confirmation email.");
+        }
+    }
+
+    private async Task CheckIfCustomerWasCreatedAsync(string email)
+    {
+        try
+        {
+            var result = await OnboardingService.VerifyIfOperationSuccessfulAsync(email);
+
+            if (result.UserFound && result.ProfileFound && result.TokenFound)
+            {
+                RegisteredUserId = result.UserId ?? Guid.Empty;
+
+                // 🔐 Check if token is already stored
+                var accessToken = await TokenStorage.GetAccessTokenAsync();
+                if (string.IsNullOrWhiteSpace(accessToken))
+                {
+                    // 🔁 Try to resend confirmation email (we lost this earlier)
+                    var sendResult = await OnboardingService.SendConfirmationEmailAsync(RegisteredUserId);
+
+                    if (sendResult.Success)
+                    {
+                        // ✅ Email re-sent; prompt user to check
+                        ActiveBottomSheet = "email_confirmation"; // this is the correct bottomsheet for that case
+                    }
+                    else
+                    {
+                        // ❌ Failed to resend
+                        ErrorMessage = sendResult.Message ?? "Failed to resend confirmation email.";
+                        ActiveBottomSheet = "failure_send_confirmationemail";
+                    }
+                }
+                else
+                {
+                    // ✅ All confirmed and token already present
+                    NavigationManager.NavigateTo("/onboarding/success");
+                }
+            }
+            else if (result.UserFound && !result.ProfileFound)
+            {
+                ActiveBottomSheet = "profile_creation_failed";
+            }
+            else if (result.UserFound && !result.TokenFound)
+            {
+                ActiveBottomSheet = "auth_register_failed";
+            }
+            else
+            {
+                ErrorMessage = "We couldn’t verify your registration. Please try again.";
+                ActiveBottomSheet = "generic_error";
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Verification Error] {ex.Message}");
+            ErrorMessage = "A system error occurred during verification.";
+            ActiveBottomSheet = "generic_error";
+        }
+    }
+
+
+
+
+    #endregion
 }
+
+
+

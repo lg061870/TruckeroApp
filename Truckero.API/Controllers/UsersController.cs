@@ -18,22 +18,22 @@ public class UsersController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<User>> GetUser(Guid id)
     {
-        var user = await _userRepo.GetByIdAsync(id);
+        var user = await _userRepo.GetUserByIdAsync(id);
         return user is null ? NotFound() : Ok(user);
     }
 
     [HttpGet("by-email")]
     public async Task<ActionResult<User>> GetByEmail([FromQuery] string email)
     {
-        var user = await _userRepo.GetByEmailAsync(email);
+        var user = await _userRepo.GetUserByEmailAsync(email);
         return user is null ? NotFound() : Ok(user);
     }
 
     [HttpPost]
     public async Task<IActionResult> CreateUser([FromBody] User user)
     {
-        await _userRepo.AddAsync(user);
-        await _userRepo.SaveChangesAsync();
+        await _userRepo.AddUserAsync(user);
+        await _userRepo.SaveUserChangesAsync();
         return CreatedAtAction(nameof(GetUser), new { id = user.Id }, user);
     }
 }

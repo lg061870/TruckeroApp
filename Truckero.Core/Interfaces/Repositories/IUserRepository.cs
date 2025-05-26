@@ -7,9 +7,8 @@ namespace Truckero.Core.Interfaces.Repositories;
 /// </summary>
 public interface IUserRepository
 {
-    Task<User?> GetByEmailAsync(string email);
-    Task<User?> GetByIdAsync(Guid id);
-    Task AddAsync(User user);
-    Task SaveChangesAsync();
-    Task GetByEmailAsync(object email);
+    Task<User?> GetUserByEmailAsync(string email);
+    Task<User?> GetUserByIdAsync(Guid id);
+    Task AddUserAsync(User user);
+    Task SaveUserChangesAsync();
 }

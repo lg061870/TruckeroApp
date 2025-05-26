@@ -16,17 +16,17 @@ public class CustomerController : ControllerBase
     }
 
     [HttpGet("{userId}")]
-    public async Task<ActionResult<CustomerProfile>> GetByUserId(Guid userId)
+    public async Task<ActionResult<CustomerProfile>> GetByCustomerProfileByUserId(Guid userId)
     {
-        var profile = await _repo.GetByUserIdAsync(userId);
+        var profile = await _repo.GetCustomerProfileByUserIdAsync(userId);
         return profile is null ? NotFound() : Ok(profile);
     }
 
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CustomerProfile profile)
     {
-        await _repo.AddAsync(profile);
-        await _repo.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetByUserId), new { userId = profile.UserId }, profile);
+        await _repo.AddCustomerProfileAsync(profile);
+        await _repo.SaveCustomerProfileChangesAsync();
+        return CreatedAtAction(nameof(GetByCustomerProfileByUserId), new { userId = profile.UserId }, profile);
     }
 }

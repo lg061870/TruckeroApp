@@ -5,6 +5,7 @@
 @using TruckeroApp.Interfaces
 @using Truckero.Core.Interfaces.Services
 @using TruckeroApp.DebugTools
+@using Truckero.Core.Constants
 
 @inject NavigationManager NavManager
 @inject ITokenStorageService TokenStorage
@@ -12,26 +13,22 @@
 @inject IAuthSessionContext Session
 @inject IAuthTokenRepository TokenRepository
 
-
 <h3>Loading...</h3>
-
 
 @code {
     protected override async Task OnInitializedAsync()
     {
-    #if DEBUG
-        // PASSED: await StartupTestPaths.TokenWithExceptionOnRefresh(TokenStorage);
-        // PASSED: await StartupTestPaths.TokenWithNoRefreshToken(TokenStorage); 
-        // PASSED: await StartupTestPaths.TokenWithBadRefreshToken(TokenStorage);
-        await StartupTestPaths.InvalidToken(TokenStorage);
-        // PASSED: await StartupTestPaths.NoToken(TokenStorage);
-        // PASSED: await StartupTestPaths.ValidTokenCustomer(TokenStorage, AuthService, TokenRepository);
-        // PASSED: await StartupTestPaths.ValidTokenStoreClerk(TokenStorage, AuthService, TokenRepository);
-        // PASSED: await StartupTestPaths.ValidTokenDriver(TokenStorage, AuthService, TokenRepository);
-         
-    #endif
+#if DEBUG
+        // await StartupTestPaths.TokenWithExceptionOnRefresh(TokenStorage);
+        // await StartupTestPaths.TokenWithNoRefreshToken(TokenStorage);
+        // await StartupTestPaths.TokenWithBadRefreshToken(TokenStorage);
+        // await StartupTestPaths.InvalidToken(TokenStorage);
+        // await StartupTestPaths.NoToken(TokenStorage);
+        // await StartupTestPaths.ValidTokenCustomer(TokenStorage, AuthService, TokenRepository);
+        // await StartupTestPaths.ValidTokenStoreClerk(TokenStorage, AuthService, TokenRepository);
+        // await StartupTestPaths.ValidTokenDriver(TokenStorage, AuthService, TokenRepository);
+#endif
 
-        // 🧪 Step 1: Try reading token from secure local storage
         var token = await TokenStorage.GetAccessTokenAsync();
 
         if (string.IsNullOrWhiteSpace(token))
@@ -40,22 +37,27 @@
             return;
         }
 
-        // 🧪 Step 2: Validate token via API call (AuthController -> AuthService)
-        var isValid = await AuthService.ValidateTokenAsync(token);
-        if (!isValid)
+        var validationResult = await TokenRepository.ValidateAccessTokenAsync(token);
+
+        if (!validationResult.Valid)
         {
-            // 🌀 Try refresh token flow — Note: this *should* call Azure B2C in real impl
+            if (validationResult.Reason == ExceptionCodes.EmailNotVerified)
+            {
+                NavManager.NavigateTo(AppRoutes.EmailNotVerified, forceLoad: true);
+                return;
+            }
+
             var refreshToken = await TokenStorage.GetRefreshTokenAsync();
 
             if (string.IsNullOrWhiteSpace(refreshToken))
             {
-                NavManager.NavigateTo($"{AppRoutes.LoginExpired}?reason=no-refresh-token", forceLoad: true);
+                NavManager.NavigateTo($"{AppRoutes.LoginExpired}?reason={ExceptionCodes.NoRefreshToken}", forceLoad: true);
                 return;
             }
 
             try
             {
-                var refreshResult = await AuthService.RefreshTokenAsync(new RefreshTokenRequest
+                var refreshResult = await AuthService.RefreshAccessTokenAsync(new RefreshTokenRequest
                 {
                     RefreshToken = refreshToken
                 });
@@ -65,25 +67,72 @@
                     await TokenStorage.SaveAccessTokenAsync(refreshResult.AccessToken);
                     await TokenStorage.SaveRefreshTokenAsync(refreshResult.RefreshToken);
                     token = refreshResult.AccessToken;
+
+                    var role = await AuthService.GetActiveRoleAsync();
+                    var roles = await AuthService.GetAllRolesAsync();
+                    Session.Set(token, roles, role);
                 }
                 else
                 {
-                    NavManager.NavigateTo($"{AppRoutes.LoginExpired}?reason=refresh-failed", forceLoad: true);
-                    return;
+                    var refreshedUser = await AuthService.GetCurrentUserAsync();
+                    if (refreshedUser == null)
+                    {
+                        var role = await TokenStorage.GetValueAsync("role");
+                        NavManager.NavigateTo($"{AppRoutes.AccountNotAvailable}?role={role}", forceLoad: true);
+                        return;
+                    }
+                    else if (!refreshedUser.EmailVerified)
+                    {
+                        NavManager.NavigateTo(AppRoutes.EmailNotVerified, forceLoad: true);
+                        return;
+                    }
+                    else
+                    {
+                        NavManager.NavigateTo($"{AppRoutes.LoginExpired}?reason={ExceptionCodes.RefreshFailed}", forceLoad: true);
+                        return;
+                    }
                 }
             }
             catch
             {
-                NavManager.NavigateTo($"{AppRoutes.LoginExpired}?reason=refresh-error", forceLoad: true);
-                return;
+                var exceptionUser = await AuthService.GetCurrentUserAsync();
+                if (exceptionUser == null)
+                {
+                    // before giving up -- let's try and locate the user via the GetUserBy
+                    var role = await TokenStorage.GetValueAsync("role");
+                    NavManager.NavigateTo($"{AppRoutes.AccountNotAvailable}?role={role}", forceLoad: true);
+                    return;
+                }
+                else if (!exceptionUser.EmailVerified)
+                {
+                    NavManager.NavigateTo(AppRoutes.EmailNotVerified, forceLoad: true);
+                    return;
+                }
+                else
+                {
+                    NavManager.NavigateTo($"{AppRoutes.LoginExpired}?reason={ExceptionCodes.RefreshError}", forceLoad: true);
+                    return;
+                }
             }
         }
 
-        // ✅ Step 3: Token is valid (initial or refreshed) — retrieve session info
+        var user = await AuthService.GetCurrentUserAsync();
+        if (user == null)
+        {
+            var role = await TokenStorage.GetValueAsync("role");
+            NavManager.NavigateTo($"{AppRoutes.AccountNotAvailable}?role={role}", forceLoad: true);
+            return;
+        }
+        if (!user.EmailVerified)
+        {
+            NavManager.NavigateTo(AppRoutes.EmailNotVerified, forceLoad: true);
+            return;
+        }
+
         try
         {
             var role = await AuthService.GetActiveRoleAsync();
-            var roles = await AuthService.GetAllRolesAsync(); // Real implementation uses repo
+            var roles = await AuthService.GetAllRolesAsync();
 
             Session.Set(token, roles, role);
 
@@ -104,4 +153,3 @@
         }
     }
 }
-

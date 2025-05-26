@@ -29,7 +29,7 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterUserRequest request)
     {
-        var response = await _authService.RegisterAsync(request);
+        var response = await _authService.RegisterUserAsync(request);
         return Created(string.Empty, response);
     }
 
@@ -38,7 +38,7 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var response = await _authService.LoginAsync(request);
+            var response = await _authService.LoginUserAsync(request);
             _logger.LogInformation("User {Email} logged in.", request.Email);
             return Ok(response);
         }
@@ -52,7 +52,7 @@ public class AuthController : ControllerBase
     [HttpPost("logout")]
     public async Task<IActionResult> Logout([FromBody] Guid userId)
     {
-        await _authService.LogoutAsync(userId);
+        await _authService.LogoutUserAsync(userId);
         _logger.LogInformation("User {UserId} logged out.", userId);
         return NoContent();
     }
@@ -71,7 +71,7 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var response = await _authService.RefreshTokenAsync(request);
+            var response = await _authService.RefreshAccessTokenAsync(request);
             return Ok(response);
         }
         catch (ArgumentException)
@@ -122,14 +122,14 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Password successfully reset." });
     }
 
-    // 🧭 Role Management
+    #region 🧭 Role Management
 
     [Authorize]
     [HttpGet("role/active")]
     public async Task<IActionResult> GetActiveRole()
     {
         var userId = User.GetUserId();
-        var token = await _authTokenRepo.GetByUserIdAsync(userId);
+        var token = await _authTokenRepo.GetByTokenByUserIdAsync(userId);
         return Ok(token?.Role ?? "Guest");
     }
 
@@ -149,14 +149,16 @@ public class AuthController : ControllerBase
             return BadRequest($"Invalid role: {role}");
 
         var userId = User.GetUserId();
-        var token = await _authTokenRepo.GetByUserIdAsync(userId);
+        var token = await _authTokenRepo.GetByTokenByUserIdAsync(userId);
         if (token == null) return NotFound("User token not found.");
 
         token.Role = role;
-        await _authTokenRepo.UpdateAsync(token);
+        await _authTokenRepo.UpdateTokenAsync(token);
 
         return Ok(new { message = $"Role set to {role}" });
     }
+
+    #endregion
 
     // 📋 Session Info
 
@@ -168,7 +170,7 @@ public class AuthController : ControllerBase
         var email = User.Claims.FirstOrDefault(c => c.Type == "email")?.Value ?? "user@example.com";
         var fullName = User.Claims.FirstOrDefault(c => c.Type == "name")?.Value ?? "Test User";
 
-        var token = await _authTokenRepo.GetByUserIdAsync(userId);
+        var token = await _authTokenRepo.GetByTokenByUserIdAsync(userId);
         var role = token?.Role ?? "Guest";
 
         return Ok(new SessionInfo
@@ -188,10 +190,47 @@ public class AuthController : ControllerBase
     [HttpGet("token/latest")]
     public async Task<IActionResult> GetLatestToken()
     {
-        var token = await _authTokenRepo.GetLatestAsync();
+        var token = await _authTokenRepo.GetLatestTokenAsync();
         if (token == null)
             return NotFound();
 
         return Ok(token);
     }
+
+    [HttpGet("user/by-email")]
+    public async Task<IActionResult> GetUserByEmail([FromQuery] string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return BadRequest(new { error = "Email is required to retrieve user info." });
+
+        var user = await _authService.GetUserByEmailAsync(email);
+
+        if (user == null)
+            return NotFound(new { error = "User not found." });
+
+        return Ok(user);
+    }
+
+    [Authorize]
+    [HttpGet("user/me")]
+    public async Task<IActionResult> GetCurrentUser()
+    {
+        var userId = User.GetUserId();
+        var user = await _authService.GetUserByIdAsync(userId);
+        if (user == null)
+            return NotFound();
+        return Ok(user);
+    }
+
+    [Authorize]
+    [HttpGet("user/by-id")]
+    public async Task<IActionResult> GetUserById([FromQuery] Guid userId)
+    {
+        var user = await _authService.GetUserByIdAsync(userId);
+        if (user == null)
+            return NotFound();
+        return Ok(user);
+    }
+
+
 }

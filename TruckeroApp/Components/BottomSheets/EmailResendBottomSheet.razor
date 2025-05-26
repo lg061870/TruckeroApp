@@ -1,0 +1,76 @@
+﻿@* EmailResendBottomSheet.razor *@
+
+<div class="fixed inset-0 z-50 flex items-end justify-center bg-black bg-opacity-50">
+    <div class="w-full sm:max-w-md bg-white rounded-t-2xl p-6 shadow-lg animate-slide-up">
+        <div class="text-center">
+            <i class="fa-solid fa-envelope-exclamation text-4xl text-red-500 mb-3"></i>
+            <h3 class="text-lg font-semibold text-gray-800 mb-2">Confirmation Email Not Sent</h3>
+            <p class="text-sm text-gray-600 mb-4">
+                Your registration was successful, but we couldn't send a confirmation email to
+                <strong>@Email</strong>.<br />
+                You can try resending the email or enter a new one below.
+            </p>
+
+            <div class="flex flex-col items-center gap-3 mt-4">
+                <button class="px-4 py-2 bg-[#FF6B00] text-white rounded-lg hover:bg-[#e66000] mb-2"
+                        @onclick="TriggerResendToOriginalEmail"
+                        disabled="@IsResendingEmail">
+                    Resend to @Email
+                </button>
+
+                <div class="w-full flex flex-col items-center gap-2">
+                    <input class="w-full px-3 py-2 border rounded" placeholder="Enter new email address"
+                           @bind="NewEmail" />
+                    <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 w-full"
+                            @onclick="TriggerSendToNewEmail"
+                            disabled="@IsResendingEmail || string.IsNullOrWhiteSpace(NewEmail)">
+                        Send to New Email
+                    </button>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(ResendEmailMessage))
+                {
+                    <div class="text-green-600 text-sm mt-2">@ResendEmailMessage</div>
+                }
+
+                <button class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 mt-2"
+                        @onclick="OnDismiss">
+                    Dismiss
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Email { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? ResendEmailMessage { get; set; }
+
+    [Parameter]
+    public bool IsResendingEmail { get; set; }
+
+    [Parameter]
+    public EventCallback OnDismiss { get; set; }
+
+    [Parameter]
+    public EventCallback ResendToOriginalEmail { get; set; }
+
+    [Parameter]
+    public EventCallback<string> SendToNewEmail { get; set; }
+
+    private string NewEmail { get; set; } = string.Empty;
+
+    private async Task TriggerSendToNewEmail()
+    {
+        if (!string.IsNullOrWhiteSpace(NewEmail))
+            await SendToNewEmail.InvokeAsync(NewEmail);
+    }
+
+    private async Task TriggerResendToOriginalEmail()
+    {
+        await ResendToOriginalEmail.InvokeAsync();
+    }
+}

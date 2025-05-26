@@ -8,6 +8,8 @@ namespace Truckero.API.Tests.Mocks;
 
 public class OnboardingMockService : IOnboardingService
 {
+    private readonly Guid _mockUserId = Guid.NewGuid();
+
     public Task StartAsync(StartOnboardingRequest request, Guid userId)
     {
         return Task.CompletedTask;
@@ -45,6 +47,28 @@ public class OnboardingMockService : IOnboardingService
     }
 
     public Task<AuthTokenResponse> CompleteCustomerOnboardingAsync(CustomerOnboardingRequest request)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<OnboardingVerificationResult> VerifyIfOperationSuccessfulAsync(string email)
+    {
+        // Return a mock result for testing
+        return Task.FromResult(new OnboardingVerificationResult
+        {
+            UserFound = true,
+            ProfileFound = true,
+            TokenFound = true,
+            UserId = _mockUserId
+        });
+    }
+
+    public Task<OperationResult> SendConfirmationEmailAsync(Guid userId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<OperationResult> ConfirmEmailAsync(string token)
     {
         throw new NotImplementedException();
     }

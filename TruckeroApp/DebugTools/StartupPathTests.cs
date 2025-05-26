@@ -1,4 +1,5 @@
-﻿using Truckero.Core.Entities;
+﻿using Truckero.Core.DTOs.Auth;
+using Truckero.Core.Entities;
 using Truckero.Core.Enums;
 using Truckero.Core.Interfaces;
 using Truckero.Core.Interfaces.Services;
@@ -75,10 +76,10 @@ public static class StartupTestPaths
             ExpiresAt = DateTime.UtcNow.AddDays(1)
         };
 
-        await tokenRepo.AddAsync(tokenEntry);
+        await tokenRepo.AddTokenAsync(tokenEntry);
 
 #if DEBUG
-        var confirm = await tokenRepo.GetByUserIdAsync(userId);
+        var confirm = await tokenRepo.GetByTokenByUserIdAsync(userId);
         Console.WriteLine($"[TEST] ValidToken created. Role persisted for user: {confirm?.Role}");
 #endif
     }

@@ -173,7 +173,7 @@
         await UiExecutionHelper.SafeExecuteAsync(
             async () =>
             {
-                var response = await AuthService.LoginAsync(new AuthLoginRequest { Email = emailOrPhone, Password = password });
+                var response = await AuthService.LoginUserAsync(new AuthLoginRequest { Email = emailOrPhone, Password = password });
                 await TokenStorage.SaveAccessTokenAsync(response.AccessToken);
                 await TokenStorage.SaveRefreshTokenAsync(response.RefreshToken);
 

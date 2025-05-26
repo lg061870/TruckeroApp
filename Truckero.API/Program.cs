@@ -95,6 +95,7 @@ builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<IDriverRepository, DriverRepository>();
 builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
 builder.Services.AddScoped<IOnboardingProgressRepository, OnboardingProgressRepository>();
+builder.Services.AddScoped<IConfirmationTokenRepository, ConfirmationTokenRepository>();
 
 // Register Services
 builder.Services.AddScoped<IAuthService, AuthService>();

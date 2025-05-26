@@ -12,7 +12,7 @@ namespace Truckero.Infrastructure.Data
 
             // ⚡ Specify your connection string here manually
             optionsBuilder.UseSqlServer(
-                "Server=localhost\\SQLEXPRESS;Database=TruckeroDev;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;"
+                "Server=localhost\\SQLEXPRESS;Database=TruckeroDev;Trusted_Connection=True;MultipleActiveResultSets=False;TrustServerCertificate=True;"
             );
 
             return new AppDbContext(optionsBuilder.Options);

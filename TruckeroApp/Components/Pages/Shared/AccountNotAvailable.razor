@@ -1,0 +1,57 @@
+@page "/accountnotavailable"
+@using Microsoft.AspNetCore.Components
+@using TruckeroApp
+@inject NavigationManager NavManager
+@inject ITokenStorageService TokenStorage
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Role { get; set; }
+
+    private async Task GoToRegister()
+    {
+        await TokenStorage.ClearAllAsync();
+        var role = (Role ?? string.Empty).ToLowerInvariant();
+        switch (role)
+        {
+            case "customer":
+                NavManager.NavigateTo(AppRoutes.RegisterCustomer, true);
+                break;
+            case "driver":
+                NavManager.NavigateTo(AppRoutes.RegisterDriver, true);
+                break;
+            case "storeclerk":
+                NavManager.NavigateTo(AppRoutes.RegisterStoreClerk, true);
+                break;
+            default:
+                NavManager.NavigateTo(AppRoutes.RegisterCustomer, true);
+                break;
+        }
+    }
+
+    private async Task GoToLogin()
+    {
+        await TokenStorage.ClearAllAsync();
+        NavManager.NavigateTo(AppRoutes.Login, true);
+    }
+}
+
+<CenterWrapper>
+    <div class="p-8 max-w-lg mx-auto text-center">
+        <i class="fa-solid fa-user-slash text-5xl text-red-500 mb-4"></i>
+        <h2 class="text-2xl font-bold mb-2">Account Not Available</h2>
+        <p class="mb-4 text-gray-700">
+            Your account is no longer available. It may have been deleted or discontinued.<br />
+            To continue using Truckero, please create a new account.
+        </p>
+        <button @onclick="GoToRegister"
+                class="w-full bg-[#FF6B00] text-white py-3 rounded-lg font-medium hover:bg-[#E05A00] focus:outline-none focus:ring-2 focus:ring-[#FF6B00] focus:ring-opacity-50 transition-colors duration-150 mt-4">
+            Create New Account
+        </button>
+        <button @onclick="GoToLogin"
+                class="w-full text-[#FF6B00] font-medium py-3 rounded-lg hover:underline transition-colors duration-150 mt-2">
+            Log In Instead
+        </button>
+    </div>
+</CenterWrapper>

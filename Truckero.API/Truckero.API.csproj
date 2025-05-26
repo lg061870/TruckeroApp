@@ -31,6 +31,7 @@
     <Folder Include="Filters\" />
     <Folder Include="Extensions\" />
     <Folder Include="Services\" />
+    <Folder Include="Truckero.API\EmailConfirmation\" />
   </ItemGroup>
 
   <ProjectExtensions><VisualStudio><UserProperties properties_4launchsettings_1json__JsonSchema="{" /></VisualStudio></ProjectExtensions>

@@ -1,15 +1,10 @@
 using Microsoft.Extensions.Logging;
-using TruckeroApp;
-using Microsoft.Extensions.DependencyInjection;
 using TruckeroApp.Interfaces;
-using TruckeroApp.Session;
 using TruckeroApp.Services;
 using TruckeroApp.Services.Media;
 using TruckeroApp.Extensions;
 using Truckero.Core.Interfaces;
-using Truckero.Core.Interfaces.Services;
-using Truckero.Infrastructure.Repositories;
-
+using TruckeroApp.ServiceClients;
 
 namespace TruckeroApp;
 
@@ -51,18 +46,14 @@ public static class MauiProgram
             .AddVehicleClient(apiBase)
             .AddOnboardingClient(apiBase)
             .AddAuthClient(apiBase)
-            .AddAuthTokenClient(apiBase);
+            .AddAuthTokenClient(apiBase)
+            .AddMediaClient(apiBase);
             
-        // Configure MediaApiClientService with the base URL
-        builder.Services.AddHttpClient<TruckeroApp.ServiceClients.MediaApiClientService>(client => {
-            client.BaseAddress = new Uri(apiBase);
-        });
 
         builder.Services.AddSingleton<ITokenStorageService, SecureTokenStorageService>();
         builder.Services.AddSingleton<IAuthSessionContext, AuthSessionContextService>();
         
         // Register media and notification services
-        builder.Services.AddMediaServices();
         builder.Services.AddToastService();
         
         // Mock blob storage service for development

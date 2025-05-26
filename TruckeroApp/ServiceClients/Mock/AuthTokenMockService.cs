@@ -1,27 +1,28 @@
-﻿using Truckero.Core.Interfaces;
+﻿using Truckero.Core.DTOs.Auth;
+using Truckero.Core.Interfaces;
 
 namespace TruckeroApp.ServiceClients.Mock;
 
 public class AuthTokenMockService : IAuthTokenRepository
 {
-    public Task<AuthToken?> GetByUserIdAsync(Guid userId)
+    public Task<AuthToken?> GetByTokenByUserIdAsync(Guid userId)
         => Task.FromResult(AuthMockStore.Tokens.TryGetValue(userId, out var token) ? token : null);
 
-    public Task AddAsync(AuthToken token)
+    public Task AddTokenAsync(AuthToken token)
     {
         AuthMockStore.Tokens[token.UserId] = token;
         AuthMockStore.Latest = token;
         return Task.CompletedTask;
     }
 
-    public Task UpdateAsync(AuthToken token)
+    public Task UpdateTokenAsync(AuthToken token)
     {
         AuthMockStore.Tokens[token.UserId] = token;
         AuthMockStore.Latest = token;
         return Task.CompletedTask;
     }
 
-    public Task DeleteAsync(AuthToken token)
+    public Task DeleteTokenAsync(AuthToken token)
     {
         AuthMockStore.Tokens.TryRemove(token.UserId, out _);
         if (AuthMockStore.Latest?.UserId == token.UserId)
@@ -29,13 +30,13 @@ public class AuthTokenMockService : IAuthTokenRepository
         return Task.CompletedTask;
     }
 
-    public Task<AuthToken?> GetByRefreshTokenAsync(string refreshToken)
+    public Task<AuthToken?> GetByRefreshTokenByRefreshTokenKeyAsync(string refreshToken)
         => Task.FromResult(AuthMockStore.Tokens.Values.FirstOrDefault(t => t.RefreshToken == refreshToken));
 
-    public Task<AuthToken?> GetLatestAsync()
+    public Task<AuthToken?> GetLatestTokenAsync()
         => Task.FromResult(AuthMockStore.Latest);
 
-    public Task RevokeAsync(string refreshToken)
+    public Task RevokeRefreshTokenAsync(string refreshToken)
     {
         var match = AuthMockStore.Tokens.FirstOrDefault(kvp => kvp.Value.RefreshToken == refreshToken);
         if (match.Key != Guid.Empty)
@@ -45,5 +46,15 @@ public class AuthTokenMockService : IAuthTokenRepository
                 AuthMockStore.Latest = null;
         }
         return Task.CompletedTask;
+    }
+
+    public Task<AuthToken?> GetByAccessTokenByAccessTokenKeyAsync(string accessToken)
+    {
+        throw new NotImplementedException();
+    }
+
+    Task<TokenValidationResult> IAuthTokenRepository.ValidateAccessTokenAsync(string accessToken)
+    {
+        throw new NotImplementedException();
     }
 }

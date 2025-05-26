@@ -5,8 +5,9 @@
 @using System.ComponentModel.DataAnnotations
 @using Truckero.Core.DTOs.Auth
 @using TruckeroApp.ServiceClients
+@using Truckero.Core.Interfaces.Services
 
-@inject OnboardingApiClientService OnboardingService
+@inject IOnboardingService OnboardingService
 @inject NavigationManager NavigationManager
 
 <div class="h-full text-base-content">
@@ -36,7 +37,7 @@
                 <span class="text-sm text-orange-700">Registering as: <strong>DRIVER</strong></span>
             </div>
 
-            <EditForm Model="@DriverProfile" OnValidSubmit="SubmitAsync" id="registration-form" class="space-y-4">
+            <EditForm EditContext="_editContext" OnValidSubmit="SubmitAsync" id="registration-form" class="space-y-4">
                 <DataAnnotationsValidator />
                 <ValidationSummary class="text-red-500 text-sm mb-4" />
 
@@ -216,7 +217,7 @@
                     </div>
                 </div>
 
-                <div class="flex items-start space-x-3 mt-6">
+                <div class="flex items-start space-x-3 mt-6 mb-4">
                     <InputCheckbox @bind-Value="AcceptTerms" id="terms" class="mt-1 h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500" />
                     <label for="terms" class="text-sm text-gray-600">
                         I agree to Truckeo's <span class="text-orange-600 cursor-pointer" @onclick="ShowTermsOfService">Terms of Service</span> and <span class="text-orange-600 cursor-pointer" @onclick="ShowPrivacyPolicy">Privacy Policy</span>
@@ -227,7 +228,7 @@
                     <div class="text-red-500 text-xs">You must accept the terms and conditions to continue</div>
                 }
 
-                <button type="submit" class="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600 mt-6 @(IsLoading ? "opacity-70 cursor-not-allowed" : "")" disabled="@IsLoading">
+                <button type="submit" class="@GetContinueButtonClasses()" disabled="@(!IsFormValid || IsLoading)">
                     @if (IsLoading)
                     {
                         <span>Processing...</span>
@@ -269,6 +270,7 @@
 
 @code {
     private DriverProfileRequest DriverProfile { get; set; } = new DriverProfileRequest();
+    private EditContext? _editContext;
 
     [Required]
     private string UserId { get; set; } = string.Empty;
@@ -320,6 +322,48 @@
         public string Year { get; set; } = string.Empty;
         public bool IsVerified { get; set; }
         public string VerificationMessage { get; set; } = string.Empty;
+    }
+
+    private bool IsFormValid =>
+        IsTextValid(DriverProfile.FullName) &&
+        IsTextValid(DriverProfile.Email) &&
+        IsTextValid(DriverProfile.PhoneNumber) &&
+        IsTextValid(DriverProfile.LicenseNumber) &&
+        IsTextValid(UserId) &&
+        IsValidEmail(DriverProfile.Email) &&
+        IsValidPassword() &&
+        AcceptTerms;
+
+    private bool IsTextValid(string? input) =>
+        !string.IsNullOrWhiteSpace(input) && input.Trim().Length >= 4;
+
+    private bool IsValidEmail(string? email)
+    {
+        try
+        {
+            var addr = new System.Net.Mail.MailAddress(email ?? "");
+            return addr.Address == email;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private bool IsValidPassword() =>
+        !string.IsNullOrWhiteSpace(Password) &&
+        Password.Length >= 8 &&
+        Password == ConfirmPassword;
+
+    private string GetContinueButtonClasses() =>
+        !IsFormValid || IsLoading
+            ? "w-full bg-orange-300 text-white py-3 rounded-lg font-medium cursor-not-allowed mt-6"
+            : "w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600 mt-6";
+
+    protected override void OnInitialized()
+    {
+        _editContext = new EditContext(DriverProfile);
+        _editContext.OnFieldChanged += (sender, args) => StateHasChanged();
     }
 
     private async Task SubmitAsync()

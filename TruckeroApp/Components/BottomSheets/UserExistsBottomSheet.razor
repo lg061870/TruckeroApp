@@ -1,0 +1,35 @@
+﻿@* UserExistsBottomSheet.razor *@
+
+<div class="fixed inset-0 z-50 flex items-end justify-center bg-black bg-opacity-50">
+    <div class="w-full sm:max-w-md bg-white rounded-t-2xl p-6 shadow-lg animate-slide-up">
+        <div class="text-center">
+            <i class="fa-solid fa-user-check text-4xl text-blue-500 mb-3"></i>
+            <h3 class="text-lg font-semibold text-gray-800 mb-2">Account Already Exists</h3>
+            <p class="text-sm text-gray-600 mb-4">
+                The email <strong>@Email</strong> is already registered.<br />
+                Click <span class="font-semibold text-[#FF6B00]">Log In</span> to enter your credentials, or <span class="font-semibold">Dismiss</span> to change your email and try again.
+            </p>
+            <div class="flex justify-center gap-3 mt-4">
+                <button class="px-4 py-2 bg-[#FF6B00] text-white rounded-lg hover:bg-[#e66000]"
+                        @onclick="OnLogin">
+                    Log In
+                </button>
+                <button class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                        @onclick="OnDismiss">
+                    Dismiss
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Email { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback OnLogin { get; set; }
+
+    [Parameter]
+    public EventCallback OnDismiss { get; set; }
+}

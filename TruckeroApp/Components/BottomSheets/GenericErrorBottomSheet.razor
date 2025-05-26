@@ -1,0 +1,29 @@
+﻿@* GenericErrorBottomSheet.razor *@
+
+<div class="fixed inset-0 z-50 flex items-end justify-center bg-black bg-opacity-50">
+    <div class="w-full sm:max-w-md bg-white rounded-t-2xl p-6 shadow-lg animate-slide-up">
+        <div class="text-center">
+            <i class="fa-solid fa-triangle-exclamation text-4xl text-yellow-500 mb-3"></i>
+            <h3 class="text-lg font-semibold text-gray-800 mb-2">Oops!</h3>
+            <p class="text-sm text-gray-600 mb-4">
+                @(string.IsNullOrWhiteSpace(Message)
+                                ? "Your registration could not be completed. Please try again. If the issue persists, press the button below to report it."
+                                : Message)
+            </p>
+            <div class="flex justify-center gap-3 mt-4">
+                <button class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                        @onclick="OnDismiss">
+                    Dismiss
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string? Message { get; set; }
+
+    [Parameter]
+    public EventCallback OnDismiss { get; set; }
+}

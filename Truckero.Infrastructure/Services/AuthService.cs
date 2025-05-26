@@ -1,9 +1,10 @@
 ﻿using Truckero.Core.DTOs.Auth;
+using Truckero.Core.Entities;
 using Truckero.Core.Enums;
+using Truckero.Core.Exceptions;
 using Truckero.Core.Interfaces;
 using Truckero.Core.Interfaces.Repositories;
 using Truckero.Core.Interfaces.Services;
-using Truckero.Core.Entities;
 using Microsoft.Extensions.Logging;
 
 namespace Truckero.Infrastructure.Services;
@@ -29,13 +30,53 @@ public class AuthService : IAuthService
         _tokenRepo = tokenRepo;
         _roleRepo = roleRepo;
         _hashService = hashService;
-        _logger = logger;
         _emailService = emailService;
+        _logger = logger;
     }
 
-    public async Task<AuthResponse> LoginAsync(AuthLoginRequest request)
+    #region 🔐 Core Authentication Lifecycle
+
+    // --- RegisterUserAsync ---
+    public async Task<(User NewUser, AuthToken Token)> RegisterUserAsync(RegisterUserRequest request)
     {
-        var user = await _userRepo.GetByEmailAsync(request.Email);
+        var existingUser = await _userRepo.GetUserByEmailAsync(request.Email);
+        if (existingUser != null)
+            throw new OnboardingStepException("User already exists", "email_already_exist");
+
+        var roleId = await _roleRepo.GetDefaultRoleIdAsync();
+
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            Email = request.Email,
+            PasswordHash = _hashService.Hash(request.Password),
+            RoleId = roleId,
+            CreatedAt = DateTime.UtcNow,
+            IsActive = true,
+            EmailVerified = false,
+            PhoneNumber = request.PhoneNumber
+        };
+
+        var token = new AuthToken
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            AccessToken = $"token-{Guid.NewGuid()}",
+            RefreshToken = $"refresh-{Guid.NewGuid()}",
+            Role = RoleType.Customer.ToString(),
+            IssuedAt = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddHours(1)
+        };
+
+        await _userRepo.AddUserAsync(user);
+        await _tokenRepo.AddTokenAsync(token);
+
+        return (user, token);
+    }
+
+    public async Task<AuthResponse> LoginUserAsync(AuthLoginRequest request)
+    {
+        var user = await _userRepo.GetUserByEmailAsync(request.Email);
         if (user == null || !_hashService.Verify(request.Password, user.PasswordHash))
         {
             _logger.LogWarning("Invalid login attempt for email: {Email}", request.Email);
@@ -48,12 +89,12 @@ public class AuthService : IAuthService
             UserId = user.Id,
             AccessToken = $"token-{Guid.NewGuid()}",
             RefreshToken = $"refresh-{Guid.NewGuid()}",
-            Role = user.Role?.Name.ToString() ?? RoleType.Guest.ToString(),
+            Role = user.Role?.Name?.ToString() ?? RoleType.Guest.ToString(),
             IssuedAt = DateTime.UtcNow,
             ExpiresAt = DateTime.UtcNow.AddHours(1)
         };
 
-        await _tokenRepo.AddAsync(token);
+        await _tokenRepo.AddTokenAsync(token);
 
         return new AuthResponse
         {
@@ -62,189 +103,23 @@ public class AuthService : IAuthService
         };
     }
 
-    public async Task<AuthResponse> RegisterAsync(RegisterUserRequest request)
+    public async Task LogoutUserAsync(Guid userId)
     {
-        var existingUser = await _userRepo.GetByEmailAsync(request.Email);
-        if (existingUser != null)
-            throw new InvalidOperationException("User already exists");
-
-        var defaultRoleId = await _roleRepo.GetDefaultRoleIdAsync();
-
-        var newUser = new User
-        {
-            Id = Guid.NewGuid(),
-            Email = request.Email,
-            PasswordHash = _hashService.Hash(request.Password),
-            RoleId = defaultRoleId,
-            CreatedAt = DateTime.UtcNow,
-            IsActive = true,
-            EmailVerified = false,
-            PhoneNumber = request.PhoneNumber
-        };
-
-        await _userRepo.AddAsync(newUser);
-        await _userRepo.SaveChangesAsync();
-
-        // Issue token manually (same as LoginAsync does)
-        var token = new AuthToken
-        {
-            Id = Guid.NewGuid(),
-            UserId = newUser.Id,
-            AccessToken = $"token-{Guid.NewGuid()}",
-            RefreshToken = $"refresh-{Guid.NewGuid()}",
-            Role = RoleType.Customer.ToString(),
-            IssuedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddHours(1),
-        };
-
-        await _tokenRepo.AddAsync(token);
-
-        _logger.LogInformation("Registered and issued token for new user: {Email}", request.Email);
-
-        return new AuthResponse
-        {
-            AccessToken = token.AccessToken,
-            RefreshToken = token.RefreshToken,
-            Success = true, // ✅ Important!
-            UserId = newUser.Id,
-            ExpiresIn = token.ExpiresAt
-        };
-    }
-
-    public async Task LogoutAsync(Guid userId)
-    {
-        var token = await _tokenRepo.GetByUserIdAsync(userId);
+        var token = await _tokenRepo.GetByTokenByUserIdAsync(userId);
         if (token != null)
         {
-            await _tokenRepo.DeleteAsync(token);
+            await _tokenRepo.DeleteTokenAsync(token);
             _logger.LogInformation("User {UserId} logged out.", userId);
         }
     }
 
-
-
-    public async Task<AuthResponse> RefreshTokenAsync(RefreshTokenRequest request)
-    {
-        if (string.IsNullOrWhiteSpace(request.RefreshToken))
-            throw new ArgumentException("Refresh token is missing.");
-
-        var existing = await _tokenRepo.GetByRefreshTokenAsync(request.RefreshToken);
-        if (existing == null)
-            throw new UnauthorizedAccessException("Invalid refresh token");
-
-        var newToken = new AuthToken
-        {
-            Id = Guid.NewGuid(),
-            UserId = existing.UserId,
-            AccessToken = $"token-{Guid.NewGuid()}",
-            RefreshToken = $"refresh-{Guid.NewGuid()}",
-            Role = existing.Role,
-            IssuedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddHours(1)
-        };
-
-        await _tokenRepo.UpdateAsync(newToken);
-
-        return new AuthResponse
-        {
-            AccessToken = newToken.AccessToken,
-            RefreshToken = newToken.RefreshToken
-        };
-    }
-
-    public Task<bool> ValidateTokenAsync(string token)
-    {
-        var isValid = !string.IsNullOrWhiteSpace(token) && token.StartsWith("token-");
-        return Task.FromResult(isValid);
-    }
-
-    public async Task RequestPasswordResetAsync(PasswordResetRequest request)
-    {
-        if (string.IsNullOrWhiteSpace(request.Email))
-            throw new ArgumentException("Email is required");
-
-        var user = await _userRepo.GetByEmailAsync(request.Email);
-        if (user == null)
-        {
-            _logger.LogWarning("Password reset requested for unknown email: {Email}", request.Email);
-            throw new KeyNotFoundException("No user found with that email");
-        }
-
-        // 🚧 TODO: Replace with secure token gen
-        var resetToken = "some-token";
-
-        var resetLink = $"https://app.truckero.com/confirm-reset?email={Uri.EscapeDataString(request.Email)}&token={resetToken}";
-
-        await _emailService.SendPasswordResetAsync(request.Email, resetLink);
-
-        _logger.LogInformation("Password reset email sent to {Email} with link: {Link}", request.Email, resetLink);
-    }
-
-
-
-    public async Task ConfirmPasswordResetAsync(PasswordResetConfirmRequest request)
-    {
-        var user = await _userRepo.GetByEmailAsync(request.Email);
-        if (user == null)
-            throw new ArgumentException("User not found");
-
-        user.PasswordHash = _hashService.Hash(request.NewPassword);
-        await _userRepo.SaveChangesAsync();
-    }
-
-    public Task<AuthToken?> GetLatestAsync() =>
-        _tokenRepo.GetLatestAsync();
-
-    public async Task<List<string>> GetAllRolesAsync()
-    {
-        var roles = await _roleRepo.GetAllRolesAsync();
-        return roles.Select(r => r.Name.ToString()).ToList();
-    }
-
-    public async Task SetActiveRoleAsync(string role)
-    {
-        var token = await _tokenRepo.GetLatestAsync();
-        if (token == null)
-            throw new InvalidOperationException("No active session");
-
-        token.Role = role;
-        await _tokenRepo.UpdateAsync(token);
-    }
-
-    public async Task<SessionInfo> GetSessionAsync()
-    {
-        var token = await _tokenRepo.GetLatestAsync();
-
-        return new SessionInfo
-        {
-            UserId = token?.UserId ?? Guid.Empty,
-            Email = "user@truckero.app", // Substitute if needed
-            FullName = "Truckero User",
-            ActiveRole = token?.Role ?? RoleType.Guest.ToString(),
-            AvailableRoles = await GetAllRolesAsync(),
-            TokenValid = token != null
-        };
-    }
-
-    public async Task<string> GetActiveRoleAsync()
-    {
-        var token = await _tokenRepo.GetLatestAsync();
-        return token?.Role ?? RoleType.Guest.ToString();
-    }
-
     public async Task<AuthResponse> ExchangeTokenAsync(TokenRequest request)
     {
-        // 🔍 Look up the user by email
-        var user = await _userRepo.GetByEmailAsync(request.Email);
-        if (user == null)
-            throw new UnauthorizedAccessException("User not found.");
+        var user = await _userRepo.GetUserByEmailAsync(request.Email);
+        if (user == null || !_hashService.Verify(request.Password, user.PasswordHash))
+            throw new UnauthorizedAccessException("Invalid credentials.");
 
-        // 🔐 Validate password
-        if (!_hashService.Verify(request.Password, user.PasswordHash))
-            throw new UnauthorizedAccessException("Invalid password.");
-
-        // ♻️ Issue a new token for the user
-        var newToken = new AuthToken
+        var token = new AuthToken
         {
             Id = Guid.NewGuid(),
             UserId = user.Id,
@@ -255,14 +130,153 @@ public class AuthService : IAuthService
             ExpiresAt = DateTime.UtcNow.AddHours(1)
         };
 
-        await _tokenRepo.UpdateAsync(newToken);
+        await _tokenRepo.UpdateTokenAsync(token);
 
         return new AuthResponse
         {
-            AccessToken = newToken.AccessToken,
-            RefreshToken = newToken.RefreshToken
+            AccessToken = token.AccessToken,
+            RefreshToken = token.RefreshToken
         };
     }
 
+    public async Task<AuthResponse> RefreshAccessTokenAsync(RefreshTokenRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.RefreshToken))
+            throw new ArgumentException("Refresh token is missing.");
+
+        var existing = await _tokenRepo.GetByRefreshTokenByRefreshTokenKeyAsync(request.RefreshToken);
+        if (existing == null)
+            throw new UnauthorizedAccessException("Invalid refresh token.");
+
+        existing.AccessToken = $"token-{Guid.NewGuid()}";
+        existing.RefreshToken = $"refresh-{Guid.NewGuid()}";
+        existing.IssuedAt = DateTime.UtcNow;
+        existing.ExpiresAt = DateTime.UtcNow.AddHours(1);
+
+        await _tokenRepo.UpdateTokenAsync(existing);
+
+        return new AuthResponse
+        {
+            AccessToken = existing.AccessToken,
+            RefreshToken = existing.RefreshToken,
+            UserId = existing.UserId
+        };
+    }
+
+    public Task<bool> ValidateTokenAsync(string token)
+    {
+        var isValid = !string.IsNullOrWhiteSpace(token) && token.StartsWith("token-");
+        return Task.FromResult(isValid);
+    }
+
+    #endregion
+
+    #region 🔑 Password Recovery
+
+    public async Task RequestPasswordResetAsync(PasswordResetRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Email))
+            throw new ArgumentException("Email is required");
+
+        var user = await _userRepo.GetUserByEmailAsync(request.Email);
+        if (user == null)
+        {
+            _logger.LogWarning("Password reset requested for unknown email: {Email}", request.Email);
+            throw new KeyNotFoundException("No user found with that email");
+        }
+
+        var resetToken = "some-token"; // TODO: secure implementation
+
+        var resetLink = $"https://app.truckero.com/confirm-reset?email={Uri.EscapeDataString(request.Email)}&token={resetToken}";
+        await _emailService.SendPasswordResetAsync(request.Email, resetLink);
+        _logger.LogInformation("Password reset email sent to {Email}", request.Email);
+    }
+
+    public async Task ConfirmPasswordResetAsync(PasswordResetConfirmRequest request)
+    {
+        // check the request is not null
+        if (request == null)
+            throw new ArgumentNullException(nameof(request), "Password Reset object is null");
+
+        if (string.IsNullOrWhiteSpace(request?.Email))
+            throw new ArgumentException("Email is required");
+
+        if (string.IsNullOrWhiteSpace(request?.NewPassword))
+            throw new ArgumentException("New password is required");
+
+        var user = await _userRepo.GetUserByEmailAsync(request.Email);
+
+        if (user == null)
+            throw new ArgumentException("User not found");
+
+        user.PasswordHash = _hashService.Hash(request.NewPassword);
+
+        await _userRepo.SaveUserChangesAsync();
+    }
+
+    #endregion
+
+    #region 🧭 Role-Based Access Control
+
+    public async Task<List<string>> GetAllRolesAsync()
+    {
+        var roles = await _roleRepo.GetAllRolesAsync();
+        return roles.Select(r => r.Name.ToString()).ToList();
+    }
+
+    public async Task SetActiveRoleAsync(string role)
+    {
+        var token = await _tokenRepo.GetLatestTokenAsync();
+        if (token == null)
+            throw new InvalidOperationException("No active session");
+
+        token.Role = role;
+        await _tokenRepo.UpdateTokenAsync(token);
+    }
+
+    public async Task<string> GetActiveRoleAsync()
+    {
+        var token = await _tokenRepo.GetLatestTokenAsync();
+        return token?.Role ?? RoleType.Guest.ToString();
+    }
+
+    #endregion
+
+    #region 📋 Session Management
+
+    public async Task<AuthToken?> GetLatestAsync() =>
+        await _tokenRepo.GetLatestTokenAsync();
+
+    public async Task<SessionInfo> GetSessionAsync()
+    {
+        var token = await _tokenRepo.GetLatestTokenAsync();
+
+        return new SessionInfo
+        {
+            UserId = token?.UserId ?? Guid.Empty,
+            Email = "user@truckero.app",
+            FullName = "Truckero User",
+            ActiveRole = token?.Role ?? RoleType.Guest.ToString(),
+            AvailableRoles = await GetAllRolesAsync(),
+            TokenValid = token != null
+        };
+    }
+
+    public async Task<User?> GetUserByEmailAsync(string email)
+    {
+        return await _userRepo.GetUserByEmailAsync(email);
+    }
+
+    public async Task<User?> GetUserByIdAsync(Guid userId)
+    {
+        return await _userRepo.GetUserByIdAsync(userId);
+    }
+
+    public Task<User?> GetCurrentUserAsync()
+    {
+        throw new NotImplementedException();
+    }
+
+    #endregion
 
 }

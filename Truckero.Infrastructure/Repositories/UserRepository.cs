@@ -14,7 +14,7 @@ public class UserRepository : IUserRepository
         _context = context;
     }
 
-    public async Task<User?> GetByEmailAsync(string email)
+    public async Task<User?> GetUserByEmailAsync(string email)
     {
         return await _context.Users
             .Include(u => u.Role)
@@ -22,7 +22,7 @@ public class UserRepository : IUserRepository
             .FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
     }
 
-    public async Task<User?> GetByIdAsync(Guid id)
+    public async Task<User?> GetUserByIdAsync(Guid id)
     {
         return await _context.Users
             .Include(u => u.Role)
@@ -30,18 +30,13 @@ public class UserRepository : IUserRepository
             .FirstOrDefaultAsync(u => u.Id == id);
     }
 
-    public async Task AddAsync(User user)
+    public async Task AddUserAsync(User user)
     {
         await _context.Users.AddAsync(user);
     }
 
-    public async Task SaveChangesAsync()
+    public async Task SaveUserChangesAsync()
     {
         await _context.SaveChangesAsync();
-    }
-
-    public Task GetByEmailAsync(object email)
-    {
-        throw new NotImplementedException();
     }
 }

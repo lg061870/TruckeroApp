@@ -53,5 +53,20 @@ public class OnboardingMockService : IOnboardingService
     {
         throw new NotImplementedException();
     }
+
+    public Task<OnboardingVerificationResult> VerifyIfOperationSuccessfulAsync(string email)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<OperationResult> SendConfirmationEmailAsync(Guid userId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<OperationResult> ConfirmEmailAsync(string token)
+    {
+        throw new NotImplementedException();
+    }
 }
 

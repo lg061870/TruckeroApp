@@ -13,5 +13,7 @@ public interface IOnboardingService
 
     Task<OperationResult> CompleteDriverOnboardingAsync(DriverProfileRequest request, Guid userId);
     Task<AuthTokenResponse> CompleteCustomerOnboardingAsync(CustomerOnboardingRequest request);
-
+    Task<OnboardingVerificationResult> VerifyIfOperationSuccessfulAsync(string email);
+    Task<OperationResult> SendConfirmationEmailAsync(Guid userId);
+    Task<OperationResult> ConfirmEmailAsync(string token);
 }

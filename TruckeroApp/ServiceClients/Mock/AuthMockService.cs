@@ -1,4 +1,5 @@
 ﻿using Truckero.Core.DTOs.Auth;
+using Truckero.Core.Entities;
 using Truckero.Core.Enums;
 using Truckero.Core.Interfaces;
 using Truckero.Core.Interfaces.Services;
@@ -25,7 +26,7 @@ public class AuthMockService : IAuthService
         _tokenRepo = tokenRepo;
     }
 
-    public async Task<AuthResponse> LoginAsync(AuthLoginRequest request)
+    public async Task<AuthResponse> LoginUserAsync(AuthLoginRequest request)
     {
         if (request.Email == "invalid@example.com" && request.Password == "wrongpass")
             throw new UnauthorizedAccessException("Invalid credentials");
@@ -40,7 +41,7 @@ public class AuthMockService : IAuthService
             ExpiresAt = DateTime.UtcNow.AddDays(1)
         };
 
-        await _tokenRepo.AddAsync(token);
+        await _tokenRepo.AddTokenAsync(token);
 
         return new AuthResponse
         {
@@ -49,16 +50,16 @@ public class AuthMockService : IAuthService
         };
     }
 
-    public Task<AuthResponse> RegisterAsync(RegisterUserRequest request)
+    public Task<AuthResponse> RegisterUserAsync(RegisterUserRequest request)
     {
-        return LoginAsync(new AuthLoginRequest { Email = request.Email, Password = "password" });
+        return LoginUserAsync(new AuthLoginRequest { Email = request.Email, Password = "password" });
     }
 
-    public async Task LogoutAsync(Guid userId)
+    public async Task LogoutUserAsync(Guid userId)
     {
-        var token = await _tokenRepo.GetByUserIdAsync(userId);
+        var token = await _tokenRepo.GetByTokenByUserIdAsync(userId);
         if (token != null)
-            await _tokenRepo.DeleteAsync(token);
+            await _tokenRepo.DeleteTokenAsync(token);
     }
 
     public Task<AuthResponse> ExchangeTokenAsync(TokenRequest request)
@@ -70,7 +71,7 @@ public class AuthMockService : IAuthService
         });
     }
 
-    public async Task<AuthResponse> RefreshTokenAsync(RefreshTokenRequest request)
+    public async Task<AuthResponse> RefreshAccessTokenAsync(RefreshTokenRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.RefreshToken))
             throw new ArgumentException("Missing refresh token");
@@ -78,7 +79,7 @@ public class AuthMockService : IAuthService
         if (request.RefreshToken == "throw-exception-token")
             throw new InvalidOperationException("Mocked backend exception");
 
-        var existing = await _tokenRepo.GetByRefreshTokenAsync(request.RefreshToken);
+        var existing = await _tokenRepo.GetByRefreshTokenByRefreshTokenKeyAsync(request.RefreshToken);
         if (existing == null)
             throw new UnauthorizedAccessException("Invalid refresh token");
 
@@ -92,7 +93,7 @@ public class AuthMockService : IAuthService
             ExpiresAt = DateTime.UtcNow.AddDays(1)
         };
 
-        await _tokenRepo.UpdateAsync(refreshed);
+        await _tokenRepo.UpdateTokenAsync(refreshed);
 
         return new AuthResponse
         {
@@ -129,7 +130,7 @@ public class AuthMockService : IAuthService
 
     public async Task<string> GetActiveRoleAsync()
     {
-        var latest = await _tokenRepo.GetLatestAsync();
+        var latest = await _tokenRepo.GetLatestTokenAsync();
         return latest?.Role ?? "Unknown";
     }
 
@@ -137,17 +138,17 @@ public class AuthMockService : IAuthService
     {
         _activeRole = role;
 
-        var latest = await _tokenRepo.GetLatestAsync();
+        var latest = await _tokenRepo.GetLatestTokenAsync();
         if (latest != null)
         {
             latest.Role = role;
-            await _tokenRepo.UpdateAsync(latest);
+            await _tokenRepo.UpdateTokenAsync(latest);
         }
     }
 
     public async Task<SessionInfo> GetSessionAsync()
     {
-        var token = await _tokenRepo.GetLatestAsync();
+        var token = await _tokenRepo.GetLatestTokenAsync();
 
         return new SessionInfo
         {
@@ -162,7 +163,43 @@ public class AuthMockService : IAuthService
 
     public Task<AuthToken?> GetLatestAsync()
     {
-        return _tokenRepo.GetLatestAsync();
+        return _tokenRepo.GetLatestTokenAsync();
     }
 
+    public Task<User?> GetUserByEmailAsync(string email)
+    {
+        // Return a mock user if the email matches the mock email, otherwise null
+        if (email == _mockEmail)
+        {
+            return Task.FromResult<User?>(new User
+            {
+                Id = _mockUserId,
+                Email = _mockEmail
+            });
+        }
+        return Task.FromResult<User?>(null);
+    }
+
+    public Task<User?> GetUserByIdAsync(Guid userId)
+    {
+        throw new NotImplementedException();
+    }
+
+    Task<(User NewUser, AuthToken Token)> IAuthService.RegisterUserAsync(RegisterUserRequest request)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<User?> GetCurrentUserAsync()
+    {
+        // Return a mock user with EmailVerified = false for testing
+        return Task.FromResult<User?>(new User
+        {
+            Id = _mockUserId,
+            Email = _mockEmail,
+            EmailVerified = false,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        });
+    }
 }
