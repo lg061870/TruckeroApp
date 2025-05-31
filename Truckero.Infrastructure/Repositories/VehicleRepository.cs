@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Truckero.Core.Entities;
 using Truckero.Core.Interfaces.Repositories;
 using Truckero.Infrastructure.Data;
@@ -8,12 +9,12 @@ namespace Truckero.Infrastructure.Repositories;
 public class VehicleRepository : IVehicleRepository
 {
     private readonly AppDbContext _context;
-    private readonly IAuditLogRepository _audit;
+    private readonly ILogger<VehicleRepository> _logger;
 
-    public VehicleRepository(AppDbContext context, IAuditLogRepository audit)
+    public VehicleRepository(AppDbContext context, ILogger<VehicleRepository> logger)
     {
         _context = context;
-        _audit = audit ?? throw new ArgumentNullException(nameof(audit));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public async Task<Vehicle?> GetByIdAsync(Guid id)
@@ -42,16 +43,7 @@ public class VehicleRepository : IVehicleRepository
 
                 if (exists)
                 {
-                    await _audit.LogAsync(new AuditLog
-                    {
-                        UserId = vehicle.DriverProfileId,
-                        Action = "VehicleAddFailed",
-                        TargetType = "Vehicle",
-                        TargetId = Guid.NewGuid(), // not created
-                        Timestamp = DateTime.UtcNow,
-                        Description = "Duplicate license plate"
-                    });
-
+                    _logger.LogWarning("Duplicate license plate '{LicensePlate}' for driver {DriverId}", vehicle.LicensePlate, vehicle.DriverProfileId);
                     throw new InvalidOperationException("This license plate already exists for the current driver.");
                 }
             }
@@ -62,44 +54,18 @@ public class VehicleRepository : IVehicleRepository
 
             if (!vehicleTypeExists)
             {
-                await _audit.LogAsync(new AuditLog
-                {
-                    UserId = vehicle.DriverProfileId,
-                    Action = "VehicleAddFailed",
-                    TargetType = "Vehicle",
-                    TargetId = Guid.NewGuid(),
-                    Timestamp = DateTime.UtcNow,
-                    Description = "Invalid VehicleTypeId"
-                });
-
+                _logger.LogWarning("Invalid VehicleTypeId '{VehicleTypeId}' for driver {DriverId}", vehicle.VehicleTypeId, vehicle.DriverProfileId);
                 throw new InvalidOperationException("Invalid VehicleTypeId specified.");
             }
 
             _context.Vehicles.Add(vehicle);
             await _context.SaveChangesAsync();
 
-            await _audit.LogAsync(new AuditLog
-            {
-                UserId = vehicle.DriverProfileId,
-                Action = "VehicleCreated",
-                TargetType = "Vehicle",
-                TargetId = vehicle.Id,
-                Timestamp = DateTime.UtcNow
-            });
+            _logger.LogInformation("Vehicle {VehicleId} created for driver {DriverId}", vehicle.Id, vehicle.DriverProfileId);
         }
         catch (Exception ex)
         {
-            // Optionally log unexpected errors (infra, db, etc.)
-            await _audit.LogAsync(new AuditLog
-            {
-                UserId = vehicle.DriverProfileId,
-                Action = "VehicleAddException",
-                TargetType = "Vehicle",
-                TargetId = Guid.NewGuid(),
-                Timestamp = DateTime.UtcNow,
-                Description = ex.Message
-            });
-
+            _logger.LogError(ex, "Exception occurred while adding vehicle for driver {DriverId}", vehicle.DriverProfileId);
             throw;
         }
     }
@@ -108,6 +74,8 @@ public class VehicleRepository : IVehicleRepository
     {
         _context.Vehicles.Update(vehicle);
         await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Vehicle {VehicleId} updated for driver {DriverId}", vehicle.Id, vehicle.DriverProfileId);
     }
 
     public async Task DeleteAsync(Guid id)
@@ -117,6 +85,12 @@ public class VehicleRepository : IVehicleRepository
         {
             _context.Vehicles.Remove(vehicle);
             await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Vehicle {VehicleId} deleted for driver {DriverId}", vehicle.Id, vehicle.DriverProfileId);
+        }
+        else
+        {
+            _logger.LogWarning("Attempted to delete vehicle {VehicleId} but it was not found.", id);
         }
     }
 }

@@ -14,10 +14,23 @@ public class DriverProfile
     public User User { get; set; } = null!;
 
     [Required]
+    public string FullName { get; set; } = null!; // <-- NEW
+
+    [Required]
     public string LicenseNumber { get; set; } = null!;
 
     [Required]
     public DateTime LicenseExpiry { get; set; }
+
+    [Required]
+    public string LicenseFrontUrl { get; set; } = null!; // <-- NEW
+
+    [Required]
+    public string LicenseBackUrl { get; set; } = null!; // <-- NEW
+
+    public string? Address { get; set; } // <-- NEW, if needed
+
+    public string? ServiceArea { get; set; } // <-- NEW, if needed
 
     public bool PayoutVerified { get; set; } = false;
     public string? VehicleType { get; set; }

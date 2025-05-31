@@ -3,7 +3,7 @@ using Truckero.Core.Entities;
 using Truckero.Diagnostics.Mocks;
 using Truckero.Infrastructure.Data;
 using Truckero.Infrastructure.Repositories;
-using Xunit;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Truckero.Infrastructure.Tests.Repositories;
 
@@ -21,7 +21,7 @@ public class VehicleRepositoryTests
 
         _dbContext = new AppDbContext(options);
         _fakeAudit = new AuditLogMockRepository();
-        _repo = new VehicleRepository(_dbContext, _fakeAudit);
+        _repo = new VehicleRepository(_dbContext, NullLogger<VehicleRepository>.Instance);
 
         // Seed vehicle type
         var type = new VehicleType

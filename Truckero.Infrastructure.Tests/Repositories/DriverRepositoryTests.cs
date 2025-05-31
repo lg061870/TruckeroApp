@@ -53,8 +53,8 @@ public class DriverRepositoryTests
             LicenseExpiry = DateTime.UtcNow.AddYears(3)
         };
 
-        await _repo.AddAsync(driver);
-        await _repo.SaveChangesAsync();
+        await _repo.AddDriverProfileAsync(driver);
+        await _repo.SaveDriverProfileChangesAsync();
 
         var found = await _dbContext.DriverProfiles.FirstOrDefaultAsync(d => d.UserId == driver.UserId);
         Assert.NotNull(found);

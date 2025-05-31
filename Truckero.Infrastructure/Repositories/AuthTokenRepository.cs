@@ -16,11 +16,12 @@ public class AuthTokenRepository : IAuthTokenRepository
         _dbContext = dbContext;
     }
 
-    public async Task<AuthToken?> GetByAccessTokenByAccessTokenKeyAsync(string accessToken)
+    public async Task<AuthToken?> GetAccessTokenByAccessTokenKeyAsync(string accessToken)
     {
-        return await _dbContext.AuthTokens
+        var result = await _dbContext.AuthTokens
             .Include(t => t.User) // Needed to check EmailVerified
             .FirstOrDefaultAsync(t => t.AccessToken == accessToken);
+        return result;
     }
 
     public async Task<AuthToken?> GetByRefreshTokenByRefreshTokenKeyAsync(string refreshToken)
@@ -43,10 +44,15 @@ public class AuthTokenRepository : IAuthTokenRepository
         }
     }
 
-    public async Task<AuthToken?> GetByTokenByUserIdAsync(Guid userId)
+    public async Task<AuthToken?> GetTokenByUserIdAsync(Guid userId)
     {
         Console.WriteLine($"[Repo] Querying AuthToken for UserId: {userId}");
-        var token = await _dbContext.AuthTokens.FirstOrDefaultAsync(t => t.UserId == userId);
+
+        var token = await _dbContext.AuthTokens
+            .Where(t => t.UserId == userId && t.ExpiresAt > DateTime.UtcNow && t.RevokedAt == null)
+            .OrderByDescending(t => t.IssuedAt)
+            .FirstOrDefaultAsync();
+
         Console.WriteLine($"[Repo] Found Token? {token != null}");
         return token;
     }
@@ -105,19 +111,38 @@ public class AuthTokenRepository : IAuthTokenRepository
             };
         }
 
-        if (token.User == null || !token.User.EmailVerified)
-        {
-            return new TokenValidationResult
-            {
-                Valid = false,
-                Reason = ExceptionCodes.EmailNotVerified
-            };
-        }
-
         return new TokenValidationResult
         {
             Valid = true,
             Reason = null
         };
     }
+
+    public async Task DeleteAllTokensForUserAsync(Guid userId)
+    {
+        var tokens = await _dbContext.AuthTokens
+            .Where(t => t.UserId == userId)
+            .ToListAsync();
+
+        if (tokens.Any())
+        {
+            _dbContext.AuthTokens.RemoveRange(tokens);
+            await _dbContext.SaveChangesAsync();
+        }
+    }
+
+    public async Task RevokeTokensByUserIdAsync(Guid userId)
+    {
+        var tokens = await _dbContext.AuthTokens
+            .Where(t => t.UserId == userId && t.ExpiresAt <= DateTime.UtcNow && t.RevokedAt == null)
+            .ToListAsync();
+
+        foreach (var token in tokens)
+        {
+            token.RevokedAt = DateTime.UtcNow;
+        }
+
+        await _dbContext.SaveChangesAsync();
+    }
+
 }

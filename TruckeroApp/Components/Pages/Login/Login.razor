@@ -1,142 +1,150 @@
 ﻿@page "/login"
 @using Refit
+@using Truckero.Core.DTOs.Auth
+@using TruckeroApp.Components.BottomSheets
 
 @inject IAuthService AuthService
 @inject ITokenStorageService TokenStorage
-@inject IAuthSessionContext SessionContext
+@inject IAuthSessionContext SessionContext 
 @inject NavigationManager Nav
+
 
 <CenterWrapper>
     @if (!showForgotPassword)
     {
-            <!-- 🔐 Login Screen -->
-            <div class="relative h-full w-full p-6">
-                <div class="flex justify-center mb-12 pt-12">
-                    <div class="flex items-center">
-                        <i class="fa-solid fa-truck text-[#FF6B00] text-4xl mr-3"></i>
-                        <h1 class="text-3xl font-bold text-[#1a237e]">TRUCKEO</h1>
-                    </div>
+        <!-- 🔐 Login Screen -->
+        <div class="relative h-full w-full p-6">
+            <div class="flex justify-center mb-12 pt-12">
+                <div class="flex items-center">
+                    <i class="fa-solid fa-truck text-[#FF6B00] text-4xl mr-3"></i>
+                    <h1 class="text-3xl font-bold text-[#1a237e]">TRUCKEO</h1>
                 </div>
+            </div>
 
-                <div class="space-y-6">
-                    <div class="text-center mb-6">
-                        <h2 class="text-2xl font-semibold text-[#1a237e]">Welcome Back!</h2>
-                        <p class="text-gray-500 mt-2">Login to continue</p>
-                    </div>
+            <div class="space-y-6">
+                <div class="text-center mb-6">
+                    <h2 class="text-2xl font-semibold text-[#1a237e]">Welcome Back!</h2>
+                    <p class="text-gray-500 mt-2">Login to continue</p>
+                </div>
 
                 @if (!string.IsNullOrWhiteSpace(alertMessage))
                 {
-                            <div class="mb-4 p-3 bg-yellow-100 border border-yellow-400 text-yellow-800 rounded-lg text-sm text-center">
-                                <i class="fa-solid fa-circle-exclamation mr-2"></i> @alertMessage
-                            </div>
+                    <div class="mb-4 p-3 bg-yellow-100 border border-yellow-400 text-yellow-800 rounded-lg text-sm text-center">
+                        <i class="fa-solid fa-circle-exclamation mr-2"></i> @alertMessage
+                    </div>
                 }
                 @if (!string.IsNullOrWhiteSpace(errorMessage))
                 {
-                            <div class="mb-4 text-sm text-red-600 text-center">@errorMessage</div>
+                    <div class="mb-4 text-sm text-red-600 text-center">@errorMessage</div>
                 }
 
-                    <div class="space-y-4">
-                        <div class="relative">
-                            <input type="text" @bind-value="emailOrPhone" @bind-value:event="oninput"
-                                   placeholder="Email or Phone Number"
-                                   class="w-full px-4 py-3 rounded-xl border @(IsValidEmail(emailOrPhone) ? "border-gray-300" : "border-red-500") focus:border-[#FF6B00] focus:ring-[#FF6B00]"
-                                   @onkeypress="HandleKeyPress" />
-                            <i class="fa-regular fa-envelope absolute right-4 top-4 text-gray-400"></i>
-                        </div>
-
-                        <div class="relative">
-                            <input type="@(isPasswordVisible ? "text" : "password")"
-                                   @bind-value="password"
-                                   @bind-value:event="oninput"
-                                   placeholder="Password"
-                                   class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-[#FF6B00] focus:ring-[#FF6B00]"
-                                   @onkeypress="HandleKeyPress" />
-
-                            <i class="fa-regular @(isPasswordVisible ? "fa-eye-slash" : "fa-eye") absolute right-4 top-4 text-gray-400 cursor-pointer" @onclick="() => isPasswordVisible = !isPasswordVisible"></i>
-                        </div>
-
-                        <div class="flex justify-end">
-                            <a @onclick="() => ToggleForgotPassword(true)" class="text-[#FF6B00] text-sm cursor-pointer">Forgot Password?</a>
-                        </div>
-
-                        <button @onclick="LoginAsync"
-                                class="@GetLoginButtonClasses()"
-                                disabled="@IsLoginDisabled">
-                            @(isLoading ? "Loading..." : "Login")
-                        </button>
-
+                <div class="space-y-4">
+                    <div class="relative">
+                        <input type="text" @bind-value="emailOrPhone" @bind-value:event="oninput"
+                               placeholder="Email or Phone Number"
+                               class="w-full px-4 py-3 rounded-xl border @(IsValidEmail(emailOrPhone) ? "border-gray-300" : "border-red-500") focus:border-[#FF6B00] focus:ring-[#FF6B00]"
+                               @onkeypress="HandleKeyPress" />
+                        <i class="fa-regular fa-envelope absolute right-4 top-4 text-gray-400"></i>
                     </div>
 
-                    <div class="relative my-8">
-                        <div class="absolute inset-0 flex items-center">
-                            <div class="w-full border-t border-gray-300"></div>
-                        </div>
-                        <div class="relative flex justify-center text-sm">
-                            <span class="px-2 bg-gray-50 text-gray-500">Or continue with</span>
-                        </div>
+                    <div class="relative">
+                        <input type="@(isPasswordVisible ? "text" : "password")"
+                               @bind-value="password"
+                               @bind-value:event="oninput"
+                               placeholder="Password"
+                               class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-[#FF6B00] focus:ring-[#FF6B00]"
+                               @onkeypress="HandleKeyPress" />
+
+                        <i class="fa-regular @(isPasswordVisible ? "fa-eye-slash" : "fa-eye") absolute right-4 top-4 text-gray-400 cursor-pointer" @onclick="() => isPasswordVisible = !isPasswordVisible"></i>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4">
-                        <button @onclick="LoginWithGoogleAsync"
-                                class="flex items-center justify-center py-3 px-4 border border-gray-300 rounded-xl hover:bg-gray-50">
-                            <i class="fa-brands fa-google text-xl mr-2"></i> Google
-                        </button>
-                        <button @onclick="LoginWithFacebookAsync"
-                                class="flex items-center justify-center py-3 px-4 border border-gray-300 rounded-xl hover:bg-gray-50">
-                            <i class="fa-brands fa-facebook text-xl mr-2"></i> Facebook
-                        </button>
+                    <div class="flex justify-end">
+                        <a @onclick="() => ToggleForgotPassword(true)" class="text-[#FF6B00] text-sm cursor-pointer">Forgot Password?</a>
                     </div>
 
-                    <div class="text-center mt-8">
-                        <p class="text-gray-600">
-                            Don't have an account?
-                            <a href="@AppRoutes.RoleSwitcher" class="text-[#FF6B00] font-semibold">Sign up</a>
-                        </p>
+                    <button @onclick="LoginAsync"
+                            class="@GetLoginButtonClasses()"
+                            disabled="@IsLoginDisabled">
+                        @(isLoading ? "Loading..." : "Login")
+                    </button>
+
+                </div>
+
+                <div class="relative my-8">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-2 bg-gray-50 text-gray-500">Or continue with</span>
                     </div>
                 </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <button @onclick="LoginWithGoogleAsync"
+                            class="flex items-center justify-center py-3 px-4 border border-gray-300 rounded-xl hover:bg-gray-50">
+                        <i class="fa-brands fa-google text-xl mr-2"></i> Google
+                    </button>
+                    <button @onclick="LoginWithFacebookAsync"
+                            class="flex items-center justify-center py-3 px-4 border border-gray-300 rounded-xl hover:bg-gray-50">
+                        <i class="fa-brands fa-facebook text-xl mr-2"></i> Facebook
+                    </button>
+                </div>
+
+                <div class="text-center mt-8">
+                    <p class="text-gray-600">
+                        Don't have an account?
+                        <a href="@AppRoutes.RoleSwitcher" class="text-[#FF6B00] font-semibold">Sign up</a>
+                    </p>
+                </div>
             </div>
+        </div>
     }
     else
     {
-            <!-- 🔑 Forgot Password Screen -->
-            <div class="p-6 min-h-screen">
-                <div class="flex items-center mb-8">
-                    <button @onclick="() => showForgotPassword = false" class="text-gray-600">
-                        <i class="fa-solid fa-arrow-left text-xl"></i>
-                    </button>
-                    <div class="text-center flex-1 mr-8">
-                        <h2 class="text-xl font-semibold">Forgot Password</h2>
-                    </div>
-                </div>
-
-                <div class="text-center mb-8">
-                    <div class="inline-block p-4 bg-orange-100 rounded-full mb-4">
-                        <i class="fa-solid fa-lock text-3xl text-orange-500"></i>
-                    </div>
-                    <h3 class="text-lg font-medium text-gray-900 mb-2">Password Recovery</h3>
-                    <p class="text-gray-600 text-sm">Enter your email address or phone number. We'll send you a link to reset your password.</p>
-                </div>
-
-                <div class="space-y-4">
-                    <div class="space-y-1">
-                        <input type="text" @bind-value="emailOrPhone" @bind-value:event="oninput"
-                               placeholder="Email or Phone Number"
-                               class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-[#FF6B00] focus:ring-[#FF6B00]" />
-                    @if (!string.IsNullOrWhiteSpace(resetError))
-                    {
-                                <div class="text-sm text-red-600 mt-1">@resetError</div>
-                    }
-                    </div>
-
-                    <button class="@GetResetButtonClasses()"
-                            @onclick="SendResetLink"
-                            disabled="@ShouldDisableResetButton()">
-                        Send Reset Link
-                    </button>
+        <!-- 🔑 Forgot Password Screen -->
+        <div class="p-6 min-h-screen">
+            <div class="flex items-center mb-8">
+                <button @onclick="() => showForgotPassword = false" class="text-gray-600">
+                    <i class="fa-solid fa-arrow-left text-xl"></i>
+                </button>
+                <div class="text-center flex-1 mr-8">
+                    <h2 class="text-xl font-semibold">Forgot Password</h2>
                 </div>
             </div>
+
+            <div class="text-center mb-8">
+                <div class="inline-block p-4 bg-orange-100 rounded-full mb-4">
+                    <i class="fa-solid fa-lock text-3xl text-orange-500"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Password Recovery</h3>
+                <p class="text-gray-600 text-sm">Enter your email address or phone number. We'll send you a link to reset your password.</p>
+            </div>
+
+            <div class="space-y-4">
+                <div class="space-y-1">
+                    <input type="text" @bind-value="emailOrPhone" @bind-value:event="oninput"
+                           placeholder="Email or Phone Number"
+                           class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-[#FF6B00] focus:ring-[#FF6B00]" />
+                    @if (!string.IsNullOrWhiteSpace(resetError))
+                    {
+                        <div class="text-sm text-red-600 mt-1">@resetError</div>
+                    }
+                </div>
+
+                <button class="@GetResetButtonClasses()"
+                        @onclick="SendResetLink"
+                        disabled="@ShouldDisableResetButton()">
+                    Send Reset Link
+                </button>
+            </div>
+        </div>
     }
 </CenterWrapper>
+
+@if (showPasswordResetBottomSheet)
+{
+    <PasswordResetBottomSheet Email="@resetEmailForConfirmation" />
+}
 
 @code {
     [Parameter][SupplyParameterFromQuery(Name = "tokenStatus")] public string? TokenStatus { get; set; }
@@ -160,6 +168,9 @@
         }
     }
 
+    private bool showPasswordResetBottomSheet = false;
+    private string resetEmailForConfirmation = "";
+
     protected override void OnInitialized()
     {
         if (TokenStatus == "expired")
@@ -170,17 +181,32 @@
 
     private async Task LoginAsync()
     {
+        errorMessage = "";
+
         await UiExecutionHelper.SafeExecuteAsync(
             async () =>
             {
                 var response = await AuthService.LoginUserAsync(new AuthLoginRequest { Email = emailOrPhone, Password = password });
+                await TokenStorage.ClearAllAsync(); // Clear any existing tokens before saving new ones
                 await TokenStorage.SaveAccessTokenAsync(response.AccessToken);
                 await TokenStorage.SaveRefreshTokenAsync(response.RefreshToken);
 
-                var session = await AuthService.GetSessionAsync();
-                SessionContext.Set(response.AccessToken, session.AvailableRoles, session.ActiveRole);
+                SessionInfo sessionInfo = new SessionInfo
+                {
+                    TokenValid = response.Success,
+                    UserId = response.UserId,
+                };
 
-                var redirect = session.ActiveRole switch
+                // We need to set the AccessToken in the session context for API Controller authentication
+                SessionContext.SetFromSession(sessionInfo, response.AccessToken);
+
+                var ActiveRole = await AuthService.GetActiveRoleAsync();       // string
+                var AvailableRoles = await AuthService.GetAllRolesAsync();     // List<string>
+
+                // Update session context with available roles, and active role
+                SessionContext.Set(response.AccessToken, AvailableRoles, ActiveRole);
+
+                var redirect = ActiveRole switch
                 {
                     "Customer" => AppRoutes.RequestFreight,
                     "Driver" => AppRoutes.PickupQueue,
@@ -200,7 +226,12 @@
     private async Task SendResetLink()
     {
         await UiExecutionHelper.SafeExecuteAsync(
-            async () => await AuthService.RequestPasswordResetAsync(new PasswordResetRequest { Email = emailOrPhone }),
+            async () =>
+            {
+                await AuthService.RequestPasswordResetAsync(new PasswordResetRequest { Email = emailOrPhone });
+                resetEmailForConfirmation = emailOrPhone;
+                showPasswordResetBottomSheet = true;
+            },
             err => resetError = err,
             msg => successMessage = msg,
             loading => isSending = loading,
@@ -228,11 +259,6 @@
             ? "w-full bg-gray-300 text-white py-3 rounded-lg font-medium cursor-not-allowed"
             : "w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600";
 
-    private bool ShouldDisableLoginButton()
-    {
-        return isLoading || emailOrPhone.Trim().Length < 4 || string.IsNullOrWhiteSpace(password);
-    }
-
     private string GetLoginButtonClasses() =>
         IsLoginDisabled
             ? "w-full bg-gray-300 text-white py-3 rounded-xl font-semibold cursor-not-allowed"
@@ -240,14 +266,12 @@
 
     private async Task LoginWithGoogleAsync()
     {
-        // 🔧 TODO: Integrate Google Sign-In
         Console.WriteLine("Google login clicked");
         await Task.CompletedTask;
     }
 
     private async Task LoginWithFacebookAsync()
     {
-        // 🔧 TODO: Integrate Facebook Login
         Console.WriteLine("Facebook login clicked");
         await Task.CompletedTask;
     }
@@ -258,7 +282,7 @@
         string.IsNullOrWhiteSpace(password) ||
         emailOrPhone.Trim().Length < 4 ||
         password.Trim().Length < 4 ||
-        !IsValidEmail(emailOrPhone); // ← Optional, but recommended
+        !IsValidEmail(emailOrPhone);
 
     private bool IsValidEmail(string input)
     {
@@ -272,5 +296,4 @@
             return false;
         }
     }
-
 }

@@ -72,4 +72,9 @@ public class OnboardingMockService : IOnboardingService
     {
         throw new NotImplementedException();
     }
+
+    public Task<AuthTokenResponse> CompleteDriverOnboardingAsync(DriverProfileRequest request)
+    {
+        throw new NotImplementedException();
+    }
 }

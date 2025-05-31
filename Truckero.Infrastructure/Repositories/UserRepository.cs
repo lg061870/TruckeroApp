@@ -30,6 +30,14 @@ public class UserRepository : IUserRepository
             .FirstOrDefaultAsync(u => u.Id == id);
     }
 
+    public async Task<User?> GetUserByAccessTokenAsync(string accessToken)
+    {
+        return await _context.Users
+            .Include(u => u.AuthTokens)
+            .Where(u => u.AuthTokens.Any(t => t.AccessToken == accessToken && t.RevokedAt == null))
+            .FirstOrDefaultAsync();
+    }
+
     public async Task AddUserAsync(User user)
     {
         await _context.Users.AddAsync(user);
@@ -39,4 +47,11 @@ public class UserRepository : IUserRepository
     {
         await _context.SaveChangesAsync();
     }
+
+    public async Task DeleteUserAsync(User user)
+    {
+        _context.Users.Remove(user);
+        await _context.SaveChangesAsync();
+    }
+
 }

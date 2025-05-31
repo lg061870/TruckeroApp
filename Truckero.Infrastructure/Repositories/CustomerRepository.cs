@@ -29,4 +29,16 @@ public class CustomerRepository : ICustomerRepository
     {
         await _context.SaveChangesAsync();
     }
+
+    public async Task DeleteCustomerProfileChangesAsync(Guid userId)
+    {
+        var profile = await _context.CustomerProfiles
+            .FirstOrDefaultAsync(p => p.UserId == userId);
+
+        if (profile != null)
+        {
+            _context.CustomerProfiles.Remove(profile);
+            await _context.SaveChangesAsync();
+        }
+    }
 }

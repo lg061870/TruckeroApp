@@ -28,18 +28,18 @@ public class DriverRepository : IDriverRepository
             .FirstOrDefaultAsync(dp => dp.UserId == userId);
     }
 
-    public async Task AddAsync(DriverProfile profile)
+    public async Task AddDriverProfileAsync(DriverProfile profile)
     {
         await _context.DriverProfiles.AddAsync(profile);
     }
 
-    public Task UpdateAsync(DriverProfile profile)
+    public Task UpdaDriverProfileteAsync(DriverProfile profile)
     {
         _context.DriverProfiles.Update(profile);
         return Task.CompletedTask;
     }
 
-    public async Task SaveChangesAsync()
+    public async Task SaveDriverProfileChangesAsync()
     {
         await _context.SaveChangesAsync();
     }

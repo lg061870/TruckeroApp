@@ -10,7 +10,7 @@ public class AuthTokenMockApiClientService : IAuthTokenRepository
     private static readonly ConcurrentDictionary<Guid, AuthToken> _mockStore = new();
     private static AuthToken? _latest;
 
-    public Task<AuthToken?> GetByTokenByUserIdAsync(Guid userId)
+    public Task<AuthToken?> GetTokenByUserIdAsync(Guid userId)
         => Task.FromResult(_mockStore.TryGetValue(userId, out var token) ? token : null);
 
     public Task AddTokenAsync(AuthToken token)
@@ -54,12 +54,22 @@ public class AuthTokenMockApiClientService : IAuthTokenRepository
         return Task.CompletedTask;
     }
 
-    public Task<AuthToken?> GetByAccessTokenByAccessTokenKeyAsync(string accessToken)
+    public Task<AuthToken?> GetAccessTokenByAccessTokenKeyAsync(string accessToken)
     {
         throw new NotImplementedException();
     }
 
     public Task<TokenValidationResult> ValidateAccessTokenAsync(string accessToken)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task DeleteAllTokensForUserAsync(Guid userId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task RevokeTokensByUserIdAsync(Guid userId)
     {
         throw new NotImplementedException();
     }

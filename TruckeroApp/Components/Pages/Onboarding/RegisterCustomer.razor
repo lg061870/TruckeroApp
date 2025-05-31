@@ -14,6 +14,7 @@
 @using System.Net
 @using System.Net.Http
 @using TruckeroApp.Components.BottomSheets
+@using System.Text.Json
 
 @inject IOnboardingService OnboardingService
 @inject NavigationManager NavigationManager
@@ -156,8 +157,6 @@
             </p>
         </EditForm>
 
-        @using System.Text.Json
-
         @if (!String.IsNullOrEmpty(ActiveBottomSheet))
         {
             @switch (ActiveBottomSheet)
@@ -202,12 +201,13 @@
                     break;
                 case "email_already_exist":
                     <UserExistsBottomSheet Email="@CustomerProfile.Email"
-                                           OnDismiss="@(() => ActiveBottomSheet = null)" />
+                       OnDismiss="@(() => ActiveBottomSheet = null)"
+                       OnLogin="@(() => NavigationManager.NavigateTo(AppRoutes.Login, forceLoad: true))" />
+
                     break;
                 case "email_confirmation":
                     <EmailConfirmationBottomSheet Email="@CustomerProfile.Email"
-                                                  RegisteredUserId="@RegisteredUserId"
-                                                   />
+                                                  RegisteredUserId="@RegisteredUserId" />
                     break;
             }
         }
@@ -579,9 +579,6 @@
             ActiveBottomSheet = "generic_error";
         }
     }
-
-
-
 
     #endregion
 }

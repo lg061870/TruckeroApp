@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Truckero.Core.DTOs.Auth;
 using Truckero.Core.DTOs.Common;
@@ -24,6 +25,7 @@ public class OnboardingController : ControllerBase
     /// <summary>
     /// Starts the onboarding process (e.g. sends verification code).
     /// </summary>
+    [AllowAnonymous] // Registration start should be open
     [HttpPost("start")]
     public async Task<IActionResult> Start([FromQuery] Guid userId, [FromBody] StartOnboardingRequest request)
     {
@@ -37,6 +39,7 @@ public class OnboardingController : ControllerBase
     /// <summary>
     /// Verifies submitted code (e.g. via SMS or email).
     /// </summary>
+    [AllowAnonymous]
     [HttpPost("verify")]
     public async Task<IActionResult> Verify([FromBody] VerifyCodeRequest request)
     {
@@ -54,6 +57,7 @@ public class OnboardingController : ControllerBase
     /// <summary>
     /// Returns the user's current onboarding progress.
     /// </summary>
+    [Authorize] // Progress is sensitive; lock down
     [HttpGet("progress")]
     public async Task<IActionResult> GetProgress([FromQuery] Guid userId)
     {
@@ -64,6 +68,15 @@ public class OnboardingController : ControllerBase
         return Ok(progress);
     }
 
+    // TODO [Security Upgrade – Phase 2]:
+    // Replace [AllowAnonymous] with custom [AppAuthorize] attribute.
+    // This endpoint will eventually accept JWTs signed by the Truckero mobile app.
+    // The token is generated client-side and validated server-side using RS256 public key cryptography.
+    // Expected Claims: { "scope": "app", "client_id": "truckero-mobile" }
+    // Validation: Use shared public key (JWKS), check audience and scope.
+    // NOTE: This is a temporary auth bypass until full JWT-based access control is enforced platform-wide.
+    //[Authorize] // Onboarding completion should require authentication
+    [AllowAnonymous] // For now, allow unauthenticated access to onboarding completion
     [HttpPost("customer")]
     public async Task<IActionResult> CompleteCustomerOnboarding([FromBody] CustomerOnboardingRequest request)
     {
@@ -94,48 +107,41 @@ public class OnboardingController : ControllerBase
     /// <summary>
     /// Completes onboarding for a driver user.
     /// </summary>
+    [Authorize]
     [HttpPost("driver")]
     public async Task<IActionResult> CompleteDriverOnboarding(
         [FromQuery] Guid userId,
         [FromBody] DriverProfileRequest request)
     {
-        if (userId == Guid.Empty)
-            return BadRequest(new { error = "Missing or invalid userId" });
-
         try
         {
-            var result = await _onboardingService.CompleteDriverOnboardingAsync(request, userId);
-
-            if (result.Success)
-            {
-                return Ok(new { message = result.Message ?? "Driver onboarding complete" });
-            }
-            else
-            {
-                // Return a 400 Bad Request with the specific error message from the operation result
-                return BadRequest(new { error = result.Message ?? "Failed to complete driver onboarding" });
-            }
+            var token = await _onboardingService.CompleteDriverOnboardingAsync(request);
+            return Ok(token);
         }
         catch (InvalidOperationException ex) when (ex.Message.Contains("already exists"))
         {
-            // Return a 409 Conflict for duplicate driver
-            return Conflict(new { error = ex.Message, code = "duplicate_driver" });
+            return Conflict(new { error = ex.Message, code = "duplicate_email" });
+        }
+        catch (OnboardingStepException ex)
+        {
+            return BadRequest(new { error = ex.Message, code = ex.Step });
         }
         catch (InvalidOperationException ex)
         {
-            // Return a 400 Bad Request for validation errors
-            return BadRequest(new { error = ex.Message });
+            return BadRequest(new { error = ex.Message, code = "invalid_operation" });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error completing driver onboarding for userId {UserId}", userId);
-            return StatusCode(500, new { error = "An unexpected error occurred during driver registration." });
+            _logger.LogError(ex, "Error during driver onboarding");
+            return StatusCode(500, new { error = "An unexpected error occurred during registration." });
         }
+
     }
 
     /// <summary>
     /// Sends a new confirmation email to the user.
     /// </summary>
+    [AllowAnonymous] // Email confirmation is usually open (user may be logged out!)
     [HttpPost("send-confirmation-email")]
     public async Task<IActionResult> SendConfirmationEmail([FromQuery] Guid userId)
     {
@@ -144,11 +150,12 @@ public class OnboardingController : ControllerBase
 
         var result = await _onboardingService.SendConfirmationEmailAsync(userId);
         if (result.Success)
-            return Ok(new { message = result.Message });
+            return Ok(new OperationResult { Success = true,  Message = result.Message });
         else
             return BadRequest(new { error = result.Message });
     }
 
+    [AllowAnonymous]
     [HttpPost("confirm-email")]
     public async Task<IActionResult> ConfirmEmail([FromQuery] string token)
     {

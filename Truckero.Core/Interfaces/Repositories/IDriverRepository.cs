@@ -6,9 +6,9 @@ public interface IDriverRepository
 {
     Task<DriverProfile?> GetByUserIdAsync(Guid userId);
     Task<DriverProfile?> GetWithVehiclesAsync(Guid userId);
-    Task AddAsync(DriverProfile profile);
-    Task UpdateAsync(DriverProfile profile);
-    Task SaveChangesAsync();
+    Task AddDriverProfileAsync(DriverProfile profile);
+    Task UpdaDriverProfileteAsync(DriverProfile profile);
+    Task SaveDriverProfileChangesAsync();
 
     // Vehicle subqueries (as driver owns many)
     Task<List<Vehicle>> GetVehiclesAsync(Guid userId);

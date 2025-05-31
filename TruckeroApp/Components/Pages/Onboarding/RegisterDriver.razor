@@ -1,16 +1,27 @@
 ﻿@page "/registerdriver"
 @using Microsoft.AspNetCore.Components
-@using Microsoft.AspNetCore.Components.Routing
 @using Microsoft.AspNetCore.Components.Forms
 @using System.ComponentModel.DataAnnotations
 @using Truckero.Core.DTOs.Auth
+@using Truckero.Core.DataAnnotations
+@using Truckero.Core.Exceptions
 @using TruckeroApp.ServiceClients
 @using Truckero.Core.Interfaces.Services
+@using System.Net
+@using TruckeroApp.Components.BottomSheets
+@using Microsoft.AspNetCore.Components.Routing
+@using Truckero.Core.DTOs.Common
+@using TruckeroApp.Interfaces
+@using TruckeroApp.DebugTools
+@using System.Net.Http
+@using System.Text.Json
 
 @inject IOnboardingService OnboardingService
 @inject NavigationManager NavigationManager
+@inject ITokenStorageService TokenStorage
 
-<div class="h-full text-base-content">
+<CenterWrapper>
+    <div class="h-full text-base-content">
     <div id="app" class="min-h-screen bg-gray-50">
         <div id="registration-screen" class="p-6 min-h-screen">
             <div id="registration-header" class="flex items-center mb-8">
@@ -37,7 +48,7 @@
                 <span class="text-sm text-orange-700">Registering as: <strong>DRIVER</strong></span>
             </div>
 
-            <EditForm EditContext="_editContext" OnValidSubmit="SubmitAsync" id="registration-form" class="space-y-4">
+            <EditForm EditContext="_editContext" OnValidSubmit="SubmitAsync" OnInvalidSubmit="HandleInvalidSubmit" id="registration-form" class="space-y-4">
                 <DataAnnotationsValidator />
                 <ValidationSummary class="text-red-500 text-sm mb-4" />
 
@@ -141,7 +152,6 @@
 
                 <div id="truck-info-section" class="space-y-4 mt-6">
                     <h3 class="text-lg font-medium text-gray-800">Truck Information</h3>
-
                     @if (RegisteredTrucks.Any())
                     {
                         <div id="registered-trucks" class="space-y-3">
@@ -177,7 +187,6 @@
                             }
                         </div>
                     }
-
                     <button type="button" @onclick="AddNewTruck" class="w-full flex items-center justify-center px-4 py-3 bg-orange-50 text-orange-600 rounded-lg border border-orange-200 hover:bg-orange-100">
                         <i class="fa-solid fa-plus mr-2"></i>
                         <span>Add New Truck</span>
@@ -204,7 +213,6 @@
                         <p class="text-xs text-gray-500 mt-1">Must be at least 8 characters long</p>
                         <ValidationMessage For="@(() => Password)" class="text-red-500 text-xs" />
                     </div>
-
                     <div class="space-y-2">
                         <label class="block text-sm font-medium text-gray-700">Confirm Password</label>
                         <div class="relative">
@@ -231,6 +239,7 @@
                 <button type="submit" class="@GetContinueButtonClasses()" disabled="@(!IsFormValid || IsLoading)">
                     @if (IsLoading)
                     {
+                        <span class="inline-block animate-spin mr-2"><i class="fa-solid fa-circle-notch"></i></span>
                         <span>Processing...</span>
                     }
                     else
@@ -263,20 +272,82 @@
                     Already have an account? <span class="text-orange-600 font-medium cursor-pointer" @onclick="NavigateToLogin">Log In</span>
                 </p>
             </EditForm>
+
+            @if (!String.IsNullOrEmpty(ActiveBottomSheet))
+            {
+                @switch (ActiveBottomSheet)
+                {
+                    case "validation_failed":
+                        <ValidationFailedBottomSheet ValidationErrors="@ValidationErrors"
+                                                     OnDismiss="@(() => ActiveBottomSheet = null)" />
+                        break;
+
+                    case "weak_password":
+                        <WeakPasswordBottomSheet OnDismiss="@(() => ActiveBottomSheet = null)" />
+                        break;
+
+                    case "invalid_phone_format":
+                        <PhoneFormatErrorBottomSheet OnDismiss="@(() => ActiveBottomSheet = null)" />
+                        break;
+
+                    case "profile_creation_failed":
+                        <ProfileCreationErrorBottomSheet OnDismiss="@(() => ActiveBottomSheet = null)" />
+                        break;
+
+                    case "progress_save_failed":
+                        <ProgressSaveErrorBottomSheet OnDismiss="@(() => ActiveBottomSheet = null)" />
+                        break;
+
+                    case "auth_register_failed":
+                        <AuthRegisterErrorBottomSheet OnDismiss="@(() => ActiveBottomSheet = null)" />
+                        break;
+
+                    case "failure_send_confirmationemail":
+                        <EmailResendBottomSheet Email="@DriverProfile.Email"
+                                                IsResendingEmail="@IsResendingEmail"
+                                                ResendEmailMessage="@ResendEmailMessage"
+                                                ResendToOriginalEmail="@ResendToOriginalEmailAsync"
+                                                SendToNewEmail="@SendToNewEmailAsync"
+                                                OnDismiss="@(() => ActiveBottomSheet = null)" />
+                        break;
+
+                    case "generic_error":
+                        <GenericErrorBottomSheet Message="@ErrorMessage"
+                                                 OnDismiss="@(() => ActiveBottomSheet = null)" />
+                        break;
+                    case "email_already_exist":
+                        <UserExistsBottomSheet Email="@DriverProfile.Email"
+                           OnDismiss="@(() => ActiveBottomSheet = null)"
+                           OnLogin="@(() => NavigationManager.NavigateTo(AppRoutes.Login, forceLoad: true))" />
+
+                        break;
+                    case "email_confirmation":
+                        <EmailConfirmationBottomSheet Email="@DriverProfile.Email"
+                                                      RegisteredUserId="@RegisteredUserId" />
+                        break;
+                }
+            }
         </div>
     </div>
 </div>
-
+</CenterWrapper>
 
 @code {
     private DriverProfileRequest DriverProfile { get; set; } = new DriverProfileRequest();
     private EditContext? _editContext;
+    private string? ActiveBottomSheet { get; set; }
+    private List<string> ValidationErrors { get; set; } = new();
+    private string ErrorMessage { get; set; } = string.Empty;
+    private Guid RegisteredUserId { get; set; }
+    private string ResendEmailMessage = string.Empty;
+    private bool IsResendingEmail = false;
 
     [Required]
     private string UserId { get; set; } = string.Empty;
 
     [Required]
     [MinLength(8, ErrorMessage = "Password must be at least 8 characters long")]
+    [StrongPassword(ErrorMessage = "Must include upper, lower, digit, and symbol")] // if available
     private string Password { get; set; } = string.Empty;
 
     [Required]
@@ -289,7 +360,6 @@
     private bool ShowPassword { get; set; } = false;
     private bool ShowConfirmPassword { get; set; } = false;
     private bool IsNameMismatch { get; set; } = false;
-
     private string? LicenseFrontUrl { get; set; }
     private string? LicenseBackUrl { get; set; }
 
@@ -323,6 +393,177 @@
         public bool IsVerified { get; set; }
         public string VerificationMessage { get; set; } = string.Empty;
     }
+
+    protected override void OnInitialized()
+    {
+        _editContext = new EditContext(DriverProfile);
+        _editContext.OnFieldChanged += (sender, args) => StateHasChanged();
+    }
+
+    private async Task SubmitAsync()
+    {
+        FormSubmitted = true;
+        ActiveBottomSheet = null;
+        ErrorMessage = string.Empty;
+
+        // Run all field validations
+        if (!(_editContext?.Validate() ?? false) || !AcceptTerms)
+        {
+            ActiveBottomSheet = "validation_failed";
+            return;
+        }
+
+        IsLoading = true;
+
+        try
+        {
+            DriverProfile.Password = Password;
+            DriverProfile.UserId = UserId;
+            DriverProfile.LicenseFrontUrl = LicenseFrontUrl ?? string.Empty;
+            DriverProfile.LicenseBackUrl = LicenseBackUrl ?? string.Empty;
+            DriverProfile.Trucks = RegisteredTrucks.Select(t => new DriverProfileRequest.TruckDto
+            {
+                LicensePlate = t.LicensePlate,
+                Make = t.Make,
+                Model = t.Model,
+                Year = t.Year
+            }).ToList();
+
+            // Simulated onboarding call - adapt for your actual API contract
+            var authTokenResponse = await OnboardingService.CompleteDriverOnboardingAsync(DriverProfile);
+
+            if (authTokenResponse == null)
+            {
+                Console.WriteLine("❌ AuthTokenResponse is null.");
+                ErrorMessage = "Unexpected error: no token received.";
+                ActiveBottomSheet = "generic_error";
+                return;
+            }
+
+            Console.WriteLine($"✅ Token received. Access: {authTokenResponse.AccessToken}, Refresh: {authTokenResponse.RefreshToken}");
+
+            if (string.IsNullOrWhiteSpace(authTokenResponse.AccessToken))
+            {
+                Console.WriteLine("❌ Access token is missing.");
+                ErrorMessage = "Access token was not issued.";
+                ActiveBottomSheet = "generic_error";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(authTokenResponse.RefreshToken))
+            {
+                Console.WriteLine("⚠️ Refresh token is missing.");
+                ErrorMessage = "Refresh token was not issued.";
+                ActiveBottomSheet = "generic_error";
+                return;
+            }
+
+            try
+            {
+                await TokenStorage.SaveAccessTokenAsync(authTokenResponse.AccessToken);
+                await TokenStorage.SaveRefreshTokenAsync(authTokenResponse.RefreshToken);
+                Console.WriteLine("💾 Tokens saved successfully.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Token storage failed: {ex.Message}");
+                ErrorMessage = "Failed to store login session.";
+                ActiveBottomSheet = "generic_error";
+                return;
+            }
+
+            // 🎉 Show confirmation
+            RegisteredUserId = authTokenResponse.UserId;
+            ActiveBottomSheet = "email_confirmation";
+        }
+        catch (OnboardingClientValidationException ex)
+        {
+            ValidationErrors = ex.Errors;
+            Console.WriteLine($"❌ Validation failed with {ValidationErrors.Count} error(s).");
+            ActiveBottomSheet = "validation_failed";
+        }
+        catch (OnboardingClientException ex)
+        {
+            ActiveBottomSheet = ex.StepCode;
+
+            // Optionally assign structured error content
+            if (ActiveBottomSheet == "generic_error")
+                ErrorMessage = ex.Message;
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Conflict)
+        {
+            Console.WriteLine($"⚠️ Conflict: {ex.Message}");
+            ActiveBottomSheet = "user_exists";
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine($"❌ HTTP Error: {ex.StatusCode}, {ex.Message}");
+            ErrorMessage = $"Server error: {ex.Message}";
+            ActiveBottomSheet = "generic_error";
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Unexpected error: {ex.Message}");
+            ErrorMessage = "An unknown error occurred during registration.";
+            ActiveBottomSheet = "generic_error";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void HandleInvalidSubmit(EditContext context)
+    {
+        ValidationErrors = context
+            .GetValidationMessages()
+            .Take(5)
+            .ToList();
+
+        ActiveBottomSheet = "validation_failed";
+    }
+
+    private void NavigateBack() => NavigationManager.NavigateTo("/register");
+    private void NavigateToLogin() => NavigationManager.NavigateTo("/login");
+    private void TogglePasswordVisibility() => ShowPassword = !ShowPassword;
+    private void ToggleConfirmPasswordVisibility() => ShowConfirmPassword = !ShowConfirmPassword;
+
+    private async Task UploadLicenseFront()
+    {
+        IsLoading = true;
+        await Task.Delay(1000);
+        LicenseFrontUrl = "https://storage.googleapis.com/uxpilot-auth.appspot.com/e3957fab62-5c352241b3435cd72397.png";
+        IsLoading = false;
+    }
+
+    private async Task UploadLicenseBack()
+    {
+        IsLoading = true;
+        await Task.Delay(1000);
+        LicenseBackUrl = "https://storage.googleapis.com/uxpilot-auth.appspot.com/186d45ce04-753aac84a2d2ecbf2640.png";
+        IsLoading = false;
+    }
+
+    private void AddNewTruck()
+    {
+        RegisteredTrucks.Add(new TruckInfo
+        {
+            LicensePlate = "NEW-TRUCK",
+            Make = "New",
+            Model = "Truck",
+            Year = DateTime.Now.Year.ToString(),
+            IsVerified = false,
+            VerificationMessage = "Pending verification"
+        });
+    }
+
+    private void EditTruck(TruckInfo truck) { }
+    private void RemoveTruck(TruckInfo truck) => RegisteredTrucks.Remove(truck);
+    private void SetServiceAreas() => NavigationManager.NavigateTo("/registerdriver/serviceareas");
+    private void ShowTermsOfService() { /* TODO: Show modal or navigate to page */ }
+    private void ShowPrivacyPolicy() { /* TODO: Show modal or navigate to page */ }
+    private void SignInWithGoogle() { /* TODO: Implement */ }
+    private void SignInWithFacebook() { /* TODO: Implement */ }
 
     private bool IsFormValid =>
         IsTextValid(DriverProfile.FullName) &&
@@ -360,89 +601,105 @@
             ? "w-full bg-orange-300 text-white py-3 rounded-lg font-medium cursor-not-allowed mt-6"
             : "w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600 mt-6";
 
-    protected override void OnInitialized()
+    #region BottomSheets Methods
+
+    private Task ReportToSupport(MouseEventArgs args)
     {
-        _editContext = new EditContext(DriverProfile);
-        _editContext.OnFieldChanged += (sender, args) => StateHasChanged();
+        // TODO: Implement support reporting — open chat, pre-fill email, or submit error log
+        throw new NotImplementedException();
     }
 
-    private async Task SubmitAsync()
+    private async Task ResendToOriginalEmailAsync()
     {
-        FormSubmitted = true;
-
-        if (!AcceptTerms)
-            return;
-
-        IsLoading = true;
-
+        IsResendingEmail = true;
+        ResendEmailMessage = string.Empty;
         try
         {
-            DriverProfile.Password = Password;
-            DriverProfile.UserId = UserId;
-            DriverProfile.LicenseFrontUrl = LicenseFrontUrl ?? string.Empty;
-            DriverProfile.LicenseBackUrl = LicenseBackUrl ?? string.Empty;
-
-            DriverProfile.Trucks = RegisteredTrucks.Select(t => new DriverProfileRequest.TruckDto
-                {
-                    LicensePlate = t.LicensePlate,
-                    Make = t.Make,
-                    Model = t.Model,
-                    Year = t.Year
-                }).ToList();
-
-            await OnboardingService.CompleteDriverOnboardingAsync(DriverProfile, Guid.Empty);
-
-            NavigationManager.NavigateTo("/registerdriver/confirmation");
+            var result = await OnboardingService.SendConfirmationEmailAsync(RegisteredUserId);
+            ResendEmailMessage = result.Success
+                ? "Confirmation email sent. Please check your inbox."
+                : result.Message ?? "Failed to resend confirmation email.";
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error submitting driver profile: {ex.Message}");
+            ResendEmailMessage = $"Error: {ex.Message}";
         }
         finally
         {
-            IsLoading = false;
+            IsResendingEmail = false;
         }
     }
 
-    private void NavigateBack() => NavigationManager.NavigateTo("/register");
-    private void NavigateToLogin() => NavigationManager.NavigateTo("/login");
-    private void TogglePasswordVisibility() => ShowPassword = !ShowPassword;
-    private void ToggleConfirmPasswordVisibility() => ShowConfirmPassword = !ShowConfirmPassword;
-
-    private async Task UploadLicenseFront()
+    private async Task SendToNewEmailAsync(string newEmail)
     {
-        IsLoading = true;
-        await Task.Delay(1000); // Simulate upload
-        LicenseFrontUrl = "https://storage.googleapis.com/uxpilot-auth.appspot.com/e3957fab62-5c352241b3435cd72397.png";
-        IsLoading = false;
+
+        var result = await OnboardingService.SendConfirmationEmailAsync(RegisteredUserId);
+
+        ResendEmailMessage = result.Message;
+        IsResendingEmail = false;
+
+        if (!result.Success)
+        {
+            throw new Exception("Failed to send confirmation email.");
+        }
     }
 
-    private async Task UploadLicenseBack()
+    private async Task CheckIfCustomerWasCreatedAsync(string email)
     {
-        IsLoading = true;
-        await Task.Delay(1000);
-        LicenseBackUrl = "https://storage.googleapis.com/uxpilot-auth.appspot.com/186d45ce04-753aac84a2d2ecbf2640.png";
-        IsLoading = false;
-    }
+        try
+        {
+            var result = await OnboardingService.VerifyIfOperationSuccessfulAsync(email);
 
-    private void AddNewTruck()
-    {
-        RegisteredTrucks.Add(new TruckInfo
+            if (result.UserFound && result.ProfileFound && result.TokenFound)
             {
-                LicensePlate = "NEW-TRUCK",
-                Make = "New",
-                Model = "Truck",
-                Year = DateTime.Now.Year.ToString(),
-                IsVerified = false,
-                VerificationMessage = "Pending verification"
-            });
+                RegisteredUserId = result.UserId ?? Guid.Empty;
+
+                // 🔐 Check if token is already stored
+                var accessToken = await TokenStorage.GetAccessTokenAsync();
+                if (string.IsNullOrWhiteSpace(accessToken))
+                {
+                    // 🔁 Try to resend confirmation email (we lost this earlier)
+                    var sendResult = await OnboardingService.SendConfirmationEmailAsync(RegisteredUserId);
+
+                    if (sendResult.Success)
+                    {
+                        // ✅ Email re-sent; prompt user to check
+                        ActiveBottomSheet = "email_confirmation"; // this is the correct bottomsheet for that case
+                    }
+                    else
+                    {
+                        // ❌ Failed to resend
+                        ErrorMessage = sendResult.Message ?? "Failed to resend confirmation email.";
+                        ActiveBottomSheet = "failure_send_confirmationemail";
+                    }
+                }
+                else
+                {
+                    // ✅ All confirmed and token already present
+                    NavigationManager.NavigateTo("/onboarding/success");
+                }
+            }
+            else if (result.UserFound && !result.ProfileFound)
+            {
+                ActiveBottomSheet = "profile_creation_failed";
+            }
+            else if (result.UserFound && !result.TokenFound)
+            {
+                ActiveBottomSheet = "auth_register_failed";
+            }
+            else
+            {
+                ErrorMessage = "We couldn’t verify your registration. Please try again.";
+                ActiveBottomSheet = "generic_error";
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Verification Error] {ex.Message}");
+            ErrorMessage = "A system error occurred during verification.";
+            ActiveBottomSheet = "generic_error";
+        }
     }
 
-    private void EditTruck(TruckInfo truck) { }
-    private void RemoveTruck(TruckInfo truck) => RegisteredTrucks.Remove(truck);
-    private void SetServiceAreas() => NavigationManager.NavigateTo("/registerdriver/serviceareas");
-    private void ShowTermsOfService() { }
-    private void ShowPrivacyPolicy() { }
-    private void SignInWithGoogle() { }
-    private void SignInWithFacebook() { }
+    #endregion
 }

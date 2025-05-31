@@ -10,4 +10,11 @@ public class ConfirmationToken
     public bool Used { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UsedAt { get; set; }
+    public required ConfirmationTokenType Type { get; set; } // e.g., "EmailConfirmation", "PasswordReset"
+}
+
+public enum ConfirmationTokenType
+{
+    EmailConfirmation,
+    PasswordReset
 }

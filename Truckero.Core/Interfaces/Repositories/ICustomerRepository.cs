@@ -7,4 +7,5 @@ public interface ICustomerRepository
     Task<CustomerProfile?> GetCustomerProfileByUserIdAsync(Guid userId);
     Task AddCustomerProfileAsync(CustomerProfile profile);
     Task SaveCustomerProfileChangesAsync();
+    Task DeleteCustomerProfileChangesAsync(Guid UserId);
 }

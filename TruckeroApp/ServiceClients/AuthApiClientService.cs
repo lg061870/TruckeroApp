@@ -1,8 +1,12 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Truckero.Core.DTOs.Auth;
 using Truckero.Core.Entities;
 using Truckero.Core.Interfaces.Services;
+using TruckeroApp.Interfaces;
+using TruckeroApp.ServiceClients.ApiHelpers;
 
 namespace TruckeroApp.ServiceClients;
 
@@ -12,11 +16,15 @@ namespace TruckeroApp.ServiceClients;
 public class AuthApiClientService : IAuthService
 {
     private readonly HttpClient _http;
+    private readonly IAuthSessionContext _session;
 
-    public AuthApiClientService(HttpClient http)
+    public AuthApiClientService(HttpClient http, IAuthSessionContext session)
     {
         _http = http;
+        _session = session;
     }
+
+    // --- Unauthenticated methods (no session token needed) ---
 
     public async Task<AuthResponse> LoginUserAsync(AuthLoginRequest request)
     {
@@ -37,7 +45,6 @@ public class AuthApiClientService : IAuthService
         if (authResponse == null)
             throw new InvalidOperationException("Empty register response");
 
-        // You’ll need to map or retrieve the `User` object (if it's not included in the response)
         var user = new User
         {
             Id = authResponse.UserId,
@@ -60,97 +67,146 @@ public class AuthApiClientService : IAuthService
         return (user, token);
     }
 
+    // --- Authenticated methods (use session token) ---
+
+    private string RequireAccessToken()
+        => _session.AccessToken ?? throw new UnauthorizedAccessException("No access token present in session.");
 
     public async Task LogoutUserAsync(Guid userId)
     {
-        await _http.PostAsJsonAsync("auth/logout", userId);
+        var envelope = AuthenticatedEnvelope.Create(RequireAccessToken(), _http, HttpMethod.Post, "auth/logout", userId);
+        await envelope.SendAsync();
     }
 
     public async Task<AuthResponse> ExchangeTokenAsync(TokenRequest request)
     {
-        var response = await _http.PostAsJsonAsync("auth/exchange", request);
+        var envelope = AuthenticatedEnvelope.Create(RequireAccessToken(), _http, HttpMethod.Post, "auth/exchange", request);
+        var response = await envelope.SendAsync<HttpResponseMessage>();
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<AuthResponse>() ?? throw new InvalidOperationException("Exchange failed");
     }
 
     public async Task<AuthResponse> RefreshAccessTokenAsync(RefreshTokenRequest request)
     {
-        var response = await _http.PostAsJsonAsync("auth/refresh", request);
+        var envelope = AuthenticatedEnvelope.Create(RequireAccessToken(), _http, HttpMethod.Post, "auth/refresh", request);
+        var response = await envelope.SendAsync<HttpResponseMessage>();
         if (!response.IsSuccessStatusCode)
             throw new UnauthorizedAccessException("Refresh failed");
-
         return await response.Content.ReadFromJsonAsync<AuthResponse>() ?? throw new InvalidOperationException("Empty refresh response");
     }
 
     public async Task<bool> ValidateTokenAsync(string token)
     {
-        var response = await _http.GetAsync($"auth/validate?accessToken={token}");
+        var endpoint = $"auth/validate?accessToken={token}";
+        var envelope = AuthenticatedEnvelope.Create(RequireAccessToken(), _http, HttpMethod.Get, endpoint);
+        var response = await envelope.SendAsync<HttpResponseMessage>();
         return response.IsSuccessStatusCode;
     }
 
     public async Task RequestPasswordResetAsync(PasswordResetRequest request)
     {
-        var response = await _http.PostAsJsonAsync("auth/password/request-reset", request);
+        var envelope = AuthenticatedEnvelope.Create(RequireAccessToken(), _http, HttpMethod.Post, "auth/password/request-reset", request);
+        var response = await envelope.SendAsync<HttpResponseMessage>();
         response.EnsureSuccessStatusCode();
     }
 
     public async Task ConfirmPasswordResetAsync(PasswordResetConfirmRequest request)
     {
-        var response = await _http.PostAsJsonAsync("auth/password/confirm-reset", request);
+        var envelope = AuthenticatedEnvelope.Create(RequireAccessToken(), _http, HttpMethod.Post, "auth/password/confirm-reset", request);
+        var response = await envelope.SendAsync<HttpResponseMessage>();
         response.EnsureSuccessStatusCode();
     }
 
     public async Task<AuthToken?> GetLatestAsync()
     {
-        return await _http.GetFromJsonAsync<AuthToken>("auth/token/latest");
+        var envelope = AuthenticatedEnvelope.Create(RequireAccessToken(), _http, HttpMethod.Get, "auth/token/latest");
+        return await envelope.SendAsync<AuthToken>();
     }
 
     public async Task<List<string>> GetAllRolesAsync()
     {
-        return await _http.GetFromJsonAsync<List<string>>("auth/role/all") ?? new();
+        var envelope = AuthenticatedEnvelope.Create(RequireAccessToken(), _http, HttpMethod.Get, "auth/role/all");
+        return await envelope.SendAsync<List<string>>() ?? new();
     }
 
     public async Task SetActiveRoleAsync(string role)
     {
-        var response = await _http.PostAsJsonAsync("auth/role/set", role);
+        var envelope = AuthenticatedEnvelope.Create(RequireAccessToken(), _http, HttpMethod.Post, "auth/role/set", role);
+        var response = await envelope.SendAsync<HttpResponseMessage>();
         response.EnsureSuccessStatusCode();
     }
 
     public async Task<SessionInfo> GetSessionAsync()
     {
-        return await _http.GetFromJsonAsync<SessionInfo>("auth/session") ?? new SessionInfo();
+        var envelope = AuthenticatedEnvelope.Create(RequireAccessToken(), _http, HttpMethod.Get, "auth/session");
+        return await envelope.SendAsync<SessionInfo>() ?? new SessionInfo();
     }
 
     public async Task<string> GetActiveRoleAsync()
     {
-        var role = await _http.GetStringAsync("auth/role/active");
+        var envelope = AuthenticatedEnvelope.Create(RequireAccessToken(), _http, HttpMethod.Get, "auth/role/active");
+        var response = await envelope.SendAsync<HttpResponseMessage>();
+
+        var role = await response.Content.ReadFromJsonAsync<string>(); // ✅ Fix: parse JSON string
+
         return string.IsNullOrWhiteSpace(role) ? "Unknown" : role;
     }
 
+
     public async Task<User?> GetUserByEmailAsync(string email)
     {
-        var response = await _http.GetAsync($"auth/user/by-email?email={Uri.EscapeDataString(email)}");
-
+        var endpoint = $"auth/user/by-email?email={Uri.EscapeDataString(email)}";
+        var envelope = AuthenticatedEnvelope.Create(RequireAccessToken(), _http, HttpMethod.Get, endpoint);
+        var response = await envelope.SendAsync<HttpResponseMessage>();
         if (!response.IsSuccessStatusCode)
             return null;
-
         return await response.Content.ReadFromJsonAsync<User>();
     }
 
     public async Task<User?> GetUserByIdAsync(Guid userId)
     {
-        return await _http.GetFromJsonAsync<User?>($"auth/user/by-id?userId={userId}");
+        var endpoint = $"auth/user/by-id?userId={userId}";
+        var envelope = AuthenticatedEnvelope.Create(RequireAccessToken(), _http, HttpMethod.Get, endpoint);
+        return await envelope.SendAsync<User>();
     }
 
     public async Task<User?> GetCurrentUserAsync()
     {
         try
         {
-            return await _http.GetFromJsonAsync<User?>("auth/user/me");
+            var envelope = AuthenticatedEnvelope.Create(RequireAccessToken(), _http, HttpMethod.Get, "auth/user/me");
+            return await envelope.SendAsync<User>();
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
             return null;
         }
     }
+
+    public async Task<AuthResponse> LoginToDeleteAccountAsync(string email, string password)
+    {
+        var payload = new { email, password };
+        var envelope = AuthenticatedEnvelope.Create(RequireAccessToken(), _http, HttpMethod.Post, "/auth/login-delete", payload);
+        var response = await envelope.SendAsync<HttpResponseMessage>();
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<AuthResponse>()
+               ?? throw new InvalidOperationException("No response from login-delete.");
+    }
+
+    public async Task<User?> GetUserByAccessToken(string accessToken)
+    {
+        var url = $"auth/user/by-access-token?token={Uri.EscapeDataString(accessToken)}";
+        var envelope = AuthenticatedEnvelope.Create(RequireAccessToken(), _http, HttpMethod.Get, url);
+        var response = await envelope.SendAsync<HttpResponseMessage>();
+        if (!response.IsSuccessStatusCode)
+            return null;
+        return await response.Content.ReadFromJsonAsync<User>();
+    }
+
+    private readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
 }

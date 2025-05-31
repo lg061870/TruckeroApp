@@ -6,16 +6,17 @@ namespace Truckero.Core.Interfaces;
 
 public interface IAuthTokenRepository
 {
-    Task<AuthToken?> GetByTokenByUserIdAsync(Guid userId);
-    Task<AuthToken?> GetByAccessTokenByAccessTokenKeyAsync(string acessTokenKey); // already there
+    Task<AuthToken?> GetTokenByUserIdAsync(Guid userId);
+    Task<AuthToken?> GetAccessTokenByAccessTokenKeyAsync(string acessTokenKey); // already there
     Task<AuthToken?> GetByRefreshTokenByRefreshTokenKeyAsync(string refreshTokenKey);
     Task<AuthToken?> GetLatestTokenAsync();
     Task AddTokenAsync(AuthToken token);
     Task UpdateTokenAsync(AuthToken token);
     Task DeleteTokenAsync(AuthToken token);
     Task RevokeRefreshTokenAsync(string refreshToken);
+    Task RevokeTokensByUserIdAsync(Guid userId);
 
-    // 🆕 Add this:
     Task<TokenValidationResult> ValidateAccessTokenAsync(string accessToken);
+    Task DeleteAllTokensForUserAsync(Guid userId);
 }
 

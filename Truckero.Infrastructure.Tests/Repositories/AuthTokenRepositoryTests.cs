@@ -50,7 +50,7 @@ public class AuthTokenRepositoryTests
             RefreshToken = "old-token",
             AccessToken = "old-access",
             IssuedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddDays(1)
+            ExpiresAt = DateTime.UtcNow.AddDays(7)
         };
 
         await _repo.AddTokenAsync(token);
@@ -71,7 +71,7 @@ public class AuthTokenRepositoryTests
             RefreshToken = "del-token",
             AccessToken = "del-access",
             IssuedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddDays(1)
+            ExpiresAt = DateTime.UtcNow.AddDays(7)
         };
 
         await _repo.AddTokenAsync(token);
@@ -91,12 +91,12 @@ public class AuthTokenRepositoryTests
             RefreshToken = "uid-token",
             AccessToken = "uid-access",
             IssuedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddDays(1)
+            ExpiresAt = DateTime.UtcNow.AddDays(7)
         };
 
         await _repo.AddTokenAsync(token);
 
-        var result = await _repo.GetByTokenByUserIdAsync(userId);
+        var result = await _repo.GetTokenByUserIdAsync(userId);
         Assert.NotNull(result);
         Assert.Equal(userId, result!.UserId);
     }

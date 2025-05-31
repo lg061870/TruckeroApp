@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Truckero.Core.Interfaces;
 
 namespace Truckero.API.Controllers;
@@ -6,6 +7,7 @@ namespace Truckero.API.Controllers;
 [ApiController]
 [Route("tokens")]
 [Produces("application/json")]
+[Authorize] // 🔒 Require authentication for all endpoints
 public class AuthTokenController : ControllerBase
 {
     private readonly IAuthTokenRepository _tokenRepo;
@@ -15,16 +17,15 @@ public class AuthTokenController : ControllerBase
         _tokenRepo = tokenRepo;
     }
 
+
     [HttpGet("validate")]
     public async Task<IActionResult> ValidateToken([FromQuery] string token)
     {
-        var authToken = await _tokenRepo.GetByAccessTokenByAccessTokenKeyAsync(token);
+        var authToken = await _tokenRepo.GetAccessTokenByAccessTokenKeyAsync(token);
         if (authToken == null)
             return Ok(new { valid = false, reason = "accesstoken_not_found" });
         if (authToken.ExpiresAt < DateTime.UtcNow)
             return Ok(new { valid = false, reason = "accesstoken_expired" });
-        if (authToken.User?.EmailVerified != true)
-            return Ok(new { valid = false, reason = "email_not_verified" });
 
         return Ok(new { valid = true });
     }
@@ -32,7 +33,7 @@ public class AuthTokenController : ControllerBase
     [HttpGet("user/{userId}")]
     public async Task<IActionResult> GetByUserId(Guid userId)
     {
-        var token = await _tokenRepo.GetByTokenByUserIdAsync(userId);
+        var token = await _tokenRepo.GetTokenByUserIdAsync(userId);
         return token is null ? NotFound() : Ok(token);
     }
 

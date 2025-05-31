@@ -30,7 +30,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Truckero.Core\Truckero.Core.csproj" />
+	  <ProjectReference Include="..\Truckero.Core\Truckero.Core.csproj" />
   </ItemGroup>
 
 </Project>

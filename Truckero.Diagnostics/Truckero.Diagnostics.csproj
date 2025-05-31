@@ -1,27 +1,27 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <Folder Include="DebugTools\" />
-    <Folder Include="Diagnostics\" />
-    <Folder Include="Middleware\" />
-    <Folder Include="Mocks\APIControllers\" />
-    <Folder Include="TestData\" />
-  </ItemGroup>
+	<ItemGroup>
+		<Folder Include="DebugTools\" />
+		<Folder Include="Diagnostics\" />
+		<Folder Include="Middleware\" />
+		<Folder Include="Mocks\APIControllers\" />
+		<Folder Include="TestData\" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.5" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.5" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.5" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.5" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Truckero.Core\Truckero.Core.csproj" />
-    <ProjectReference Include="..\Truckero.Infrastructure\Truckero.Infrastructure.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Truckero.Core\Truckero.Core.csproj" />
+		<ProjectReference Include="..\Truckero.Infrastructure\Truckero.Infrastructure.csproj" />
+	</ItemGroup>
 
 </Project>

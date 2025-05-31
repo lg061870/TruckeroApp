@@ -11,7 +11,8 @@ public interface IOnboardingService
     Task<bool> VerifyCodeAsync(VerifyCodeRequest request, Guid userId);
     Task<OnboardingProgressResponse> GetProgressAsync(Guid userId);
 
-    Task<OperationResult> CompleteDriverOnboardingAsync(DriverProfileRequest request, Guid userId);
+    Task<AuthTokenResponse> CompleteDriverOnboardingAsync(DriverProfileRequest request);
+
     Task<AuthTokenResponse> CompleteCustomerOnboardingAsync(CustomerOnboardingRequest request);
     Task<OnboardingVerificationResult> VerifyIfOperationSuccessfulAsync(string email);
     Task<OperationResult> SendConfirmationEmailAsync(Guid userId);

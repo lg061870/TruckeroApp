@@ -38,7 +38,7 @@ public class AuthMockService : IAuthService
             RefreshToken = _mockRefreshToken,
             Role = _activeRole,
             IssuedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddDays(1)
+            ExpiresAt = DateTime.UtcNow.AddDays(7)
         };
 
         await _tokenRepo.AddTokenAsync(token);
@@ -57,7 +57,7 @@ public class AuthMockService : IAuthService
 
     public async Task LogoutUserAsync(Guid userId)
     {
-        var token = await _tokenRepo.GetByTokenByUserIdAsync(userId);
+        var token = await _tokenRepo.GetTokenByUserIdAsync(userId);
         if (token != null)
             await _tokenRepo.DeleteTokenAsync(token);
     }
@@ -90,7 +90,7 @@ public class AuthMockService : IAuthService
             RefreshToken = "refreshed.refresh.token",
             Role = existing.Role,
             IssuedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddDays(1)
+            ExpiresAt = DateTime.UtcNow.AddDays(7)
         };
 
         await _tokenRepo.UpdateTokenAsync(refreshed);
@@ -201,5 +201,20 @@ public class AuthMockService : IAuthService
             IsActive = true,
             CreatedAt = DateTime.UtcNow
         });
+    }
+
+    public Task<AuthResponse> LoginToDeleteAccountAsync(string email, string password)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<User?> GetUserByTokenAsync(string accessToken, string? refreshToken = null)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<User?> GetUserByAccessToken(string accessToken)
+    {
+        throw new NotImplementedException();
     }
 }

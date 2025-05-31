@@ -73,13 +73,13 @@ public static class StartupTestPaths
             RefreshToken = mockRefreshToken,
             Role = role.ToString(),
             IssuedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddDays(1)
+            ExpiresAt = DateTime.UtcNow.AddDays(7)
         };
 
         await tokenRepo.AddTokenAsync(tokenEntry);
 
 #if DEBUG
-        var confirm = await tokenRepo.GetByTokenByUserIdAsync(userId);
+        var confirm = await tokenRepo.GetTokenByUserIdAsync(userId);
         Console.WriteLine($"[TEST] ValidToken created. Role persisted for user: {confirm?.Role}");
 #endif
     }

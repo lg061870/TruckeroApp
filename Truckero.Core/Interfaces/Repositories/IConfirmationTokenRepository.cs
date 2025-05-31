@@ -6,9 +6,12 @@ namespace Truckero.Core.Interfaces.Repositories
 {
     public interface IConfirmationTokenRepository
     {
-        Task AddAsync(ConfirmationToken token);
-        Task<ConfirmationToken?> GetByTokenAsync(string token);
-        Task UpdateAsync(ConfirmationToken token);
-        Task SaveChangesAsync();
+        Task AddConfirmationTokenAsync(ConfirmationToken token);
+        Task<ConfirmationToken?> GetConfirmationTokenByTokenAndTypeAsync(string token, ConfirmationTokenType type);
+        Task UpdateConfirmationTokenAsync(ConfirmationToken token);
+        Task SaveConfirmationTokenChangesAsync();
+        Task<List<ConfirmationToken>> GetUnusedTokensForUserAsync(Guid userId, ConfirmationTokenType type, Guid excludeTokenId);
+        Task UpdateConfirmationTokensAsync(IEnumerable<ConfirmationToken> tokens);
+
     }
 }

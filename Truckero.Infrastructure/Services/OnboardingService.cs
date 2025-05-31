@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using System.Net;
 using Truckero.Core.DTOs.Auth;
 using Truckero.Core.DTOs.Common;
 using Truckero.Core.DTOs.Onboarding;
@@ -9,6 +10,7 @@ using Truckero.Core.Interfaces;
 using Truckero.Core.Interfaces.Repositories;
 using Truckero.Core.Interfaces.Services;
 using Truckero.Infrastructure.Data;
+using Truckero.Infrastructure.Repositories;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Truckero.Infrastructure.Services;
@@ -23,6 +25,7 @@ public class OnboardingService : IOnboardingService
     private readonly AppDbContext _dbContext;
     private readonly IConfirmationTokenRepository _confirmationTokenRepo;
     private readonly IEmailService _emailService;
+    private readonly IDriverRepository _driverRepo;
 
     public OnboardingService(
         ICustomerRepository customerRepo,
@@ -32,7 +35,8 @@ public class OnboardingService : IOnboardingService
         IHashService hashService,
         AppDbContext dbContext,
         IConfirmationTokenRepository confirmationTokenRepo,
-        IEmailService emailService) // <-- Add this
+        IEmailService emailService,
+        IDriverRepository driverRepo)
     {
         _customerRepo = customerRepo;
         _progressRepo = progressRepo;
@@ -41,7 +45,8 @@ public class OnboardingService : IOnboardingService
         _hashService = hashService;
         _dbContext = dbContext;
         _confirmationTokenRepo = confirmationTokenRepo;
-        _emailService = emailService; // <-- Add this
+        _emailService = emailService;
+        _driverRepo = driverRepo;
     }
 
     // --- CompleteCustomerOnboardingAsync ---
@@ -83,7 +88,6 @@ public class OnboardingService : IOnboardingService
                     Completed = false,
                     LastUpdated = DateTime.UtcNow
                 };
-
                 await _progressRepo.AddOrUpdateAsync(progress);
 
                 var confirmationToken = new ConfirmationToken
@@ -92,10 +96,11 @@ public class OnboardingService : IOnboardingService
                     UserId = user.Id,
                     Token = Guid.NewGuid().ToString(),
                     Used = false,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    Type = ConfirmationTokenType.EmailConfirmation
                 };
 
-                await _confirmationTokenRepo.AddAsync(confirmationToken);
+                await _confirmationTokenRepo.AddConfirmationTokenAsync(confirmationToken);
 
                 // Perform a single SaveChanges call
                 await _dbContext.SaveChangesAsync();
@@ -133,6 +138,114 @@ public class OnboardingService : IOnboardingService
         });
     }
 
+    public async Task<AuthTokenResponse> CompleteDriverOnboardingAsync(DriverProfileRequest request)
+    {
+        Validator.ValidateObject(request, new ValidationContext(request), validateAllProperties: true);
+
+        var strategy = _dbContext.Database.CreateExecutionStrategy();
+
+        return await strategy.ExecuteAsync(async () =>
+        {
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync();
+
+            try
+            {
+                var (user, token) = await _authService.RegisterUserAsync(new RegisterUserRequest
+                {
+                    Email = request.Email,
+                    Password = request.Password,
+                    Role = "Driver",
+                    PhoneNumber = request.PhoneNumber
+                });
+
+                var driverProfile = new DriverProfile
+                {
+                    UserId = user.Id,
+                    FullName = request.FullName,
+                    LicenseNumber = request.LicenseNumber,
+                    LicenseFrontUrl = request.LicenseFrontUrl,
+                    LicenseBackUrl = request.LicenseBackUrl,
+                    Vehicles = request.Trucks?.Select(t => new Vehicle
+                    {
+                        Id = Guid.NewGuid(),
+                        LicensePlate = t.LicensePlate,
+                        Make = t.Make,
+                        Model = t.Model,
+                        Year = int.TryParse(t.Year, out var parsedYear) ? parsedYear : 0
+                    }).ToList() ?? new List<Vehicle>()
+                };
+
+                await _driverRepo.AddDriverProfileAsync(driverProfile);
+
+                // 4. Track onboarding progress
+                var progress = new OnboardingProgress
+                {
+                    UserId = user.Id,
+                    StepCurrent = "ProfileCreated",
+                    Completed = false,
+                    LastUpdated = DateTime.UtcNow
+                };
+                await _progressRepo.AddOrUpdateAsync(progress);
+
+                // 5. Generate confirmation token
+                var confirmationToken = new ConfirmationToken
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = user.Id,
+                    Token = Guid.NewGuid().ToString(),
+                    Used = false,
+                    CreatedAt = DateTime.UtcNow,
+                    Type = ConfirmationTokenType.EmailConfirmation
+                };
+
+                await _confirmationTokenRepo.AddConfirmationTokenAsync(confirmationToken);
+
+                // 6. Persist all changes in one call
+                await _dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                // 7. Send confirmation email outside the transaction
+                try
+                {
+                    await _emailService.SendConfirmationAsync(request.Email, confirmationToken.Token);
+                }
+                catch (Exception ex)
+                {
+                    throw new OnboardingStepException(
+                        "Failed to send confirmation email.",
+                        "failure_send_confirmationemail",
+                        ex
+                    );
+                }
+
+                // 8. Return auth token
+                return new AuthTokenResponse
+                {
+                    AccessToken = token.AccessToken,
+                    RefreshToken = token.RefreshToken,
+                    ExpiresIn = token.ExpiresAt,
+                    Success = true,
+                    UserId = user.Id
+                };
+            }
+            catch (OnboardingStepException)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                throw new OnboardingStepException(
+                    "Unexpected onboarding failure.",
+                    "unhandled_exception",
+                    ex
+                );
+            }
+        });
+    }
+
+
     public Task StartAsync(StartOnboardingRequest request, Guid userId)
     {
         // TODO: Implement verification (e.g., via SMS/email provider)
@@ -158,13 +271,6 @@ public class OnboardingService : IOnboardingService
             };
     }
 
-    public Task<OperationResult> CompleteDriverOnboardingAsync(DriverProfileRequest request, Guid userId)
-    {
-        // TODO: Wire up driver onboarding once driver repo is ready
-        // For now, return a placeholder result
-        return Task.FromResult(OperationResult.Succeeded("Driver onboarding completed successfully"));
-    }
-
     public Task<OnboardingVerificationResult> VerifyIfOperationSuccessfulAsync(string email)
     {
         // No implementation for this method as the mobile app (TruckeroApp) directly calls
@@ -186,12 +292,13 @@ public class OnboardingService : IOnboardingService
             UserId = userId,
             Token = Guid.NewGuid().ToString(),
             Used = false,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            Type = ConfirmationTokenType.EmailConfirmation
         };
         try
         {
-            await _confirmationTokenRepo.AddAsync(confirmationToken);
-            await _confirmationTokenRepo.SaveChangesAsync();
+            await _confirmationTokenRepo.AddConfirmationTokenAsync(confirmationToken);
+            await _confirmationTokenRepo.SaveConfirmationTokenChangesAsync();
 
             await _emailService.SendConfirmationAsync(user.Email, confirmationToken.Token);
 
@@ -208,9 +315,12 @@ public class OnboardingService : IOnboardingService
         if (string.IsNullOrWhiteSpace(token))
             return OperationResult.Failed("Invalid or missing confirmation token.");
 
-        var confirmationToken = await _confirmationTokenRepo.GetByTokenAsync(token);
+        var confirmationToken = await _confirmationTokenRepo
+            .GetConfirmationTokenByTokenAndTypeAsync(token, ConfirmationTokenType.EmailConfirmation);
+
         if (confirmationToken == null)
             return OperationResult.Failed("Confirmation token not found or invalid.");
+
         if (confirmationToken.Used)
             return OperationResult.Failed("This confirmation token has already been used.");
 
@@ -218,14 +328,26 @@ public class OnboardingService : IOnboardingService
         if (user == null)
             return OperationResult.Failed("User not found for this confirmation token.");
 
+        // Mark this token as used
         user.EmailVerified = true;
         confirmationToken.Used = true;
         confirmationToken.UsedAt = DateTime.UtcNow;
 
+        // Fetch and mark all other unused confirmation tokens for this user as used
+        var otherUnusedTokens = await _confirmationTokenRepo.GetUnusedTokensForUserAsync(
+            user.Id,
+            ConfirmationTokenType.EmailConfirmation,
+            excludeTokenId: confirmationToken.Id);
+
         await _userRepo.SaveUserChangesAsync();
-        await _confirmationTokenRepo.UpdateAsync(confirmationToken);
-        await _confirmationTokenRepo.SaveChangesAsync();
+        await _confirmationTokenRepo.UpdateConfirmationTokenAsync(confirmationToken);
+        await _confirmationTokenRepo.SaveConfirmationTokenChangesAsync();
 
         return OperationResult.Succeeded("Email confirmed successfully.");
     }
+
+
+
+
+
 }

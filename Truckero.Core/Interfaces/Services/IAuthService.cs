@@ -33,5 +33,7 @@ public interface IAuthService
     Task<User?> GetUserByEmailAsync(string email);
     Task<User?> GetUserByIdAsync(Guid userId);
     Task<User?> GetCurrentUserAsync();
+    Task<User?> GetUserByAccessToken(string accessToken);
+    Task<AuthResponse> LoginToDeleteAccountAsync(string email, string password);
 }
 

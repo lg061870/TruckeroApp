@@ -1,10 +1,18 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.Json;
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Net.Mime;
+using System.Security.Claims;
+using System.Text.Json;
 using Truckero.Core.DTOs.Auth;
+using Truckero.Core.Entities;
 using Truckero.Core.Interfaces;
 using Truckero.Core.Interfaces.Services;
 using Truckero.Infrastructure.Extensions;
+using Truckero.Infrastructure.Services;
 
 namespace Truckero.API.Controllers;
 
@@ -118,9 +126,26 @@ public class AuthController : ControllerBase
     [HttpPost("password/confirm-reset")]
     public async Task<IActionResult> ConfirmPasswordReset([FromBody] PasswordResetConfirmRequest request)
     {
-        await _authService.ConfirmPasswordResetAsync(request);
-        return Ok(new { message = "Password successfully reset." });
+        try
+        {
+            await _authService.ConfirmPasswordResetAsync(request);
+            return Ok(new { message = "Password successfully reset." });
+        }
+        catch (ArgumentNullException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            // Optionally log the exception here
+            return StatusCode(500, new { error = "An unexpected error occurred." });
+        }
     }
+
 
     #region 🧭 Role Management
 
@@ -129,7 +154,7 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> GetActiveRole()
     {
         var userId = User.GetUserId();
-        var token = await _authTokenRepo.GetByTokenByUserIdAsync(userId);
+        var token = await _authTokenRepo.GetTokenByUserIdAsync(userId);
         return Ok(token?.Role ?? "Guest");
     }
 
@@ -149,7 +174,7 @@ public class AuthController : ControllerBase
             return BadRequest($"Invalid role: {role}");
 
         var userId = User.GetUserId();
-        var token = await _authTokenRepo.GetByTokenByUserIdAsync(userId);
+        var token = await _authTokenRepo.GetTokenByUserIdAsync(userId);
         if (token == null) return NotFound("User token not found.");
 
         token.Role = role;
@@ -170,7 +195,7 @@ public class AuthController : ControllerBase
         var email = User.Claims.FirstOrDefault(c => c.Type == "email")?.Value ?? "user@example.com";
         var fullName = User.Claims.FirstOrDefault(c => c.Type == "name")?.Value ?? "Test User";
 
-        var token = await _authTokenRepo.GetByTokenByUserIdAsync(userId);
+        var token = await _authTokenRepo.GetTokenByUserIdAsync(userId);
         var role = token?.Role ?? "Guest";
 
         return Ok(new SessionInfo
@@ -211,16 +236,20 @@ public class AuthController : ControllerBase
         return Ok(user);
     }
 
+
     [Authorize]
     [HttpGet("user/me")]
     public async Task<IActionResult> GetCurrentUser()
     {
-        var userId = User.GetUserId();
-        var user = await _authService.GetUserByIdAsync(userId);
-        if (user == null)
-            return NotFound();
-        return Ok(user);
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (!Guid.TryParse(userId, out var guid))
+            return Unauthorized();
+
+        var user = await _authService.GetUserByIdAsync(guid);
+        return user != null ? Ok(user) : NotFound();
     }
+
 
     [Authorize]
     [HttpGet("user/by-id")]
@@ -232,5 +261,21 @@ public class AuthController : ControllerBase
         return Ok(user);
     }
 
+    [HttpPost("login-delete")]
+    public async Task<IActionResult> LoginToDelete([FromBody] LoginRequest payload)
+    {
+        var result = await _authService.LoginToDeleteAccountAsync(payload.Email, payload.Password);
+        return Ok(result);
+    }
+
+    [HttpGet("auth/user/by-access-token")]
+    public async Task<IActionResult> GetUserByAccessToken([FromQuery] string token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            return BadRequest("Access token is required.");
+
+        var user = await _authService.GetUserByAccessToken(token);
+        return user != null ? Ok(user) : NotFound();
+    }
 
 }

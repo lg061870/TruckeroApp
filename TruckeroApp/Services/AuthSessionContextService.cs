@@ -17,8 +17,12 @@ public class AuthSessionContextService : IAuthSessionContext
     public void Set(string accessToken, List<string> roles, string activeRole)
     {
         AccessToken = accessToken;
-        AvailableRoles = roles;
-        ActiveRole = activeRole;
+
+        var oldRoles = AvailableRoles;
+        AvailableRoles = roles ?? oldRoles;
+
+        var oldActiveRole = ActiveRole;
+        ActiveRole = activeRole ?? oldActiveRole;
         IsInitialized = true;
     }
 

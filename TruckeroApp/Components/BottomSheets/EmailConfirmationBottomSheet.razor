@@ -1,4 +1,6 @@
-﻿@using Microsoft.AspNetCore.Components
+﻿@* EmailConfirmationBottomSheet.razor *@
+
+@using Microsoft.AspNetCore.Components
 @using Truckero.Core.Interfaces.Services
 
 @inject NavigationManager NavigationManager
@@ -81,7 +83,7 @@
 
     private void NavigateToLogin()
     {
-        NavigationManager.NavigateTo(AppRoutes.StartupRouter);
+        NavigationManager.NavigateTo(AppRoutes.Login);
     }
 
     private void CloseApp()

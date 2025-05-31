@@ -3,16 +3,17 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
+using Truckero.API;
+using Truckero.API.Auth;
 using Truckero.API.TestAuth;
 using Truckero.Core.Interfaces;
-using Truckero.Infrastructure.Data;
-using Truckero.Infrastructure.Repositories;
 using Truckero.Core.Interfaces.Repositories;
 using Truckero.Core.Interfaces.Services;
-using Truckero.Infrastructure.Storage;
-using Truckero.API;
-using Truckero.Infrastructure.Services;
 using Truckero.Diagnostics.Mocks;
+using Truckero.Infrastructure.Data;
+using Truckero.Infrastructure.Repositories;
+using Truckero.Infrastructure.Services;
+using Truckero.Infrastructure.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
 var env = builder.Environment;
@@ -31,11 +32,20 @@ if (!string.IsNullOrEmpty(keyVaultUrl))
     builder.Configuration.AddAzureKeyVault(new Uri(keyVaultUrl), new DefaultAzureCredential());
 }
 
-// Configure Authentication (Azure AD B2C or test fallback)
-var b2cOptions = builder.Configuration.GetSection("AzureAdB2C");
-
-if (!env.IsEnvironment("UnitTesting"))
+// Configure Authentication (per environment)
+if (env.IsEnvironment("UnitTesting"))
 {
+    builder.Services.AddAuthentication("Test")
+        .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", _ => { });
+}
+else if (env.IsDevelopment())
+{
+    builder.Services.AddAuthentication("Token")
+        .AddScheme<AuthenticationSchemeOptions, AuthTokenSecurityHandler>("Token", options => { });
+}
+else
+{
+    var b2cOptions = builder.Configuration.GetSection("AzureAdB2C");
     builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
         .AddMicrosoftIdentityWebApp(options =>
         {
@@ -45,11 +55,6 @@ if (!env.IsEnvironment("UnitTesting"))
             options.ResponseType = "code";
             options.SaveTokens = true;
         });
-}
-else
-{
-    builder.Services.AddAuthentication("Test")
-        .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", _ => { });
 }
 
 builder.Services.AddAuthorization();
@@ -134,7 +139,12 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // MVC
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+    });
 
 // Logging
 builder.Logging.AddConsole();

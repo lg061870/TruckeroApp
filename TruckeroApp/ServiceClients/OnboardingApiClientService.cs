@@ -8,18 +8,26 @@ using Truckero.Core.DTOs.Onboarding;
 using Truckero.Core.Entities;
 using Truckero.Core.Exceptions;
 using Truckero.Core.Interfaces.Services;
+using TruckeroApp.Interfaces;
+using TruckeroApp.ServiceClients.ApiHelpers;
 
 namespace TruckeroApp.ServiceClients;
 
 public class OnboardingApiClientService : IOnboardingService
 {
     private readonly HttpClient _http;
+    private readonly IAuthSessionContext _session;
 
-    public OnboardingApiClientService(HttpClient http)
+    public OnboardingApiClientService(HttpClient http, IAuthSessionContext session)
     {
         _http = http;
+        _session = session;
     }
 
+    private string RequireAccessToken()
+        => _session.AccessToken ?? throw new UnauthorizedAccessException("No access token present in session.");
+
+    // UNAUTHENTICATED (open) - if you want to lock down, just use envelope and RequireAccessToken
     public async Task StartAsync(StartOnboardingRequest request, Guid userId)
     {
         var response = await _http.PostAsJsonAsync($"/onboarding/start?userId={userId}", request);
@@ -34,53 +42,17 @@ public class OnboardingApiClientService : IOnboardingService
 
     public async Task<OnboardingProgressResponse> GetProgressAsync(Guid userId)
     {
-        var response = await _http.GetAsync($"/onboarding/progress?userId={userId}");
+        // Authenticated (should require login)
+        var envelope = AuthenticatedEnvelope.Create(RequireAccessToken(), _http, HttpMethod.Get, $"/onboarding/progress?userId={userId}");
+        var response = await envelope.SendAsync<HttpResponseMessage>();
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<OnboardingProgressResponse>())!;
     }
 
-    public async Task<OperationResult> CompleteDriverOnboardingAsync(DriverProfileRequest request, Guid userId)
+    public async Task<AuthTokenResponse> CompleteDriverOnboardingAsync(DriverProfileRequest request)
     {
-        try
-        {
-            var response = await _http.PostAsJsonAsync($"/onboarding/driver?userId={userId}", request);
-            
-            if (response.IsSuccessStatusCode)
-            {
-                // If successful, try to read the OperationResult from the response
-                var result = await response.Content.ReadFromJsonAsync<OperationResult>();
-                return result ?? OperationResult.Succeeded("Driver onboarding completed successfully");
-            }
-            else
-            {
-                // Try to extract error information from the response
-                try
-                {
-                    var errorResponse = await response.Content.ReadFromJsonAsync<ErrorResponse>();
-                    if (errorResponse != null && !string.IsNullOrEmpty(errorResponse.Error))
-                    {
-                        return OperationResult.Failed(errorResponse.Error);
-                    }
-                }
-                catch
-                {
-                    // If we can't deserialize the error, continue to the fallback
-                }
-                
-                // Fallback: try to read raw content
-                var errorContent = await response.Content.ReadAsStringAsync();
-                return OperationResult.Failed($"Error {(int)response.StatusCode}: {errorContent}");
-            }
-        }
-        catch (Exception ex)
-        {
-            return OperationResult.Failed($"Failed to complete driver onboarding: {ex.Message}");
-        }
-    }
-
-    public async Task<AuthTokenResponse> CompleteCustomerOnboardingAsync(CustomerOnboardingRequest request)
-    {
-        var response = await _http.PostAsJsonAsync("/onboarding/customer", request);
+        var envelope = AuthenticatedEnvelope.Create(RequireAccessToken(), _http, HttpMethod.Post, "/onboarding/driver", request);
+        var response = await envelope.SendAsync<HttpResponseMessage>();
 
         if (response.IsSuccessStatusCode)
         {
@@ -92,7 +64,6 @@ public class OnboardingApiClientService : IOnboardingService
 
         try
         {
-            // Handle server-side model validation errors (400 + ModelState)
             if (response.StatusCode == HttpStatusCode.BadRequest &&
                 response.Content.Headers.ContentType?.MediaType?.Contains("json") == true)
             {
@@ -108,7 +79,53 @@ public class OnboardingApiClientService : IOnboardingService
                 }
             }
 
-            // Handle structured onboarding failures (e.g., profile creation)
+            var error = JsonSerializer.Deserialize<ErrorResponse>(content);
+
+            if (error != null && !string.IsNullOrWhiteSpace(error.Error) && !string.IsNullOrWhiteSpace(error.Code))
+            {
+                throw new OnboardingClientException(error.Error, error.Code, response.StatusCode);
+            }
+        }
+        catch (JsonException)
+        {
+            // Fall through to generic failure
+        }
+
+        throw new HttpRequestException($"Unrecognized error response: {content}", null, response.StatusCode);
+    }
+
+    public async Task<AuthTokenResponse> CompleteCustomerOnboardingAsync(CustomerOnboardingRequest request)
+    {
+        //var envelope = AuthenticatedEnvelope.Create(RequireAccessToken(), _http, HttpMethod.Post, "/onboarding/customer", request);
+        //var response = await envelope.SendAsync<HttpResponseMessage>();
+
+        var response = await _http.PostAsJsonAsync("/onboarding/customer", request);
+        response.EnsureSuccessStatusCode();
+
+        if (response.IsSuccessStatusCode)
+        {
+            return await response.Content.ReadFromJsonAsync<AuthTokenResponse>()
+                   ?? throw new Exception("Empty token response");
+        }
+
+        var content = await response.Content.ReadAsStringAsync();
+
+        try
+        {
+            if (response.StatusCode == HttpStatusCode.BadRequest &&
+                response.Content.Headers.ContentType?.MediaType?.Contains("json") == true)
+            {
+                var validationDetails = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
+                if (validationDetails?.Errors?.Any() == true)
+                {
+                    var messages = validationDetails.Errors
+                        .SelectMany(kvp => kvp.Value)
+                        .Distinct()
+                        .ToList();
+
+                    throw new OnboardingClientValidationException("Validation failed.", messages, response.StatusCode);
+                }
+            }
 
             var error = JsonSerializer.Deserialize<ErrorResponse>(content);
 
@@ -125,6 +142,7 @@ public class OnboardingApiClientService : IOnboardingService
         throw new HttpRequestException($"Unrecognized error response: {content}", null, response.StatusCode);
     }
 
+    // Unauthenticated: this checks user state, not a protected resource
     public async Task<OnboardingVerificationResult> VerifyIfOperationSuccessfulAsync(string email)
     {
         var result = new OnboardingVerificationResult();
@@ -152,6 +170,7 @@ public class OnboardingApiClientService : IOnboardingService
         return result;
     }
 
+    // These two are likely safe as unauthenticated, but if you want to lock them, use envelope.
     public async Task<OperationResult> SendConfirmationEmailAsync(Guid userId)
     {
         var response = await _http.PostAsync($"/onboarding/send-confirmation-email?userId={userId}", null);

@@ -1,155 +1,191 @@
 ﻿@page "/"
 @using Truckero.Core.DTOs.Auth
-@using Truckero.Core.Enums
-@using Truckero.Core.Interfaces
 @using TruckeroApp.Interfaces
-@using Truckero.Core.Interfaces.Services
-@using TruckeroApp.DebugTools
-@using Truckero.Core.Constants
 
 @inject NavigationManager NavManager
 @inject ITokenStorageService TokenStorage
 @inject IAuthService AuthService
 @inject IAuthSessionContext Session
 @inject IAuthTokenRepository TokenRepository
-
-<h3>Loading...</h3>
+@inject ILogger<StartupRouter> _logger
 
 @code {
     protected override async Task OnInitializedAsync()
     {
+        _logger.LogInformation("🚀 StartupRoter initializing...");
+
 #if DEBUG
-        // await StartupTestPaths.TokenWithExceptionOnRefresh(TokenStorage);
-        // await StartupTestPaths.TokenWithNoRefreshToken(TokenStorage);
-        // await StartupTestPaths.TokenWithBadRefreshToken(TokenStorage);
-        // await StartupTestPaths.InvalidToken(TokenStorage);
-        // await StartupTestPaths.NoToken(TokenStorage);
-        // await StartupTestPaths.ValidTokenCustomer(TokenStorage, AuthService, TokenRepository);
-        // await StartupTestPaths.ValidTokenStoreClerk(TokenStorage, AuthService, TokenRepository);
-        // await StartupTestPaths.ValidTokenDriver(TokenStorage, AuthService, TokenRepository);
+    // Optional debug scenarios can be toggled here
+    // await StartupTestPaths.NoToken(TokenStorage);
 #endif
 
-        var token = await TokenStorage.GetAccessTokenAsync();
-
-        if (string.IsNullOrWhiteSpace(token))
+        try
         {
-            NavManager.NavigateTo(AppRoutes.RoleSwitcher, forceLoad: true);
-            return;
-        }
-
-        var validationResult = await TokenRepository.ValidateAccessTokenAsync(token);
-
-        if (!validationResult.Valid)
-        {
-            if (validationResult.Reason == ExceptionCodes.EmailNotVerified)
+            var accessToken = await TokenStorage.GetAccessTokenAsync();
+            if (string.IsNullOrWhiteSpace(accessToken))
             {
-                NavManager.NavigateTo(AppRoutes.EmailNotVerified, forceLoad: true);
+                _logger.LogWarning("No access token found. Redirecting to RoleSwitcher.");
+                NavManager.NavigateTo(AppRoutes.RoleSwitcher, forceLoad: true);
                 return;
             }
 
-            var refreshToken = await TokenStorage.GetRefreshTokenAsync();
+            var validationResult = await TokenRepository.ValidateAccessTokenAsync(accessToken);
+            string? refreshToken = string.Empty;
 
-            if (string.IsNullOrWhiteSpace(refreshToken))
+            if (!validationResult.Valid)
             {
-                NavManager.NavigateTo($"{AppRoutes.LoginExpired}?reason={ExceptionCodes.NoRefreshToken}", forceLoad: true);
+                _logger.LogWarning("Token validation failed with reason: {Reason}", validationResult.Reason);
+
+                switch (validationResult.Reason)
+                {
+                    case ExceptionCodes.InvalidHttpRequestSecurityHeader:
+                        NavManager.NavigateTo(AppRoutes.LoginExpired, forceLoad: true);
+                        return;
+                    case ExceptionCodes.AccessTokenIsBlank:
+                        NavManager.NavigateTo(AppRoutes.Login, forceLoad: true);
+                        return;
+                    case ExceptionCodes.AccessTokenNotFound:
+                        NavManager.NavigateTo(AppRoutes.AccountNotAvailable, forceLoad: true);
+                        return;
+                    case ExceptionCodes.AccessTokenExpired:
+                        NavManager.NavigateTo(AppRoutes.LoginExpired, forceLoad: true);
+                        return;
+                    case ExceptionCodes.NetworkError:
+                        _logger.LogWarning("Network error detected. Redirecting to LoginExpired.");
+                        return;
+                }
+
+                refreshToken = await TokenStorage.GetRefreshTokenAsync();
+                if (string.IsNullOrWhiteSpace(refreshToken))
+                {
+                    _logger.LogWarning("No refresh token found. Redirecting to LoginExpired.");
+                    NavManager.NavigateTo($"{AppRoutes.LoginExpired}?reason={ExceptionCodes.NoRefreshToken}", forceLoad: true);
+                    return;
+                }
+
+                try
+                {
+                    // ! Save the access token in session storage to prevent re-fetching it
+                    // Session.Set(accessToken, null, string.Empty);
+
+                    var refreshResult = await AuthService.RefreshAccessTokenAsync(new RefreshTokenRequest
+                    {
+                        RefreshToken = refreshToken
+                    });
+
+                    if (!string.IsNullOrWhiteSpace(refreshResult.AccessToken))
+                    {
+                        _logger.LogInformation("Token refresh succeeded.");
+                        await TokenStorage.SaveAccessTokenAsync(refreshResult.AccessToken);
+                        await TokenStorage.SaveRefreshTokenAsync(refreshResult.RefreshToken);
+                        accessToken = refreshResult.AccessToken;
+                        await SetSession(accessToken);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Refresh returned no token. Falling back to user state check.");
+                        await HandleUserAfterFailedRefresh();
+                        return;
+                    }
+                }
+                catch (Exception refreshEx)
+                {
+                    _logger.LogError(refreshEx, "Error during token refresh.");
+                    await HandleUserAfterFailedRefresh();
+                    return;
+                }
+            }
+
+            Session.Set(accessToken, null, string.Empty);
+            var user = await AuthService.GetCurrentUserAsync();
+            if (user == null)
+            {
+                var role = await TokenStorage.GetValueAsync("role");
+                _logger.LogWarning("No user associated with token. Redirecting to AccountNotAvailable.");
+                NavManager.NavigateTo($"{AppRoutes.AccountNotAvailable}?role={role}", forceLoad: true);
+                return;
+            }
+
+            if (!user.EmailVerified)
+            {
+                _logger.LogInformation("User email not verified. Redirecting.");
+                NavManager.NavigateTo(AppRoutes.EmailNotVerified, forceLoad: true);
                 return;
             }
 
             try
             {
-                var refreshResult = await AuthService.RefreshAccessTokenAsync(new RefreshTokenRequest
-                {
-                    RefreshToken = refreshToken
-                });
+                var role = await AuthService.GetActiveRoleAsync();
+                var roles = await AuthService.GetAllRolesAsync();
 
-                if (!string.IsNullOrWhiteSpace(refreshResult.AccessToken))
-                {
-                    await TokenStorage.SaveAccessTokenAsync(refreshResult.AccessToken);
-                    await TokenStorage.SaveRefreshTokenAsync(refreshResult.RefreshToken);
-                    token = refreshResult.AccessToken;
+                Session.Set(accessToken, roles, role);
 
-                    var role = await AuthService.GetActiveRoleAsync();
-                    var roles = await AuthService.GetAllRolesAsync();
-                    Session.Set(token, roles, role);
-                }
-                else
+                var redirect = role?.Trim() switch
                 {
-                    var refreshedUser = await AuthService.GetCurrentUserAsync();
-                    if (refreshedUser == null)
-                    {
-                        var role = await TokenStorage.GetValueAsync("role");
-                        NavManager.NavigateTo($"{AppRoutes.AccountNotAvailable}?role={role}", forceLoad: true);
-                        return;
-                    }
-                    else if (!refreshedUser.EmailVerified)
-                    {
-                        NavManager.NavigateTo(AppRoutes.EmailNotVerified, forceLoad: true);
-                        return;
-                    }
-                    else
-                    {
-                        NavManager.NavigateTo($"{AppRoutes.LoginExpired}?reason={ExceptionCodes.RefreshFailed}", forceLoad: true);
-                        return;
-                    }
-                }
+                    "Customer" => AppRoutes.RequestFreight,
+                    "Driver" => AppRoutes.PickupQueue,
+                    "StoreClerk" => AppRoutes.RegisterStoreClerk,
+                    _ => AppRoutes.LoginExpired,
+                };
+
+                _logger.LogInformation("User logged in with role {Role}. Redirecting to {Redirect}.", role, redirect);
+                NavManager.NavigateTo(redirect, forceLoad: true);
             }
-            catch
+            catch (Exception ex)
             {
-                var exceptionUser = await AuthService.GetCurrentUserAsync();
-                if (exceptionUser == null)
-                {
-                    // before giving up -- let's try and locate the user via the GetUserBy
-                    var role = await TokenStorage.GetValueAsync("role");
-                    NavManager.NavigateTo($"{AppRoutes.AccountNotAvailable}?role={role}", forceLoad: true);
-                    return;
-                }
-                else if (!exceptionUser.EmailVerified)
-                {
-                    NavManager.NavigateTo(AppRoutes.EmailNotVerified, forceLoad: true);
-                    return;
-                }
-                else
-                {
-                    NavManager.NavigateTo($"{AppRoutes.LoginExpired}?reason={ExceptionCodes.RefreshError}", forceLoad: true);
-                    return;
-                }
+                _logger.LogWarning(ex, "Session setup failed during startup routing.");
+                NavManager.NavigateTo(AppRoutes.Login, forceLoad: true);
             }
         }
+        catch (UnauthorizedAccessException ax2)
+        {
+            _logger.LogError(ax2, "Unhandled exception during StartupRouter initialization.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled exception during StartupRouter initialization.");
+            NavManager.NavigateTo(AppRoutes.LoginExpired, forceLoad: true);
+        }
+    }
 
+    private async Task<User> SetSessionIfUserExists(string token)
+    {
+        var user = await AuthService.GetCurrentUserAsync();
+        if (user != null)
+        {
+            var roles = await AuthService.GetAllRolesAsync();
+            var activeRole = await AuthService.GetActiveRoleAsync();
+            Session.Set(token, roles, activeRole ?? "");
+        }
+
+        return user;
+    }
+
+    private async Task SetSession(string token)
+    {
+        var role = await AuthService.GetActiveRoleAsync();
+        var roles = await AuthService.GetAllRolesAsync();
+        Session.Set(token, roles, role ?? "");
+    }
+
+    private async Task HandleUserAfterFailedRefresh()
+    {
         var user = await AuthService.GetCurrentUserAsync();
         if (user == null)
         {
             var role = await TokenStorage.GetValueAsync("role");
+            _logger.LogWarning("Refresh failed, and user not found. Redirecting.");
             NavManager.NavigateTo($"{AppRoutes.AccountNotAvailable}?role={role}", forceLoad: true);
-            return;
         }
-        if (!user.EmailVerified)
+        else if (!user.EmailVerified)
         {
+            _logger.LogInformation("Refresh failed, user email unverified. Redirecting.");
             NavManager.NavigateTo(AppRoutes.EmailNotVerified, forceLoad: true);
-            return;
         }
-
-        try
+        else
         {
-            var role = await AuthService.GetActiveRoleAsync();
-            var roles = await AuthService.GetAllRolesAsync();
-
-            Session.Set(token, roles, role);
-
-            var redirect = role switch
-            {
-                "Customer" => AppRoutes.RequestFreight,
-                "Driver" => AppRoutes.PickupQueue,
-                "StoreClerk" => AppRoutes.RegisterStoreClerk,
-                _ => AppRoutes.LoginExpired
-            };
-
-            NavManager.NavigateTo(redirect, forceLoad: true);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"⚠️ Session setup failed: {ex.Message}");
-            NavManager.NavigateTo(AppRoutes.Login, forceLoad: true);
+            _logger.LogWarning("Refresh failed for valid user. Redirecting to LoginExpired.");
+            NavManager.NavigateTo($"{AppRoutes.LoginExpired}?reason={ExceptionCodes.RefreshError}", forceLoad: true);
         }
     }
 }

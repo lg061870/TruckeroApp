@@ -5,7 +5,7 @@ namespace TruckeroApp.ServiceClients.Mock;
 
 public class AuthTokenMockService : IAuthTokenRepository
 {
-    public Task<AuthToken?> GetByTokenByUserIdAsync(Guid userId)
+    public Task<AuthToken?> GetTokenByUserIdAsync(Guid userId)
         => Task.FromResult(AuthMockStore.Tokens.TryGetValue(userId, out var token) ? token : null);
 
     public Task AddTokenAsync(AuthToken token)
@@ -48,12 +48,22 @@ public class AuthTokenMockService : IAuthTokenRepository
         return Task.CompletedTask;
     }
 
-    public Task<AuthToken?> GetByAccessTokenByAccessTokenKeyAsync(string accessToken)
+    public Task<AuthToken?> GetAccessTokenByAccessTokenKeyAsync(string accessToken)
     {
         throw new NotImplementedException();
     }
 
     Task<TokenValidationResult> IAuthTokenRepository.ValidateAccessTokenAsync(string accessToken)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task DeleteAllTokensForUserAsync(Guid userId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task RevokeTokensByUserIdAsync(Guid userId)
     {
         throw new NotImplementedException();
     }

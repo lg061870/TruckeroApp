@@ -9,6 +9,9 @@ public interface IUserRepository
 {
     Task<User?> GetUserByEmailAsync(string email);
     Task<User?> GetUserByIdAsync(Guid id);
+    Task<User?> GetUserByAccessTokenAsync(string accessToken);
     Task AddUserAsync(User user);
     Task SaveUserChangesAsync();
+
+    Task DeleteUserAsync(User user);
 }

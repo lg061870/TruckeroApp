@@ -1,4 +1,5 @@
-﻿using Truckero.Core.Enums;
+﻿using System.Text.Json.Serialization;
+using Truckero.Core.Enums;
 
 namespace Truckero.Core.Entities;
 

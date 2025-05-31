@@ -9,4 +9,5 @@ public class TokenValidationResult
 
     [JsonPropertyName("reason")]
     public string? Reason { get; set; }
+    public string? ErrorMessage { get; set; }
 }

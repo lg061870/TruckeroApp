@@ -1,9 +1,13 @@
 ﻿@page "/emailnotverified"
+@using Microsoft.Extensions.Logging
 @using Truckero.Core.Interfaces.Services
 @using TruckeroApp.Interfaces
+@using TruckeroApp.Components.BottomSheets
+
 @inject IOnboardingService OnboardingService
 @inject IAuthService AuthService
 @inject ITokenStorageService TokenStorage
+@inject ILogger<EmailNotVerified> Logger
 @inject NavigationManager NavManager
 
 <CenterWrapper>
@@ -18,141 +22,112 @@
         </p>
 
         <div class="flex flex-col items-center gap-3 mt-4">
-            <button class="w-full bg-[#FF6B00] text-white py-3 rounded-lg font-medium hover:bg-[#E05A00] focus:outline-none focus:ring-2 focus:ring-[#FF6B00] focus:ring-opacity-50 transition-colors duration-150"
+            <button class="w-full px-4 py-2 bg-[#FF6B00] text-white rounded-lg hover:bg-[#e66000] transition-colors duration-150"
                     @onclick="ResendConfirmationEmail"
-                    disabled="@IsResending || string.IsNullOrWhiteSpace(Email)">
-                @if (IsResending && ResendTarget == "original")
-                {
-                    <span>Sending...</span>
-                }
-                else
-                {
-                    <span>Resend to @Email</span>
-                }
+                    disabled="@(IsResending || string.IsNullOrWhiteSpace(Email))">
+                <span>@ResendButtonText</span>
             </button>
 
-@*             <div class="w-full flex flex-col items-center gap-2">
-                <input class="w-full px-3 py-2 border rounded" placeholder="Enter new email address"
-                       @bind="NewEmail" />
-                <button class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors duration-150"
-                        @onclick="SendToNewEmail"
-                        disabled="@IsResending || string.IsNullOrWhiteSpace(NewEmail)">
-                    @if (IsResending && ResendTarget == "new")
-                    {
-                        <span>Sending...</span>
-                    }
-                    else
-                    {
-                        <span>Send to New Email</span>
-                    }
-                </button>
-            </div> *@
-
-            @if (!string.IsNullOrEmpty(ResendMessage))
-            {
-                <div class="text-sm mt-2 @(ResendSuccess ? "text-green-600" : "text-red-600")">@ResendMessage</div>
-            }
-
-            <button class="w-full text-[#FF6B00] font-medium py-3 rounded-lg hover:underline transition-colors duration-150 mt-2"
-                    @onclick="Logout">
+            <button class="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-150 mt-2"
+                    @onclick="Logout" disabled="@IsResending">
                 Log Out
             </button>
+
+            <button class="w-full px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors duration-150 mt-2"
+                    @onclick="() => ActiveBottomSheet = BottomSheetState.DeleteAccount" disabled="@IsResending">
+                Delete My Account
+            </button>
         </div>
+
+        @switch (ActiveBottomSheet)
+        {
+            case BottomSheetState.DeleteAccount:
+                <LoginToDeleteAccountBottomSheet OnDismiss="@(() => ActiveBottomSheet = BottomSheetState.None)" />
+                break;
+
+            case BottomSheetState.Confirmation:
+                <EmailConfirmationBottomSheet Email="@Email" RegisteredUserId="@UserId.Value" />
+                break;
+
+            case BottomSheetState.GenericError:
+                <GenericErrorBottomSheet Message="@GenericErrorMessage" OnDismiss="@(() => ActiveBottomSheet = BottomSheetState.None)" />
+                break;
+        }
     </div>
 </CenterWrapper>
 
 @code {
     private bool IsResending = false;
-    private string? ResendMessage;
-    private bool ResendSuccess = false;
     private Guid? UserId;
     private string? Email;
-    private string NewEmail = string.Empty;
-    private string? ResendTarget = null; // "original" or "new"
+    private string? ResendTarget = null;
+    private string? GenericErrorMessage;
+    private BottomSheetState ActiveBottomSheet = BottomSheetState.None;
 
     protected override async Task OnInitializedAsync()
     {
-        // Try to get the current user to obtain their ID and email
         var user = await AuthService.GetCurrentUserAsync();
-        UserId = user?.Id;
-        Email = user?.Email;
+
+        if (user == null)
+        {
+            const string fallbackMessage = "User not found or email not verified. Please log in again.";
+            Logger.LogWarning(fallbackMessage);
+
+            GenericErrorMessage = fallbackMessage;
+            ActiveBottomSheet = BottomSheetState.GenericError;
+            StateHasChanged();
+            return;
+        }
+
+        UserId = user.Id;
+        Email = user.Email;
+
+        Logger.LogInformation("EmailNotVerified loaded: email = {Email}, userId = {UserId}", Email, UserId);
     }
 
     private async Task ResendConfirmationEmail()
     {
         if (UserId == null || string.IsNullOrWhiteSpace(Email))
         {
-            ResendMessage = "Unable to determine user. Please log in again.";
-            ResendSuccess = false;
+            Logger.LogWarning("User session invalid during resend attempt.");
+            GenericErrorMessage = "User session is invalid. Please log in again.";
+            ActiveBottomSheet = BottomSheetState.GenericError;
+            StateHasChanged();
             return;
         }
 
         IsResending = true;
         ResendTarget = "original";
-        ResendMessage = null;
-        ResendSuccess = false;
+
         try
         {
+            Logger.LogInformation("Attempting to resend confirmation email for user: {UserId}", UserId);
+
             var result = await OnboardingService.SendConfirmationEmailAsync(UserId.Value);
+
             if (result.Success)
             {
-                ResendMessage = "A new confirmation email has been sent.";
-                ResendSuccess = true;
+                Logger.LogInformation("Confirmation email successfully resent to {Email}", Email);
+                ActiveBottomSheet = BottomSheetState.Confirmation;
             }
             else
             {
-                ResendMessage = result.Message ?? "Failed to send confirmation email. Please try again.";
-                ResendSuccess = false;
+                Logger.LogWarning("Resend failed: {Message}", result.Message);
+                GenericErrorMessage = result.Message ?? "Failed to resend confirmation email.";
+                ActiveBottomSheet = BottomSheetState.GenericError;
             }
         }
-        catch
+        catch (Exception ex)
         {
-            ResendMessage = "Failed to send confirmation email. Please try again.";
-            ResendSuccess = false;
+            Logger.LogError(ex, "Unhandled exception during confirmation email resend.");
+            GenericErrorMessage = ex.Message;
+            ActiveBottomSheet = BottomSheetState.GenericError;
         }
         finally
         {
             IsResending = false;
             ResendTarget = null;
-        }
-    }
-
-    private async Task SendToNewEmail()
-    {
-        if (UserId == null || string.IsNullOrWhiteSpace(NewEmail))
-        {
-            ResendMessage = "Please enter a valid new email address.";
-            ResendSuccess = false;
-            return;
-        }
-
-        IsResending = true;
-        ResendTarget = "new";
-        ResendMessage = null;
-        ResendSuccess = false;
-        try
-        {
-            var result = await OnboardingService.SendConfirmationEmailAsync(UserId.Value, NewEmail);
-            if (result.Success)
-            {
-                ResendMessage = "A new confirmation email has been sent to your new email address.";
-                ResendSuccess = true;
-            }
-            else
-            {
-                ResendMessage = result.Message ?? "Failed to send confirmation email. Please try again.";
-                ResendSuccess = false;
-            }
-        }
-        catch
-        {
-            ResendMessage = "Failed to send confirmation email. Please try again.";
-            ResendSuccess = false;
-        }
-        finally
-        {
-            IsResending = false;
-            ResendTarget = null;
+            StateHasChanged();
         }
     }
 
@@ -161,4 +136,15 @@
         await TokenStorage.ClearAllAsync();
         NavManager.NavigateTo("/login", true);
     }
+
+    private async Task HideDeleteSheet()
+    {
+        ActiveBottomSheet = BottomSheetState.DeleteAccount;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private string ResendButtonText =>
+        IsResending && ResendTarget == "original"
+            ? "Sending..."
+            : $"Resend to {Email}";
 }
