@@ -20,13 +20,14 @@
 @using TruckeroApp.ServiceClients
 @using TruckeroApp.Services.Media
 @using TruckeroApp.Components.Pages.Driver
+@using TruckeroApp.Models
 
 @inject IOnboardingService OnboardingService
 @inject NavigationManager NavigationManager
 @inject ITokenStorageService TokenStorage
 @inject IMediaPicker MediaPicker
 @inject IMediaService MediaService
-
+@inject ILocalStorageService LocalStorage
 
 <CenterWrapper>
     <div class="h-full text-base-content">
@@ -66,12 +67,6 @@
                         <InputText @bind-Value="DriverProfile.FullName" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="Enter your full name" />
                         <ValidationMessage For="@(() => DriverProfile.FullName)" class="text-red-500 text-xs" />
                     </div>
-
-@*                     <div class="space-y-2">
-                        <label class="block text-sm font-medium text-gray-700">User ID</label>
-                        <InputText @bind-Value="UserId" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="Choose a unique user ID" />
-                        <ValidationMessage For="@(() => UserId)" class="text-red-500 text-xs" />
-                    </div> *@
 
                     <div class="space-y-2">
                         <label class="block text-sm font-medium text-gray-700">Email Address</label>
@@ -331,6 +326,12 @@
                         <EmailConfirmationBottomSheet Email="@DriverProfile.Email"
                                                         RegisteredUserId="@RegisteredUserId" />
                         break;
+
+                    case "registration_restored":
+                        <RegistrationRestoredBottomSheet 
+                            LastSaved="@LastSavedFormatted"
+                            OnDismiss="@(() => ActiveBottomSheet = null)" />
+                        break;
                 }
             }
 
@@ -373,56 +374,183 @@
     private string? LicenseFrontUrl { get; set; }
     private string? LicenseBackUrl { get; set; }
 
-    private List<Truck> RegisteredTrucks { get; set; } = new()
+    private bool IsExistingRegistration { get; set; } = false;
+
+    private bool IsEditMode => IsExistingRegistration && UserId != Guid.Empty;
+
+    private List<Truck> RegisteredTrucks { get; set; } = new();
+
+    private const string STORAGE_KEY = "driver_registration_form";
+
+    protected override async Task OnInitializedAsync()
     {
-        new Truck
+        // Try to load saved data from local storage first
+        var savedData = await LocalStorage.GetItemAsync<DriverRegistrationData>(STORAGE_KEY);
+        
+        if (savedData != null)
         {
-            LicensePlate = "ABC-1234",
-            Make = "Ford",
-            Model = "F-150",
-            Year = 2023,
-            IsVerified = true
-        },
-        new Truck
-        {
-            LicensePlate = "XYZ-5678",
-            Make = "Toyota",
-            Model = "Tundra",
-            Year = 2024,
-            IsVerified = false
+            // Restore from saved data
+            UserId = savedData.UserId;
+            DriverProfile = savedData.Profile;
+            Password = savedData.Password;
+            ConfirmPassword = savedData.Password; // Re-populate both fields
+            LicenseFrontUrl = savedData.LicenseFrontUrl;
+            LicenseBackUrl = savedData.LicenseBackUrl;
+            RegisteredTrucks = savedData.Trucks;
+            
+            // Mark as existing registration if it was previously submitted to the API
+            IsExistingRegistration = savedData.IsRegisteredWithApi;
+            
+            // Show resume message to user
+            ErrorMessage = $"Your previous registration has been restored. Last saved: {savedData.LastUpdated}";
+            ActiveBottomSheet = "registration_restored";
         }
-    };
-
-    private void AddNewTruck()
-    {
-        RegisteredTrucks.Add(new Truck
+        else
         {
-            LicensePlate = $"TRUCK-{RegisteredTrucks.Count + 1}",
-            Make = "New",
-            Model = "Truck",
-            Year = DateTime.Now.Year,
-            IsVerified = false,
-        });
-    }
+            // If this is our first time loading the page, generate a new ID
+            UserId = Guid.NewGuid();
+            DriverProfile.UserId = UserId;
+            IsExistingRegistration = false;
+        }
 
-    private void EditTruck(Truck truck)
-    {
-        // TODO: Add modal or editing form logic
-        Console.WriteLine($"Editing truck: {truck.LicensePlate}");
-    }
-
-    private void RemoveTruck(Truck truck)
-    {
-        RegisteredTrucks.Remove(truck);
-    }
-
-    protected override void OnInitialized()
-    {
-        UserId = Guid.NewGuid();
-        DriverProfile.UserId = UserId;
+        // Only load trucks from API if this is truly an edit of an existing profile
+        if (IsEditMode)
+        {
+            await LoadDriverTrucks();
+        }
 
         _editContext = new EditContext(DriverProfile);
-        _editContext.OnFieldChanged += (sender, args) => StateHasChanged();
+        _editContext.OnFieldChanged += (sender, args) => 
+        {
+            StateHasChanged();
+            _ = SaveFormToLocalStorage();
+        };
+    }
+
+    private async Task LoadDriverTrucks()
+    {
+        try
+        {
+            IsLoading = true;
+            RegisteredTrucks = await OnboardingService.GetDriverTrucksAsync(UserId);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Failed to load trucks: {ex.Message}";
+            ActiveBottomSheet = "generic_error";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task SaveFormToLocalStorage()
+    {
+        if (!IsFormValid) return; // Don't save invalid data
+        
+        var data = DriverRegistrationData.FromRegistrationForm(
+            UserId,
+            DriverProfile,
+            Password,
+            LicenseFrontUrl,
+            LicenseBackUrl,
+            RegisteredTrucks
+        );
+        
+        await LocalStorage.SetItemAsync(STORAGE_KEY, data);
+    }
+
+    private async Task AddNewTruck()
+    {
+        // Save the current form state before navigating
+        await SaveFormToLocalStorage();
+
+        // Navigate to the truck registration page
+        NavigationManager.NavigateTo(AppRoutes.RegisterTruck);
+    }
+
+    private async Task EditTruck(Truck truck)
+    {
+        if (IsEditMode) // If editing existing driver, use API
+        {
+            try
+            {
+                IsLoading = true;
+                
+                truck.LicensePlate = truck.LicensePlate + " (Edited)";
+                
+                var result = await OnboardingService.UpdateDriverTruckAsync(UserId, truck);
+                
+                if (result.Success)
+                {
+                    // Refresh the truck list
+                    await LoadDriverTrucks();
+                }
+                else
+                {
+                    ErrorMessage = result.Message ?? "Failed to update truck";
+                    ActiveBottomSheet = "generic_error";
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = $"Failed to update truck: {ex.Message}";
+                ActiveBottomSheet = "generic_error";
+            }
+            finally
+            {
+                IsLoading = false;
+            }
+        }
+        else // During initial registration
+        {
+            var index = RegisteredTrucks.FindIndex(t => t == truck);
+            if (index >= 0)
+            {
+                truck.LicensePlate += " (Edited)";
+                RegisteredTrucks[index] = truck;
+                await SaveFormToLocalStorage(); // Save after editing truck
+            }
+        }
+    }
+
+    private async Task RemoveTruck(Truck truck)
+    {
+        if (IsEditMode) // If editing existing driver, use API
+        {
+            try
+            {
+                IsLoading = true;
+                
+                var result = await OnboardingService.DeleteDriverTruckAsync(UserId, truck.Id);
+                
+                if (result.Success)
+                {
+                    // Reload the trucks after deletion
+                    await LoadDriverTrucks();
+                }
+                else
+                {
+                    ErrorMessage = result.Message ?? "Failed to delete truck";
+                    ActiveBottomSheet = "generic_error";
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = $"Failed to delete truck: {ex.Message}";
+                ActiveBottomSheet = "generic_error";
+            }
+            finally
+            {
+                IsLoading = false;
+            }
+        }
+        else // During initial registration, just remove from local collection
+        {
+            RegisteredTrucks.Remove(truck);
+            await SaveFormToLocalStorage(); // Save after removing truck
+        }
     }
 
     private async Task SubmitAsync()
@@ -474,6 +602,9 @@
 
             RegisteredUserId = authTokenResponse.UserId;
             ActiveBottomSheet = "email_confirmation";
+
+            // Clear the saved form data after successful submission
+            await LocalStorage.RemoveItemAsync(STORAGE_KEY);
         }
         catch (OnboardingClientValidationException ex)
         {
@@ -708,4 +839,9 @@
     private void SignInWithFacebook() { }
 
     #endregion
+
+    // Add this property to format the last saved date
+    private string LastSavedFormatted => 
+        (LocalStorage.GetItemAsync<DriverRegistrationData>(STORAGE_KEY).Result?.LastUpdated ?? DateTime.Now)
+            .ToString("MMM d, yyyy h:mm tt");
 }

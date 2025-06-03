@@ -57,6 +57,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<IAuthSessionContext, AuthSessionContextService>();
         builder.Services.AddSingleton<IMediaService, MediaService>();
         builder.Services.AddSingleton<IMediaPicker>(MediaPicker.Default);
+        builder.Services.AddScoped<ILocalStorageService, LocalStorageService>();
 
 #if DEBUG
         builder.Services.AddSingleton<IBlobStorageService, MockBlobStorageService>();

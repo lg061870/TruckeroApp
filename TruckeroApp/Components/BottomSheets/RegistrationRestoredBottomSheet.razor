@@ -1,0 +1,50 @@
+@* RegistrationRestoredBottomSheet.razor *@
+@using TruckeroApp.Interfaces
+@inject NavigationManager NavigationManager
+
+<div class="fixed inset-0 z-50 flex items-end justify-center bg-black bg-opacity-50">
+    <div class="w-full sm:max-w-md bg-white rounded-t-2xl p-6 shadow-lg animate-slide-up">
+        <div class="text-center">
+            <div class="bg-blue-100 text-blue-600 p-3 rounded-full inline-flex items-center justify-center mb-3">
+                <i class="fa-solid fa-info text-3xl"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-800 mb-2">Registration In Progress</h3>
+            <p class="text-sm text-gray-600 mb-4">
+                We've restored your previous registration information.
+                You can continue from where you left off.
+            </p>
+
+            @if (!string.IsNullOrEmpty(LastSaved))
+            {
+                <p class="text-sm text-gray-500 mb-4">Last updated: @LastSaved</p>
+            }
+
+            <div class="flex space-x-3">
+                <button @onclick="StartOver"
+                        class="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                    Start Over
+                </button>
+                <button @onclick="OnDismiss"
+                        class="flex-1 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600">
+                    Continue
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnDismiss { get; set; }
+    [Parameter] public string LastSaved { get; set; } = string.Empty;
+
+    // Inject the local storage service
+    [Inject] private ILocalStorageService LocalStorage { get; set; } = null!;
+
+    private async Task StartOver()
+    {
+        // Clear the saved form data
+        await LocalStorage.RemoveItemAsync("driver_registration_form");
+        // Refresh the page to start over
+        NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+    }
+}

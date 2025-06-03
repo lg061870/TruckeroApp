@@ -1,21 +1,24 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using Truckero.Core.DTOs.Common;
 using Truckero.Core.Entities;
-using Truckero.Core.Interfaces.Repositories;
+using Truckero.Core.Interfaces.Services;
 
 namespace Truckero.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
-[Authorize] // 🔒 All endpoints require authentication
+[Route("api/driver")]
+[Authorize]
 public class DriverController : ControllerBase
 {
-    private readonly IDriverRepository _repo;
+    private readonly IOnboardingService _onboardingService;
+    private readonly ILogger<DriverController> _logger;
 
-    public DriverController(IDriverRepository repo)
+    public DriverController(IOnboardingService onboardingService, ILogger<DriverController> logger)
     {
-        _repo = repo;
+        _onboardingService = onboardingService;
+        _logger = logger;
     }
 
     // Helper to get the authenticated user's ID (assumes claims-based identity)
@@ -27,57 +30,75 @@ public class DriverController : ControllerBase
         throw new UnauthorizedAccessException("Invalid or missing user ID claim.");
     }
 
-    [HttpGet("{userId}")]
-    public async Task<ActionResult<DriverProfile>> GetByUserId(Guid userId)
+    [HttpGet("{userId}/trucks")]
+    public async Task<ActionResult<List<Truck>>> GetDriverTrucks(Guid userId)
     {
-        if (userId != GetCurrentUserId())
-            return Forbid();
-
-        var profile = await _repo.GetByUserIdAsync(userId);
-        return profile is null ? NotFound() : Ok(profile);
+        try
+        {
+            var trucks = await _onboardingService.GetDriverTrucksAsync(userId);
+            return Ok(trucks);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching trucks for driver {UserId}", userId);
+            return StatusCode(500, "Failed to retrieve truck information");
+        }
     }
 
-    [HttpGet("{userId}/vehicles")]
-    public async Task<ActionResult<List<Truck>>> GetVehicles(Guid userId)
+    [HttpPost("{userId}/trucks")]
+    public async Task<ActionResult<OperationResult>> AddDriverTruck(Guid userId, [FromBody] Truck truck)
     {
-        if (userId != GetCurrentUserId())
-            return Forbid();
-
-        var vehicles = await _repo.GetVehiclesAsync(userId);
-        return Ok(vehicles);
+        try
+        {
+            var result = await _onboardingService.AddDriverTruckAsync(userId, truck);
+            if (!result.Success)
+                return BadRequest(result);
+                
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error adding truck for driver {UserId}", userId);
+            return StatusCode(500, "Failed to add truck");
+        }
     }
 
-    [HttpPost]
-    public async Task<IActionResult> Create([FromBody] DriverProfile profile)
+    [HttpPut("{userId}/trucks/{truckId}")]
+    public async Task<ActionResult<OperationResult>> UpdateDriverTruck(Guid userId, Guid truckId, [FromBody] Truck truck)
     {
-        if (profile.UserId != GetCurrentUserId())
-            return Forbid();
-
-        await _repo.AddDriverProfileAsync(profile);
-        await _repo.SaveDriverProfileChangesAsync();
-        return CreatedAtAction(nameof(GetByUserId), new { userId = profile.UserId }, profile);
+        if (truck.Id != truckId)
+            return BadRequest("Truck ID mismatch");
+            
+        try
+        {
+            var result = await _onboardingService.UpdateDriverTruckAsync(userId, truck);
+            if (!result.Success)
+                return BadRequest(result);
+                
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating truck {TruckId} for driver {UserId}", truckId, userId);
+            return StatusCode(500, "Failed to update truck");
+        }
     }
 
-    [HttpPost("vehicle")]
-    public async Task<IActionResult> AddVehicle([FromBody] Truck vehicle)
+    [HttpDelete("{userId}/trucks/{truckId}")]
+    public async Task<ActionResult<OperationResult>> DeleteDriverTruck(Guid userId, Guid truckId)
     {
-        if (vehicle.DriverProfile.UserId != GetCurrentUserId())
-            return Forbid();
-
-        await _repo.AddVehicleAsync(vehicle);
-        await _repo.SaveDriverProfileChangesAsync();
-        return Ok(vehicle);
-    }
-
-    [HttpDelete("vehicle/{vehicleId}")]
-    public async Task<IActionResult> DeleteVehicle(Guid vehicleId)
-    {
-        // To enforce per-user security, you would first look up the vehicle to check ownership:
-        // var vehicle = await _repo.GetVehicleByIdAsync(vehicleId);
-        // if (vehicle == null || vehicle.UserId != GetCurrentUserId()) return Forbid();
-
-        await _repo.DeleteVehicleAsync(vehicleId);
-        await _repo.SaveDriverProfileChangesAsync();
-        return NoContent();
+        try
+        {
+            var result = await _onboardingService.DeleteDriverTruckAsync(userId, truckId);
+            if (!result.Success)
+                return BadRequest(result);
+                
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting truck {TruckId} for driver {UserId}", truckId, userId);
+            return StatusCode(500, "Failed to delete truck");
+        }
     }
 }

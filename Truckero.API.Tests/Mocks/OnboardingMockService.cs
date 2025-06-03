@@ -2,6 +2,7 @@ using Truckero.Core.DTOs;
 using Truckero.Core.DTOs.Auth;
 using Truckero.Core.DTOs.Common;
 using Truckero.Core.DTOs.Onboarding;
+using Truckero.Core.Entities;
 using Truckero.Core.Interfaces.Services;
 
 namespace Truckero.API.Tests.Mocks;
@@ -74,6 +75,26 @@ public class OnboardingMockService : IOnboardingService
     }
 
     public Task<AuthTokenResponse> CompleteDriverOnboardingAsync(DriverProfileRequest request)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<List<Truck>> GetDriverTrucksAsync(Guid userId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<OperationResult> AddDriverTruckAsync(Guid userId, Truck truck)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<OperationResult> UpdateDriverTruckAsync(Guid userId, Truck truck)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<OperationResult> DeleteDriverTruckAsync(Guid userId, Guid truckId)
     {
         throw new NotImplementedException();
     }

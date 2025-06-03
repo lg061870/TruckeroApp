@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
-using System.Net;
 using Truckero.Core.DTOs.Auth;
 using Truckero.Core.DTOs.Common;
 using Truckero.Core.DTOs.Onboarding;
@@ -10,8 +9,6 @@ using Truckero.Core.Interfaces;
 using Truckero.Core.Interfaces.Repositories;
 using Truckero.Core.Interfaces.Services;
 using Truckero.Infrastructure.Data;
-using Truckero.Infrastructure.Repositories;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Truckero.Infrastructure.Services;
 
@@ -350,9 +347,96 @@ public class OnboardingService : IOnboardingService
 
         return OperationResult.Succeeded("Email confirmed successfully.");
     }
+    public async Task<List<Truck>> GetDriverTrucksAsync(Guid userId)
+    {
+        return await _driverRepo.GetVehiclesAsync(userId);
+    }
 
+    public async Task<OperationResult> AddDriverTruckAsync(Guid userId, Truck truck)
+    {
+        try
+        {
+            // Get the driver profile to validate the user
+            var driverProfile = await _driverRepo.GetByUserIdAsync(userId);
+            if (driverProfile == null)
+                return OperationResult.Failed("Driver profile not found.");
 
+            // Set the driver profile ID
+            truck.DriverProfileId = driverProfile.Id;
+            
+            // Add truck to the repository
+            await _driverRepo.AddVehicleAsync(truck);
+            await _driverRepo.SaveDriverProfileChangesAsync();
+            
+            return OperationResult.Succeeded("Truck added successfully.");
+        }
+        catch (Exception ex)
+        {
+            return OperationResult.Failed($"Failed to add truck: {ex.Message}");
+        }
+    }
 
+    public async Task<OperationResult> UpdateDriverTruckAsync(Guid userId, Truck truck)
+    {
+        try
+        {
+            // Get the driver profile to validate the user
+            var driverProfile = await _driverRepo.GetByUserIdAsync(userId);
+            if (driverProfile == null)
+                return OperationResult.Failed("Driver profile not found.");
+            
+            // Get the truck to validate it belongs to this driver
+            var existingTruck = await _driverRepo.GetVehicleByIdAsync(truck.Id);
+            if (existingTruck == null)
+                return OperationResult.Failed("Truck not found.");
+                
+            if (existingTruck.DriverProfileId != driverProfile.Id)
+                return OperationResult.Failed("You don't have permission to update this truck.");
+            
+            // Update existing truck properties
+            existingTruck.LicensePlate = truck.LicensePlate;
+            existingTruck.Make = truck.Make;
+            existingTruck.Model = truck.Model;
+            existingTruck.Year = truck.Year;
+            
+            // Update in the repository
+            await _driverRepo.UpdateVehicleAsync(existingTruck);
+            await _driverRepo.SaveDriverProfileChangesAsync();
+            
+            return OperationResult.Succeeded("Truck updated successfully.");
+        }
+        catch (Exception ex)
+        {
+            return OperationResult.Failed($"Failed to update truck: {ex.Message}");
+        }
+    }
 
-
+    public async Task<OperationResult> DeleteDriverTruckAsync(Guid userId, Guid truckId)
+    {
+        try
+        {
+            // Get the driver profile to validate the user
+            var driverProfile = await _driverRepo.GetByUserIdAsync(userId);
+            if (driverProfile == null)
+                return OperationResult.Failed("Driver profile not found.");
+            
+            // Get the truck to validate it belongs to this driver
+            var truck = await _driverRepo.GetVehicleByIdAsync(truckId);
+            if (truck == null)
+                return OperationResult.Failed("Truck not found.");
+                
+            if (truck.DriverProfileId != driverProfile.Id)
+                return OperationResult.Failed("You don't have permission to delete this truck.");
+            
+            // Delete from the repository
+            await _driverRepo.DeleteVehicleAsync(truckId);
+            await _driverRepo.SaveDriverProfileChangesAsync();
+            
+            return OperationResult.Succeeded("Truck deleted successfully.");
+        }
+        catch (Exception ex)
+        {
+            return OperationResult.Failed($"Failed to delete truck: {ex.Message}");
+        }
+    }
 }
