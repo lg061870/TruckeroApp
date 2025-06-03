@@ -25,6 +25,8 @@ namespace Truckero.Core.DTOs.Media
         [Required]
         public string FileType { get; set; } = string.Empty;
 
+        public Guid UserId { get; set; }
+
         /// <summary>
         /// Maximum allowed file size in bytes
         /// </summary>

@@ -35,6 +35,12 @@ public class DriverProfile
     public bool PayoutVerified { get; set; } = false;
     public string? VehicleType { get; set; }
 
-    public ICollection<Vehicle> Vehicles { get; set; } = new List<Vehicle>();
+    public string HomeBase { get; set; } = null!;
+    public int ServiceRadiusKm { get; set; } = 25;
+    public double Latitude { get; set; }
+    public double Longitude { get; set; }
+
+
+    public ICollection<Truck> Vehicles { get; set; } = new List<Truck>();
     public ICollection<PayoutAccount> PayoutAccounts { get; set; } = new List<PayoutAccount>();
 }

@@ -1,24 +1,28 @@
 ﻿@page "/registercustomer"
-@using Microsoft.AspNetCore.Components
-@using Microsoft.AspNetCore.Components.Routing
-@using Microsoft.AspNetCore.Components.Forms
 @using System.ComponentModel.DataAnnotations
+@using System.Net
+@using System.Net.Http
+@using System.Text.Json
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Routing
 @using Truckero.Core.DTOs.Auth
 @using Truckero.Core.DTOs.Common
 @using Truckero.Core.DataAnnotations
 @using Truckero.Core.Exceptions
 @using Truckero.Core.Interfaces.Services
-@using TruckeroApp.ServiceClients
-@using TruckeroApp.Interfaces
-@using TruckeroApp.DebugTools
-@using System.Net
-@using System.Net.Http
 @using TruckeroApp.Components.BottomSheets
-@using System.Text.Json
+@using TruckeroApp.DebugTools
+@using TruckeroApp.Interfaces
+@using TruckeroApp.ServiceClients
+@using TruckeroApp.Services.Media
 
 @inject IOnboardingService OnboardingService
 @inject NavigationManager NavigationManager
 @inject ITokenStorageService TokenStorage
+@inject IMediaPicker MediaPicker
+@inject IMediaService MediaService
+
 
 <CenterWrapper>
     <div id="registration-screen" class="p-6 min-h-screen">

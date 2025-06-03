@@ -1,0 +1,46 @@
+﻿@using Truckero.Core.Entities
+
+@code {
+    [Parameter]
+    public Truck Truck { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<Truck> OnEdit { get; set; }
+
+    [Parameter]
+    public EventCallback<Truck> OnRemove { get; set; }
+
+    private Task Edit() => OnEdit.InvokeAsync(Truck);
+    private Task Remove() => OnRemove.InvokeAsync(Truck);
+}
+
+
+<div class="bg-white rounded-lg border border-gray-200 p-4">
+    <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <i class="fa-solid fa-truck-moving text-gray-600"></i>
+            <div>
+                <h4 class="font-medium">@Truck.LicensePlate</h4>
+                <p class="text-sm text-gray-500">@Truck.Make @Truck.Model • @Truck.Year</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-3">
+            @if (Truck.IsVerified)
+            {
+                <i class="fa-solid fa-circle-check text-green-500" title="Verified"></i>
+            }
+            else
+            {
+                <i class="fa-solid fa-circle-xmark text-red-500" title="Not Verified"></i>
+            }
+
+            <button type="button" @onclick="Edit" class="text-gray-400 hover:text-gray-600">
+                <i class="fa-solid fa-pen-to-square"></i>
+            </button>
+            <button type="button" @onclick="Remove" class="text-gray-400 hover:text-red-500">
+                <i class="fa-solid fa-trash"></i>
+            </button>
+        </div>
+    </div>
+</div>
+

@@ -23,7 +23,7 @@ public class AppDbContext : DbContext
     public DbSet<PaymentMethod> PaymentMethods => Set<PaymentMethod>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
-    public DbSet<Vehicle> Vehicles => Set<Vehicle>();
+    public DbSet<Truck> Vehicles => Set<Truck>();
     public DbSet<VehicleType> VehicleTypes => Set<VehicleType>();
     public DbSet<PaymentMethodType> PaymentMethodTypes => Set<PaymentMethodType>();
     public DbSet<CustomerProfile> CustomerProfiles => Set<CustomerProfile>();
@@ -43,6 +43,16 @@ public class AppDbContext : DbContext
             .WithMany(r => r.Users)
             .HasForeignKey(u => u.RoleId);
 
+        modelBuilder.Entity<User>()
+            .Property(u => u.Id)
+            .ValueGeneratedNever(); // <-- Ensures EF won't expect DB to assign this
+
+        // 📧 Ensure unique email for login and registration
+        modelBuilder.Entity<User>()
+            .HasIndex(u => u.Email)
+            .IsUnique();
+
+
         modelBuilder.Entity<OnboardingProgress>()
             .HasKey(o => o.UserId);
 
@@ -54,6 +64,15 @@ public class AppDbContext : DbContext
             .HasOne(d => d.User)
             .WithOne(u => u.DriverProfile)
             .HasForeignKey<DriverProfile>(d => d.UserId);
+
+        modelBuilder.Entity<DriverProfile>()
+            .Property(dp => dp.HomeBase)
+            .IsRequired();
+
+        modelBuilder.Entity<DriverProfile>()
+            .Property(dp => dp.ServiceRadiusKm)
+            .HasDefaultValue(25);
+
 
         // 🛒 CustomerProfile Configuration
         modelBuilder.Entity<CustomerProfile>()
@@ -129,15 +148,15 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<SystemSetting>()
             .HasKey(s => s.Key);
 
-        modelBuilder.Entity<Vehicle>()
+        modelBuilder.Entity<Truck>()
             .HasKey(v => v.Id);
 
-        modelBuilder.Entity<Vehicle>()
+        modelBuilder.Entity<Truck>()
             .HasOne(v => v.VehicleType)
             .WithMany(vt => vt.Vehicles)
             .HasForeignKey(v => v.VehicleTypeId);
 
-        modelBuilder.Entity<Vehicle>()
+        modelBuilder.Entity<Truck>()
             .HasOne(v => v.DriverProfile)
             .WithMany(dp => dp.Vehicles)
             .HasForeignKey(v => v.DriverProfileId);

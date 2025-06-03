@@ -14,6 +14,6 @@ public class VehicleType
     [MaxLength(250)]
     public string? Description { get; set; }
 
-    public ICollection<Vehicle> Vehicles { get; set; } = new List<Vehicle>();
+    public ICollection<Truck> Vehicles { get; set; } = new List<Truck>();
 }
 

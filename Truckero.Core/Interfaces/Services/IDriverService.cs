@@ -8,8 +8,8 @@ namespace Truckero.Core.Interfaces.Services;
 public interface IDriverService
 {
     Task<DriverProfile?> GetByUserIdAsync(Guid userId);
-    Task<List<Vehicle>> GetVehiclesAsync(Guid userId);
-    Task AddVehicleAsync(Vehicle vehicle);
-    Task UpdateVehicleAsync(Vehicle vehicle);
+    Task<List<Truck>> GetVehiclesAsync(Guid userId);
+    Task AddVehicleAsync(Truck vehicle);
+    Task UpdateVehicleAsync(Truck vehicle);
     Task DeleteVehicleAsync(Guid vehicleId);
 }

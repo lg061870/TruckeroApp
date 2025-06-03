@@ -17,19 +17,19 @@ public class VehicleRepository : IVehicleRepository
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public async Task<Vehicle?> GetByIdAsync(Guid id)
+    public async Task<Truck?> GetByIdAsync(Guid id)
     {
         return await _context.Vehicles.FindAsync(id);
     }
 
-    public async Task<IEnumerable<Vehicle>> GetByDriverIdAsync(Guid driverUserId)
+    public async Task<IEnumerable<Truck>> GetByDriverIdAsync(Guid driverUserId)
     {
         return await _context.Vehicles
             .Where(v => v.DriverProfileId == driverUserId)
             .ToListAsync();
     }
 
-    public async Task AddAsync(Vehicle vehicle)
+    public async Task AddAsync(Truck vehicle)
     {
         try
         {
@@ -70,7 +70,7 @@ public class VehicleRepository : IVehicleRepository
         }
     }
 
-    public async Task UpdateAsync(Vehicle vehicle)
+    public async Task UpdateAsync(Truck vehicle)
     {
         _context.Vehicles.Update(vehicle);
         await _context.SaveChangesAsync();

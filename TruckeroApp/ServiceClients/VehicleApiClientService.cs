@@ -13,16 +13,16 @@ namespace TruckeroApp.ServiceClients
             _http = http;
         }
 
-        public async Task AddAsync(Vehicle vehicle)
+        public async Task AddAsync(Truck vehicle)
         {
             var response = await _http.PostAsJsonAsync("/api/vehicle", vehicle);
             response.EnsureSuccessStatusCode();
         }
 
-        public async Task<IEnumerable<Vehicle>> GetVehiclesForDriverAsync(Guid driverProfileId)
+        public async Task<IEnumerable<Truck>> GetVehiclesForDriverAsync(Guid driverProfileId)
         {
-            var result = await _http.GetFromJsonAsync<IEnumerable<Vehicle>>($"/api/vehicle/driver/{driverProfileId}");
-            return result ?? Enumerable.Empty<Vehicle>();
+            var result = await _http.GetFromJsonAsync<IEnumerable<Truck>>($"/api/vehicle/driver/{driverProfileId}");
+            return result ?? Enumerable.Empty<Truck>();
         }
 
         public async Task DeleteAsync(Guid vehicleId)
@@ -32,7 +32,7 @@ namespace TruckeroApp.ServiceClients
         }
 
         // Optional: Update method if needed
-        public async Task UpdateAsync(Vehicle vehicle)
+        public async Task UpdateAsync(Truck vehicle)
         {
             var response = await _http.PutAsJsonAsync($"/api/vehicle/{vehicle.Id}", vehicle);
             response.EnsureSuccessStatusCode();

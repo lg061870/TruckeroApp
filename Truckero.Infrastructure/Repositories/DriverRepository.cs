@@ -44,26 +44,26 @@ public class DriverRepository : IDriverRepository
         await _context.SaveChangesAsync();
     }
 
-    public async Task<List<Vehicle>> GetVehiclesAsync(Guid userId)
+    public async Task<List<Truck>> GetVehiclesAsync(Guid userId)
     {
         return await _context.Vehicles
             .Where(v => v.DriverProfile.UserId == userId)
             .ToListAsync();
     }
 
-    public async Task<Vehicle?> GetVehicleByIdAsync(Guid vehicleId)
+    public async Task<Truck?> GetVehicleByIdAsync(Guid vehicleId)
     {
         return await _context.Vehicles
             .Include(v => v.VehicleType)
             .FirstOrDefaultAsync(v => v.Id == vehicleId);
     }
 
-    public async Task AddVehicleAsync(Vehicle vehicle)
+    public async Task AddVehicleAsync(Truck vehicle)
     {
         await _context.Vehicles.AddAsync(vehicle);
     }
 
-    public Task UpdateVehicleAsync(Vehicle vehicle)
+    public Task UpdateVehicleAsync(Truck vehicle)
     {
         _context.Vehicles.Update(vehicle);
         return Task.CompletedTask;

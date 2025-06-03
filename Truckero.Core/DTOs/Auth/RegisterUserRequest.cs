@@ -4,6 +4,7 @@ namespace Truckero.Core.DTOs.Auth;
 
 public class RegisterUserRequest
 {
+    public Guid UserId { get; set; }
     [Required]
     public string Email { get; set; } = null!;
 

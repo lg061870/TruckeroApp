@@ -15,5 +15,5 @@ public class MediaAsset
 
     // Navigation (optional)
     public User? User { get; set; }
-    public Vehicle? Vehicle { get; set; }
+    public Truck? Vehicle { get; set; }
 }

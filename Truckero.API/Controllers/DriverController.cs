@@ -38,7 +38,7 @@ public class DriverController : ControllerBase
     }
 
     [HttpGet("{userId}/vehicles")]
-    public async Task<ActionResult<List<Vehicle>>> GetVehicles(Guid userId)
+    public async Task<ActionResult<List<Truck>>> GetVehicles(Guid userId)
     {
         if (userId != GetCurrentUserId())
             return Forbid();
@@ -59,7 +59,7 @@ public class DriverController : ControllerBase
     }
 
     [HttpPost("vehicle")]
-    public async Task<IActionResult> AddVehicle([FromBody] Vehicle vehicle)
+    public async Task<IActionResult> AddVehicle([FromBody] Truck vehicle)
     {
         if (vehicle.DriverProfile.UserId != GetCurrentUserId())
             return Forbid();

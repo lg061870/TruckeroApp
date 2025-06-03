@@ -1,0 +1,124 @@
+﻿@using Microsoft.JSInterop
+
+<div class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-end justify-center">
+    <div class="w-full sm:max-w-md bg-white rounded-t-2xl shadow-lg animate-slide-up relative">
+        <div class="px-5 pt-4 pb-3 border-b border-gray-100 flex justify-between items-center">
+            <h3 class="text-base font-semibold text-gray-800">Set Home Base & Radius</h3>
+            <button type="button" class="text-gray-500 hover:text-gray-700" @onclick="Hide">&times;</button>
+        </div>
+
+        <!-- Map Area -->
+        <div class="h-[400px] relative">
+            <div id="map" class="w-full h-full rounded-b-2xl z-0"></div>
+
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div class="w-10 h-10 bg-orange-100 rounded-full border-4 border-white shadow pointer-events-none"></div>
+            </div>
+
+@*             <button type="button"
+                    class="absolute top-4 right-4 bg-white text-gray-700 px-3 py-1 text-xs border border-gray-200 rounded shadow hover:bg-gray-100 z-10"
+                    @onclick="RecenterToUser">
+                My Location
+            </button> *@
+            <button type="button"
+                    class="absolute top-4 right-4 z-10 px-3 py-1 text-sm bg-white border rounded-lg shadow hover:bg-gray-100"
+                    @onclick="CenterMapToUserLocation">
+                📍 My Location
+            </button>
+
+
+        </div>
+
+        <!-- Details + Controls -->
+        <div class="px-5 py-4 flex flex-col gap-3">
+            <div class="text-xs text-gray-600">Detected Address:</div>
+            <div class="text-sm font-medium text-gray-800 truncate">@Address</div>
+
+            <label class="block text-sm font-medium text-gray-700">Service Radius (km)</label>
+            <div class="flex items-center">
+                <input type="range" min="5" max="100" @bind="RadiusKm" class="w-full accent-orange-500" />
+                <span class="ml-4 w-16 text-right text-sm text-orange-700">@RadiusKm km</span>
+            </div>
+
+            <button type="button"
+                    class="w-full mt-3 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                    @onclick="ConfirmSelection">
+                Confirm
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback<MapPickResult> OnConfirm { get; set; }
+    [Parameter] public EventCallback OnDismiss { get; set; }
+
+    private int RadiusKm = 25;
+    private double Latitude;
+    private double Longitude;
+    private string Address = "Loading...";
+
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("initMapPicker", DotNetObjectReference.Create(this));
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnMapMoved(double lat, double lon)
+    {
+        Latitude = lat;
+        Longitude = lon;
+
+        using var client = new HttpClient();
+        var url = $"https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat={lat}&lon={lon}";
+        var result = await client.GetFromJsonAsync<NominatimResponse>(url);
+        Address = result?.display_name ?? "Unknown Location";
+        StateHasChanged();
+    }
+
+    private async Task ConfirmSelection()
+    {
+        await OnConfirm.InvokeAsync(new MapPickResult
+        {
+            Latitude = Latitude,
+            Longitude = Longitude,
+            RadiusKm = RadiusKm,
+            Address = Address
+        });
+        await Hide();
+    }
+
+    private async Task RecenterToUser()
+    {
+        await JS.InvokeVoidAsync("centerMapToUserLocation");
+    }
+
+    private async Task Hide()
+    {
+        await OnDismiss.InvokeAsync();
+    }
+
+    private class NominatimResponse
+    {
+        public string display_name { get; set; } = "";
+    }
+
+    public class MapPickResult
+    {
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+        public int RadiusKm { get; set; }
+        public string Address { get; set; } = "";
+    }
+
+    private async Task CenterMapToUserLocation()
+    {
+        await JS.InvokeVoidAsync("centerMapToUserLocation");
+    }
+
+}

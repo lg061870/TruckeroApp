@@ -155,7 +155,8 @@ public class OnboardingService : IOnboardingService
                     Email = request.Email,
                     Password = request.Password,
                     Role = "Driver",
-                    PhoneNumber = request.PhoneNumber
+                    PhoneNumber = request.PhoneNumber,
+                    UserId = request.UserId // Ensure UserId is set for the new user
                 });
 
                 var driverProfile = new DriverProfile
@@ -165,14 +166,18 @@ public class OnboardingService : IOnboardingService
                     LicenseNumber = request.LicenseNumber,
                     LicenseFrontUrl = request.LicenseFrontUrl,
                     LicenseBackUrl = request.LicenseBackUrl,
-                    Vehicles = request.Trucks?.Select(t => new Vehicle
+                    HomeBase = request.HomeBase,
+                    ServiceRadiusKm = request.ServiceRadiusKm,
+                    Latitude = request.Latitude,
+                    Longitude = request.Longitude,
+                    Vehicles = request.Trucks?.Select(t => new Truck
                     {
                         Id = Guid.NewGuid(),
                         LicensePlate = t.LicensePlate,
                         Make = t.Make,
                         Model = t.Model,
-                        Year = int.TryParse(t.Year, out var parsedYear) ? parsedYear : 0
-                    }).ToList() ?? new List<Vehicle>()
+                        Year = t.Year
+                    }).ToList() ?? new List<Truck>()
                 };
 
                 await _driverRepo.AddDriverProfileAsync(driverProfile);

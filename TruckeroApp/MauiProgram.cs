@@ -1,10 +1,12 @@
+using CommunityToolkit.Maui;
 using Microsoft.Extensions.Logging;
+using Truckero.Core.Interfaces;
+using Truckero.Core.Interfaces.Services;
+using Truckero.Infrastructure.Storage;
+using TruckeroApp.Extensions;
 using TruckeroApp.Interfaces;
 using TruckeroApp.Services;
 using TruckeroApp.Services.Media;
-using TruckeroApp.Extensions;
-using Truckero.Core.Interfaces;
-using TruckeroApp.ServiceClients;
 
 namespace TruckeroApp;
 
@@ -16,6 +18,7 @@ public static class MauiProgram
 
         builder
             .UseMauiApp<App>()
+            .UseMauiCommunityToolkit() 
             .ConfigureFonts(fonts =>
             {
                 fonts.AddFont("Inter-Regular.ttf", "InterRegular");
@@ -48,16 +51,21 @@ public static class MauiProgram
             .AddAuthClient(apiBase)
             .AddAuthTokenClient(apiBase)
             .AddMediaClient(apiBase);
-            
 
+        builder.Services.AddToastService();
         builder.Services.AddSingleton<ITokenStorageService, SecureTokenStorageService>();
         builder.Services.AddSingleton<IAuthSessionContext, AuthSessionContextService>();
-        
-        // Register media and notification services
-        builder.Services.AddToastService();
-        
-        // Mock blob storage service for development
+        builder.Services.AddSingleton<IMediaService, MediaService>();
+        builder.Services.AddSingleton<IMediaPicker>(MediaPicker.Default);
+
+#if DEBUG
         builder.Services.AddSingleton<IBlobStorageService, MockBlobStorageService>();
+#else
+        builder.Services.AddSingleton<IBlobStorageService, AzureBlobStorageService>();  
+#endif
+
+
+
 
         return builder.Build();
     }

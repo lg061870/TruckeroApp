@@ -1,24 +1,32 @@
 ﻿@page "/registerdriver"
-@using Microsoft.AspNetCore.Components
-@using Microsoft.AspNetCore.Components.Forms
 @using System.ComponentModel.DataAnnotations
-@using Truckero.Core.DTOs.Auth
-@using Truckero.Core.DataAnnotations
-@using Truckero.Core.Exceptions
-@using TruckeroApp.ServiceClients
-@using Truckero.Core.Interfaces.Services
 @using System.Net
-@using TruckeroApp.Components.BottomSheets
-@using Microsoft.AspNetCore.Components.Routing
-@using Truckero.Core.DTOs.Common
-@using TruckeroApp.Interfaces
-@using TruckeroApp.DebugTools
 @using System.Net.Http
 @using System.Text.Json
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Routing
+@using Truckero.Core.DTOs.Auth
+@using Truckero.Core.DTOs.Common
+@using Truckero.Core.DTOs.Media
+@using Truckero.Core.DTOs.Onboarding
+@using Truckero.Core.DataAnnotations
+@using Truckero.Core.Exceptions
+@using Truckero.Core.Interfaces.Services
+@using Truckero.Infrastructure.Services
+@using TruckeroApp.Components.BottomSheets
+@using TruckeroApp.DebugTools
+@using TruckeroApp.Interfaces
+@using TruckeroApp.ServiceClients
+@using TruckeroApp.Services.Media
+@using TruckeroApp.Components.Pages.Driver
 
 @inject IOnboardingService OnboardingService
 @inject NavigationManager NavigationManager
 @inject ITokenStorageService TokenStorage
+@inject IMediaPicker MediaPicker
+@inject IMediaService MediaService
+
 
 <CenterWrapper>
     <div class="h-full text-base-content">
@@ -59,11 +67,11 @@
                         <ValidationMessage For="@(() => DriverProfile.FullName)" class="text-red-500 text-xs" />
                     </div>
 
-                    <div class="space-y-2">
+@*                     <div class="space-y-2">
                         <label class="block text-sm font-medium text-gray-700">User ID</label>
                         <InputText @bind-Value="UserId" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="Choose a unique user ID" />
                         <ValidationMessage For="@(() => UserId)" class="text-red-500 text-xs" />
-                    </div>
+                    </div> *@
 
                     <div class="space-y-2">
                         <label class="block text-sm font-medium text-gray-700">Email Address</label>
@@ -150,57 +158,49 @@
                     }
                 </div>
 
-                <div id="truck-info-section" class="space-y-4 mt-6">
-                    <h3 class="text-lg font-medium text-gray-800">Truck Information</h3>
-                    @if (RegisteredTrucks.Any())
-                    {
-                        <div id="registered-trucks" class="space-y-3">
-                            @foreach (var truck in RegisteredTrucks)
-                            {
-                                <div class="bg-white rounded-lg border border-gray-200 p-4">
-                                    <div class="flex items-center justify-between">
-                                        <div class="flex items-center space-x-3">
-                                            <i class="fa-solid fa-truck-moving text-gray-600"></i>
-                                            <div>
-                                                <h4 class="font-medium">@truck.LicensePlate</h4>
-                                                <p class="text-sm text-gray-500">@truck.Make @truck.Model • @truck.Year</p>
-                                            </div>
-                                        </div>
-                                        <div class="flex items-center space-x-3">
-                                            @if (truck.IsVerified)
-                                            {
-                                                <i class="fa-solid fa-circle-check text-green-500"></i>
-                                            }
-                                            else
-                                            {
-                                                <i class="fa-solid fa-circle-xmark text-red-500" title="@truck.VerificationMessage"></i>
-                                            }
-                                            <button type="button" @onclick="() => EditTruck(truck)" class="text-gray-400 hover:text-gray-600">
-                                                <i class="fa-solid fa-pen-to-square"></i>
-                                            </button>
-                                            <button type="button" @onclick="() => RemoveTruck(truck)" class="text-gray-400 hover:text-red-500">
-                                                <i class="fa-solid fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            }
+                <!-- Trucks Section -->
+
+                <TruckInfo RegisteredTrucks="RegisteredTrucks"
+                           OnEditTruck="EditTruck"
+                           OnRemoveTruck="RemoveTruck"
+                           OnAddNewTruck="AddNewTruck" />
+
+
+                <!-- Driver HomeBase -->
+                <div class="space-y-5 mt-6">
+                    <h3 class="text-lg font-medium text-gray-800">Your Work Area</h3>
+
+                    <div class="flex items-center space-x-3">
+                      <input type="text"
+                             class="flex-1 px-4 py-2 rounded-lg border border-gray-300 bg-gray-100 text-gray-600 text-sm"
+                             placeholder="123 Main Street, Los Angeles, CA"
+                             readonly
+                             value="@DriverProfile.HomeBase" />
+
+                            <button type="button"
+                                    class="h-[42px] px-3 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg flex items-center justify-center font-medium text-sm"
+                                    @onclick="ShowMapPickerSheet">
+                                Map
+                            </button>
+
+
+                    </div>
+
+                    <div class="pt-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Service Radius (km)</label>
+                        <div class="flex items-center">
+                            <input type="range" min="5" max="100" step="1"
+                                   class="w-full accent-orange-500"
+                                   @bind="DriverProfile.ServiceRadiusKm" />
+                            <span class="ml-4 w-20 text-right text-sm text-gray-700">@DriverProfile.ServiceRadiusKm km</span>
                         </div>
-                    }
-                    <button type="button" @onclick="AddNewTruck" class="w-full flex items-center justify-center px-4 py-3 bg-orange-50 text-orange-600 rounded-lg border border-orange-200 hover:bg-orange-100">
-                        <i class="fa-solid fa-plus mr-2"></i>
-                        <span>Add New Truck</span>
-                    </button>
+                        <div class="mt-2 text-xs text-gray-500">
+                            Serving within: <span class="font-medium text-orange-600">@DriverProfile.ServiceRadiusKm</span> km
+                        </div>
+                    </div>
                 </div>
 
-                <div id="service-area-section" class="space-y-4 mt-6">
-                    <h3 class="text-lg font-medium text-gray-800">Service Area</h3>
-                    <button type="button" @onclick="SetServiceAreas" class="w-full flex items-center justify-between px-4 py-3 bg-gray-50 rounded-lg border border-gray-300 hover:border-orange-500">
-                        <span class="text-gray-600">Set Availability &amp; Service Areas</span>
-                        <i class="fa-solid fa-chevron-right text-gray-400"></i>
-                    </button>
-                </div>
-
+                <!-- Password Section -->
                 <div id="password-section" class="space-y-4 mt-6">
                     <div class="space-y-2">
                         <label class="block text-sm font-medium text-gray-700">Password</label>
@@ -273,13 +273,18 @@
                 </p>
             </EditForm>
 
-            @if (!String.IsNullOrEmpty(ActiveBottomSheet))
+            @if (!string.IsNullOrEmpty(ActiveBottomSheet))
             {
                 @switch (ActiveBottomSheet)
                 {
+                    case "map_picker":
+                        <MapPickerBottomSheet OnDismiss="@(() => ActiveBottomSheet = null)"
+                                                OnConfirm="HandleMapPick" />
+                        break;
+
                     case "validation_failed":
                         <ValidationFailedBottomSheet ValidationErrors="@ValidationErrors"
-                                                     OnDismiss="@(() => ActiveBottomSheet = null)" />
+                                                        OnDismiss="@(() => ActiveBottomSheet = null)" />
                         break;
 
                     case "weak_password":
@@ -313,24 +318,28 @@
 
                     case "generic_error":
                         <GenericErrorBottomSheet Message="@ErrorMessage"
-                                                 OnDismiss="@(() => ActiveBottomSheet = null)" />
+                                                    OnDismiss="@(() => ActiveBottomSheet = null)" />
                         break;
+
                     case "email_already_exist":
                         <UserExistsBottomSheet Email="@DriverProfile.Email"
-                           OnDismiss="@(() => ActiveBottomSheet = null)"
-                           OnLogin="@(() => NavigationManager.NavigateTo(AppRoutes.Login, forceLoad: true))" />
-
+                                                OnDismiss="@(() => ActiveBottomSheet = null)"
+                                                OnLogin="@(() => NavigationManager.NavigateTo(AppRoutes.Login, forceLoad: true))" />
                         break;
+
                     case "email_confirmation":
                         <EmailConfirmationBottomSheet Email="@DriverProfile.Email"
-                                                      RegisteredUserId="@RegisteredUserId" />
+                                                        RegisteredUserId="@RegisteredUserId" />
                         break;
                 }
             }
+
         </div>
     </div>
 </div>
 </CenterWrapper>
+
+@using Truckero.Core.Entities
 
 @code {
     private DriverProfileRequest DriverProfile { get; set; } = new DriverProfileRequest();
@@ -341,13 +350,14 @@
     private Guid RegisteredUserId { get; set; }
     private string ResendEmailMessage = string.Empty;
     private bool IsResendingEmail = false;
+    private bool ShowMapPicker = false;
 
     [Required]
-    private string UserId { get; set; } = string.Empty;
+    private Guid UserId { get; set; } = Guid.Empty;
 
     [Required]
     [MinLength(8, ErrorMessage = "Password must be at least 8 characters long")]
-    [StrongPassword(ErrorMessage = "Must include upper, lower, digit, and symbol")] // if available
+    [StrongPassword(ErrorMessage = "Must include upper, lower, digit, and symbol")]
     private string Password { get; set; } = string.Empty;
 
     [Required]
@@ -363,39 +373,54 @@
     private string? LicenseFrontUrl { get; set; }
     private string? LicenseBackUrl { get; set; }
 
-    private List<TruckInfo> RegisteredTrucks { get; set; } = new List<TruckInfo>
+    private List<Truck> RegisteredTrucks { get; set; } = new()
     {
-        new TruckInfo
+        new Truck
         {
             LicensePlate = "ABC-1234",
             Make = "Ford",
             Model = "F-150",
-            Year = "2023",
+            Year = 2023,
             IsVerified = true
         },
-        new TruckInfo
+        new Truck
         {
             LicensePlate = "XYZ-5678",
             Make = "Toyota",
             Model = "Tundra",
-            Year = "2024",
-            IsVerified = false,
-            VerificationMessage = "Registered to another driver"
+            Year = 2024,
+            IsVerified = false
         }
     };
 
-    private class TruckInfo
+    private void AddNewTruck()
     {
-        public string LicensePlate { get; set; } = string.Empty;
-        public string Make { get; set; } = string.Empty;
-        public string Model { get; set; } = string.Empty;
-        public string Year { get; set; } = string.Empty;
-        public bool IsVerified { get; set; }
-        public string VerificationMessage { get; set; } = string.Empty;
+        RegisteredTrucks.Add(new Truck
+        {
+            LicensePlate = $"TRUCK-{RegisteredTrucks.Count + 1}",
+            Make = "New",
+            Model = "Truck",
+            Year = DateTime.Now.Year,
+            IsVerified = false,
+        });
+    }
+
+    private void EditTruck(Truck truck)
+    {
+        // TODO: Add modal or editing form logic
+        Console.WriteLine($"Editing truck: {truck.LicensePlate}");
+    }
+
+    private void RemoveTruck(Truck truck)
+    {
+        RegisteredTrucks.Remove(truck);
     }
 
     protected override void OnInitialized()
     {
+        UserId = Guid.NewGuid();
+        DriverProfile.UserId = UserId;
+
         _editContext = new EditContext(DriverProfile);
         _editContext.OnFieldChanged += (sender, args) => StateHasChanged();
     }
@@ -406,7 +431,6 @@
         ActiveBottomSheet = null;
         ErrorMessage = string.Empty;
 
-        // Run all field validations
         if (!(_editContext?.Validate() ?? false) || !AcceptTerms)
         {
             ActiveBottomSheet = "validation_failed";
@@ -426,84 +450,53 @@
                 LicensePlate = t.LicensePlate,
                 Make = t.Make,
                 Model = t.Model,
-                Year = t.Year
+                Year = t.Year,
             }).ToList();
 
-            // Simulated onboarding call - adapt for your actual API contract
             var authTokenResponse = await OnboardingService.CompleteDriverOnboardingAsync(DriverProfile);
 
-            if (authTokenResponse == null)
+            if (authTokenResponse == null || string.IsNullOrWhiteSpace(authTokenResponse.AccessToken))
             {
-                Console.WriteLine("❌ AuthTokenResponse is null.");
-                ErrorMessage = "Unexpected error: no token received.";
-                ActiveBottomSheet = "generic_error";
-                return;
-            }
-
-            Console.WriteLine($"✅ Token received. Access: {authTokenResponse.AccessToken}, Refresh: {authTokenResponse.RefreshToken}");
-
-            if (string.IsNullOrWhiteSpace(authTokenResponse.AccessToken))
-            {
-                Console.WriteLine("❌ Access token is missing.");
-                ErrorMessage = "Access token was not issued.";
+                ErrorMessage = "Unexpected error: access token not received.";
                 ActiveBottomSheet = "generic_error";
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(authTokenResponse.RefreshToken))
             {
-                Console.WriteLine("⚠️ Refresh token is missing.");
                 ErrorMessage = "Refresh token was not issued.";
                 ActiveBottomSheet = "generic_error";
                 return;
             }
 
-            try
-            {
-                await TokenStorage.SaveAccessTokenAsync(authTokenResponse.AccessToken);
-                await TokenStorage.SaveRefreshTokenAsync(authTokenResponse.RefreshToken);
-                Console.WriteLine("💾 Tokens saved successfully.");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Token storage failed: {ex.Message}");
-                ErrorMessage = "Failed to store login session.";
-                ActiveBottomSheet = "generic_error";
-                return;
-            }
+            await TokenStorage.SaveAccessTokenAsync(authTokenResponse.AccessToken);
+            await TokenStorage.SaveRefreshTokenAsync(authTokenResponse.RefreshToken);
 
-            // 🎉 Show confirmation
             RegisteredUserId = authTokenResponse.UserId;
             ActiveBottomSheet = "email_confirmation";
         }
         catch (OnboardingClientValidationException ex)
         {
             ValidationErrors = ex.Errors;
-            Console.WriteLine($"❌ Validation failed with {ValidationErrors.Count} error(s).");
             ActiveBottomSheet = "validation_failed";
         }
         catch (OnboardingClientException ex)
         {
             ActiveBottomSheet = ex.StepCode;
-
-            // Optionally assign structured error content
             if (ActiveBottomSheet == "generic_error")
                 ErrorMessage = ex.Message;
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Conflict)
         {
-            Console.WriteLine($"⚠️ Conflict: {ex.Message}");
             ActiveBottomSheet = "user_exists";
         }
         catch (HttpRequestException ex)
         {
-            Console.WriteLine($"❌ HTTP Error: {ex.StatusCode}, {ex.Message}");
             ErrorMessage = $"Server error: {ex.Message}";
             ActiveBottomSheet = "generic_error";
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Unexpected error: {ex.Message}");
             ErrorMessage = "An unknown error occurred during registration.";
             ActiveBottomSheet = "generic_error";
         }
@@ -513,13 +506,15 @@
         }
     }
 
+    private static Guid GenerateDeterministicGuidFromEmail(string email)
+    {
+        var hash = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(email));
+        return new Guid(hash.Take(16).ToArray());
+    }
+
     private void HandleInvalidSubmit(EditContext context)
     {
-        ValidationErrors = context
-            .GetValidationMessages()
-            .Take(5)
-            .ToList();
-
+        ValidationErrors = context.GetValidationMessages().Take(5).ToList();
         ActiveBottomSheet = "validation_failed";
     }
 
@@ -528,49 +523,55 @@
     private void TogglePasswordVisibility() => ShowPassword = !ShowPassword;
     private void ToggleConfirmPasswordVisibility() => ShowConfirmPassword = !ShowConfirmPassword;
 
-    private async Task UploadLicenseFront()
+    private async Task UploadLicenseSide(string fileType, Action<string> setUrlAction)
     {
-        IsLoading = true;
-        await Task.Delay(1000);
-        LicenseFrontUrl = "https://storage.googleapis.com/uxpilot-auth.appspot.com/e3957fab62-5c352241b3435cd72397.png";
-        IsLoading = false;
-    }
+        var file = await MediaPicker.CapturePhotoAsync();
+        if (file == null) return;
 
-    private async Task UploadLicenseBack()
-    {
         IsLoading = true;
-        await Task.Delay(1000);
-        LicenseBackUrl = "https://storage.googleapis.com/uxpilot-auth.appspot.com/186d45ce04-753aac84a2d2ecbf2640.png";
-        IsLoading = false;
-    }
 
-    private void AddNewTruck()
-    {
-        RegisteredTrucks.Add(new TruckInfo
+        try
         {
-            LicensePlate = "NEW-TRUCK",
-            Make = "New",
-            Model = "Truck",
-            Year = DateTime.Now.Year.ToString(),
-            IsVerified = false,
-            VerificationMessage = "Pending verification"
-        });
+            using var stream = await file.OpenReadAsync();
+
+            var uploadResult = await MediaService.UploadImageAsync(new ImageUploadRequest
+            {
+                FileStream = stream,
+                FileName = file.FileName,
+                FileType = fileType,
+                AllowedExtensions = new[] { ".jpg", ".jpeg", ".png" },
+                MaxSizeBytes = 5 * 1024 * 1024,
+                UserId = UserId
+            });
+
+            if (uploadResult.Success)
+            {
+                setUrlAction(uploadResult.Url);
+            }
+            else
+            {
+                ActiveBottomSheet = "generic_error";
+                ErrorMessage = uploadResult.ErrorMessage ?? string.Empty;
+            }
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
-    private void EditTruck(TruckInfo truck) { }
-    private void RemoveTruck(TruckInfo truck) => RegisteredTrucks.Remove(truck);
-    private void SetServiceAreas() => NavigationManager.NavigateTo("/registerdriver/serviceareas");
-    private void ShowTermsOfService() { /* TODO: Show modal or navigate to page */ }
-    private void ShowPrivacyPolicy() { /* TODO: Show modal or navigate to page */ }
-    private void SignInWithGoogle() { /* TODO: Implement */ }
-    private void SignInWithFacebook() { /* TODO: Implement */ }
+    private Task UploadLicenseFront() =>
+        UploadLicenseSide("license-front", url => LicenseFrontUrl = url);
+
+    private Task UploadLicenseBack() =>
+        UploadLicenseSide("license-back", url => LicenseBackUrl = url);
 
     private bool IsFormValid =>
         IsTextValid(DriverProfile.FullName) &&
         IsTextValid(DriverProfile.Email) &&
         IsTextValid(DriverProfile.PhoneNumber) &&
         IsTextValid(DriverProfile.LicenseNumber) &&
-        IsTextValid(UserId) &&
+        UserId != Guid.Empty &&
         IsValidEmail(DriverProfile.Email) &&
         IsValidPassword() &&
         AcceptTerms;
@@ -605,7 +606,6 @@
 
     private Task ReportToSupport(MouseEventArgs args)
     {
-        // TODO: Implement support reporting — open chat, pre-fill email, or submit error log
         throw new NotImplementedException();
     }
 
@@ -632,9 +632,7 @@
 
     private async Task SendToNewEmailAsync(string newEmail)
     {
-
         var result = await OnboardingService.SendConfirmationEmailAsync(RegisteredUserId);
-
         ResendEmailMessage = result.Message;
         IsResendingEmail = false;
 
@@ -653,29 +651,19 @@
             if (result.UserFound && result.ProfileFound && result.TokenFound)
             {
                 RegisteredUserId = result.UserId ?? Guid.Empty;
-
-                // 🔐 Check if token is already stored
                 var accessToken = await TokenStorage.GetAccessTokenAsync();
+
                 if (string.IsNullOrWhiteSpace(accessToken))
                 {
-                    // 🔁 Try to resend confirmation email (we lost this earlier)
                     var sendResult = await OnboardingService.SendConfirmationEmailAsync(RegisteredUserId);
+                    ActiveBottomSheet = sendResult.Success
+                        ? "email_confirmation"
+                        : "failure_send_confirmationemail";
 
-                    if (sendResult.Success)
-                    {
-                        // ✅ Email re-sent; prompt user to check
-                        ActiveBottomSheet = "email_confirmation"; // this is the correct bottomsheet for that case
-                    }
-                    else
-                    {
-                        // ❌ Failed to resend
-                        ErrorMessage = sendResult.Message ?? "Failed to resend confirmation email.";
-                        ActiveBottomSheet = "failure_send_confirmationemail";
-                    }
+                    ErrorMessage = sendResult.Message ?? "Failed to resend confirmation email.";
                 }
                 else
                 {
-                    // ✅ All confirmed and token already present
                     NavigationManager.NavigateTo("/onboarding/success");
                 }
             }
@@ -700,6 +688,24 @@
             ActiveBottomSheet = "generic_error";
         }
     }
+
+    private async Task HandleMapPick(MapPickerBottomSheet.MapPickResult result)
+    {
+        DriverProfile.HomeBase = result.Address;
+        DriverProfile.Latitude = result.Latitude;
+        DriverProfile.Longitude = result.Longitude;
+        DriverProfile.ServiceRadiusKm = result.RadiusKm;
+        ShowMapPicker = false;
+    }
+
+    private void ShowMapPickerSheet() => ActiveBottomSheet = "map_picker";
+
+    private void SetServiceAreas() => NavigationManager.NavigateTo("/registerdriver/serviceareas");
+
+    private void ShowTermsOfService() { }
+    private void ShowPrivacyPolicy() { }
+    private void SignInWithGoogle() { }
+    private void SignInWithFacebook() { }
 
     #endregion
 }

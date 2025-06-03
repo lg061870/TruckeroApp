@@ -1,9 +1,18 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Truckero.Core.DataAnnotations;
-using Truckero.Core.Entities;
 
+namespace Truckero.Core.DTOs.Onboarding;
+
+/// <summary>
+/// DTO for driver profile onboarding. Aggregates user + driver license details.
+/// </summary>
 public class DriverProfileRequest
 {
+    // 👤 User Identity
+
+    [Required]
+    public Guid UserId { get; set; }
+
     [Required]
     public string FullName { get; set; } = null!;
 
@@ -16,15 +25,14 @@ public class DriverProfileRequest
     public string PhoneNumber { get; set; } = null!;
 
     [Required]
-    public string LicenseNumber { get; set; } = null!;
-
-    [Required]
     [MinLength(8)]
-    [StrongPassword(ErrorMessage = "Password must include uppercase, lowercase, digit, and symbol")] // add this if available
+    [StrongPassword(ErrorMessage = "Password must include uppercase, lowercase, digit, and symbol")]
     public string Password { get; set; } = null!;
 
+    // 🪪 Driver License
+
     [Required]
-    public string UserId { get; set; } = null!;
+    public string LicenseNumber { get; set; } = null!;
 
     [Required]
     public string LicenseFrontUrl { get; set; } = null!;
@@ -32,24 +40,30 @@ public class DriverProfileRequest
     [Required]
     public string LicenseBackUrl { get; set; } = null!;
 
-    // Optional: add Address, ServiceArea, Payment if required:
-    // [Required]
-    // [StringLength(200, MinimumLength = 5, ErrorMessage = "Address must be between 5 and 200 characters")]
-    // public string Address { get; set; } = null!;
+    [Required]
+    public string HomeBase { get; set; } = null!; // e.g., "Pavas, San José"
 
-    // ... other fields ...
+    [Range(1, 100, ErrorMessage = "Radius must be between 1 and 100 km")]
+    public int ServiceRadiusKm { get; set; } = 25;
+    public double Latitude { get; set; }
+    public double Longitude { get; set; }
+
+    // 🚚 Optional: Trucks (can be added post-registration)
+
     public List<TruckDto> Trucks { get; set; } = new();
 
     public class TruckDto
     {
         [Required]
         public string LicensePlate { get; set; } = null!;
+
         [Required]
         public string Make { get; set; } = null!;
+
         [Required]
         public string Model { get; set; } = null!;
-        [Required]
-        public string Year { get; set; } = null!;
-    }
 
+        [Required]
+        public int Year { get; set; }
+    }
 }

@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Truckero.Core.Entities;
 
-public class Vehicle
+public class Truck
 {
     [Key]
     public Guid Id { get; set; }

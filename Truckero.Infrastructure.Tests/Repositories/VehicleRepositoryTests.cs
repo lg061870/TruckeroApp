@@ -40,7 +40,7 @@ public class VehicleRepositoryTests
     [Fact]
     public async Task AddAsync_Should_Add_Vehicle_When_Valid()
     {
-        var vehicle = new Vehicle
+        var vehicle = new Truck
         {
             Id = Guid.NewGuid(),
             DriverProfileId = Guid.NewGuid(),
@@ -60,7 +60,7 @@ public class VehicleRepositoryTests
     {
         var driverId = Guid.NewGuid();
 
-        var vehicle1 = new Vehicle
+        var vehicle1 = new Truck
         {
             Id = Guid.NewGuid(),
             DriverProfileId = driverId,
@@ -68,7 +68,7 @@ public class VehicleRepositoryTests
             VehicleTypeId = SeededVehicleTypeId
         };
 
-        var vehicle2 = new Vehicle
+        var vehicle2 = new Truck
         {
             Id = Guid.NewGuid(),
             DriverProfileId = driverId,
@@ -85,7 +85,7 @@ public class VehicleRepositoryTests
     [Fact]
     public async Task AddAsync_Should_Throw_When_VehicleType_Is_Invalid()
     {
-        var vehicle = new Vehicle
+        var vehicle = new Truck
         {
             Id = Guid.NewGuid(),
             DriverProfileId = Guid.NewGuid(),
@@ -100,7 +100,7 @@ public class VehicleRepositoryTests
     [Fact]
     public async Task GetByIdAsync_Should_Return_Vehicle()
     {
-        var vehicle = new Vehicle
+        var vehicle = new Truck
         {
             Id = Guid.NewGuid(),
             DriverProfileId = Guid.NewGuid(),
@@ -121,14 +121,14 @@ public class VehicleRepositoryTests
     {
         var driverId = Guid.NewGuid();
 
-        var vehicle1 = new Vehicle
+        var vehicle1 = new Truck
         {
             Id = Guid.NewGuid(),
             DriverProfileId = driverId,
             LicensePlate = "AAA111",
             VehicleTypeId = SeededVehicleTypeId
         };
-        var vehicle2 = new Vehicle
+        var vehicle2 = new Truck
         {
             Id = Guid.NewGuid(),
             DriverProfileId = driverId,
@@ -146,7 +146,7 @@ public class VehicleRepositoryTests
     [Fact]
     public async Task DeleteAsync_Should_Remove_Vehicle()
     {
-        var vehicle = new Vehicle
+        var vehicle = new Truck
         {
             Id = Guid.NewGuid(),
             DriverProfileId = Guid.NewGuid(),
@@ -166,7 +166,7 @@ public class VehicleRepositoryTests
     [Fact]
     public async Task UpdateAsync_Should_Modify_Existing_Vehicle()
     {
-        var vehicle = new Vehicle
+        var vehicle = new Truck
         {
             Id = Guid.NewGuid(),
             DriverProfileId = Guid.NewGuid(),

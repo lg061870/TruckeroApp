@@ -2,8 +2,8 @@
 
 public interface IVehicleService
 {
-    Task AddAsync(Vehicle vehicle);
+    Task AddAsync(Truck vehicle);
     Task DeleteAsync(Guid vehicleId);
-    Task<IEnumerable<Vehicle>> GetVehiclesForDriverAsync(Guid driverProfileId);
-    Task UpdateAsync(Vehicle vehicle);
+    Task<IEnumerable<Truck>> GetVehiclesForDriverAsync(Guid driverProfileId);
+    Task UpdateAsync(Truck vehicle);
 }

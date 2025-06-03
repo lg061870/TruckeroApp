@@ -5,10 +5,10 @@ namespace Truckero.Core.Interfaces.Repositories;
 
 public interface IVehicleRepository
 {
-    Task<Vehicle?> GetByIdAsync(Guid id);
-    Task<IEnumerable<Vehicle>> GetByDriverIdAsync(Guid driverUserId);
-    Task AddAsync(Vehicle vehicle);
-    Task UpdateAsync(Vehicle vehicle);
+    Task<Truck?> GetByIdAsync(Guid id);
+    Task<IEnumerable<Truck>> GetByDriverIdAsync(Guid driverUserId);
+    Task AddAsync(Truck vehicle);
+    Task UpdateAsync(Truck vehicle);
     Task DeleteAsync(Guid id);
 }
 

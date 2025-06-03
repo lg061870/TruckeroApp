@@ -11,9 +11,9 @@ public interface IDriverRepository
     Task SaveDriverProfileChangesAsync();
 
     // Vehicle subqueries (as driver owns many)
-    Task<List<Vehicle>> GetVehiclesAsync(Guid userId);
-    Task<Vehicle?> GetVehicleByIdAsync(Guid vehicleId);
-    Task AddVehicleAsync(Vehicle vehicle);
-    Task UpdateVehicleAsync(Vehicle vehicle);
+    Task<List<Truck>> GetVehiclesAsync(Guid userId);
+    Task<Truck?> GetVehicleByIdAsync(Guid vehicleId);
+    Task AddVehicleAsync(Truck vehicle);
+    Task UpdateVehicleAsync(Truck vehicle);
     Task DeleteVehicleAsync(Guid vehicleId);
 }

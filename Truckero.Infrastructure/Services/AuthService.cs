@@ -52,9 +52,13 @@ public class AuthService : IAuthService
 
         var roleId = await _roleRepo.GetDefaultRoleIdAsync();
 
+        var userId = request.UserId == Guid.Empty
+            ? request.UserId
+            : Guid.NewGuid();
+
         var user = new User
         {
-            Id = Guid.NewGuid(),
+            Id = userId,
             Email = request.Email,
             PasswordHash = _hashService.Hash(request.Password),
             RoleId = roleId,

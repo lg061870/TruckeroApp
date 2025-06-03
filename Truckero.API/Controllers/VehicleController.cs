@@ -16,7 +16,7 @@ public class VehicleController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> RegisterVehicle([FromBody] Vehicle vehicle)
+    public async Task<IActionResult> RegisterVehicle([FromBody] Truck vehicle)
     {
         try
         {

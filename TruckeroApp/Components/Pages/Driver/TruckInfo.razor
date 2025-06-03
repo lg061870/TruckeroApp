@@ -1,0 +1,44 @@
+﻿@using Truckero.Core.Entities
+
+
+<div id="truck-info-section" class="space-y-4 mt-6">
+    <h3 class="text-lg font-medium text-gray-800">Truck Information</h3>
+
+    @if (RegisteredTrucks?.Any() == true)
+    {
+        <div id="registered-trucks" class="space-y-3">
+            @foreach (var truck in RegisteredTrucks)
+            {
+                <TruckInfoCard Truck="truck"
+                               OnEdit="EditTruck"
+                               OnRemove="RemoveTruck" />
+            }
+        </div>
+    }
+
+    <button type="button" @onclick="AddNewTruck"
+            class="w-full flex items-center justify-center px-4 py-3 bg-orange-50 text-orange-600 rounded-lg border border-orange-200 hover:bg-orange-100">
+        <i class="fa-solid fa-plus mr-2"></i>
+        <span>Add New Truck</span>
+    </button>
+</div>
+
+
+
+@code {
+    [Parameter]
+    public List<Truck> RegisteredTrucks { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<Truck> OnEditTruck { get; set; }
+
+    [Parameter]
+    public EventCallback<Truck> OnRemoveTruck { get; set; }
+
+    [Parameter]
+    public EventCallback OnAddNewTruck { get; set; }
+
+    private void EditTruck(Truck truck) => OnEditTruck.InvokeAsync(truck);
+    private void RemoveTruck(Truck truck) => OnRemoveTruck.InvokeAsync(truck);
+    private void AddNewTruck() => OnAddNewTruck.InvokeAsync();
+}

@@ -38,7 +38,7 @@ public class DriverApiClientService : IDriverService
         return JsonSerializer.Deserialize<DriverProfile>(json, _jsonOptions);
     }
 
-    public async Task<List<Vehicle>> GetVehiclesAsync(Guid userId)
+    public async Task<List<Truck>> GetVehiclesAsync(Guid userId)
     {
         var envelope = AuthenticatedEnvelope.Create(
             RequireAccessToken(), _http, HttpMethod.Get, $"/api/Driver/{userId}/vehicles"
@@ -47,10 +47,10 @@ public class DriverApiClientService : IDriverService
         if (!response.IsSuccessStatusCode) return new();
 
         var json = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<List<Vehicle>>(json, _jsonOptions) ?? new();
+        return JsonSerializer.Deserialize<List<Truck>>(json, _jsonOptions) ?? new();
     }
 
-    public async Task AddVehicleAsync(Vehicle vehicle)
+    public async Task AddVehicleAsync(Truck vehicle)
     {
         var envelope = AuthenticatedEnvelope.Create(
             RequireAccessToken(), _http, HttpMethod.Post, "/api/Driver/vehicles", vehicle
@@ -59,7 +59,7 @@ public class DriverApiClientService : IDriverService
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task UpdateVehicleAsync(Vehicle vehicle)
+    public async Task UpdateVehicleAsync(Truck vehicle)
     {
         var envelope = AuthenticatedEnvelope.Create(
             RequireAccessToken(), _http, HttpMethod.Put, $"/api/Driver/vehicles/{vehicle.Id}", vehicle
