@@ -16,4 +16,13 @@ public static class ExceptionCodes
     public const string InvalidHttpRequestSecurityHeader = "invalid-httprequest-securityheader";
     public const string NetworkError = "network-error";
     public const string LoginFailure = "login-failure";
+
+    // PayoutAccount and PaymentMethod error codes
+    public const string CannotDeleteDefault = "CANNOT_DELETE_DEFAULT";
+    public const string PayoutAccountNotFound = "PAYOUT_ACCOUNT_NOT_FOUND";
+    public const string UserNotFound = "USER_NOT_FOUND";
+    public const string InvalidPaymentMethodType = "INVALID_PAYMENT_METHOD_TYPE";
+    public const string IdMismatch = "ID_MISMATCH";
+    public const string ValidationError = "VALIDATION_ERROR";
+    public const string UnhandledException = "UNHANDLED_EXCEPTION";
 }

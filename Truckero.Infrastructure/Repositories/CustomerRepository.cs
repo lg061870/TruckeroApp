@@ -17,12 +17,25 @@ public class CustomerRepository : ICustomerRepository
     public async Task<CustomerProfile?> GetCustomerProfileByUserIdAsync(Guid userId)
     {
         return await _context.CustomerProfiles
-            .FirstOrDefaultAsync(p => p.UserId == userId);
+            .Include(cp => cp.PaymentMethods)
+            .FirstOrDefaultAsync(cp => cp.UserId == userId);
+    }
+
+    public async Task<IEnumerable<CustomerProfile>> GetAllCustomerProfilesAsync()
+    {
+        return await _context.CustomerProfiles
+            .Include(cp => cp.User)
+            .ToListAsync();
     }
 
     public async Task AddCustomerProfileAsync(CustomerProfile profile)
     {
         await _context.CustomerProfiles.AddAsync(profile);
+    }
+
+    public async Task UpdateCustomerProfileAsync(CustomerProfile profile)
+    {
+        _context.Entry(profile).State = EntityState.Modified;
     }
 
     public async Task SaveCustomerProfileChangesAsync()
@@ -32,9 +45,7 @@ public class CustomerRepository : ICustomerRepository
 
     public async Task DeleteCustomerProfileChangesAsync(Guid userId)
     {
-        var profile = await _context.CustomerProfiles
-            .FirstOrDefaultAsync(p => p.UserId == userId);
-
+        var profile = await _context.CustomerProfiles.FirstOrDefaultAsync(cp => cp.UserId == userId);
         if (profile != null)
         {
             _context.CustomerProfiles.Remove(profile);

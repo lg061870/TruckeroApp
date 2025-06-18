@@ -138,6 +138,25 @@
                 </button>
             </div>
         </div>
+
+        @if (!string.IsNullOrEmpty(ActiveBottomSheet))
+        {
+            @switch (ActiveBottomSheet)
+            {
+                case "email_not_verified":
+                    <EmailResendBottomSheet Email="@emailOrPhone"
+                                            IsResendingEmail="@IsResendingEmail"
+                                            ResendEmailMessage="@ResendEmailMessage"
+                                            ResendToOriginalEmail="@ResendToOriginalEmailAsync"
+                                            SendToNewEmail="@SendToNewEmailAsync"
+                                            OnDismiss="@(() => ActiveBottomSheet = null)" />
+                    break;
+                case "generic_error":
+                    <GenericErrorBottomSheet Message="@loginStepMessage" OnDismiss="@(() => ActiveBottomSheet = null)" />
+                    break;
+                    // Add more case as needed
+            }
+        }
     }
 </CenterWrapper>
 
@@ -148,7 +167,11 @@
 
 @code {
     [Parameter][SupplyParameterFromQuery(Name = "tokenStatus")] public string? TokenStatus { get; set; }
-
+    private string? loginStepCode;
+    private string? loginStepMessage;
+    private string? ActiveBottomSheet { get; set; }
+    private bool IsResendingEmail => isSending;
+    private string? ResendEmailMessage => loginStepMessage;
     private string password = "";
     private string? errorMessage, alertMessage, resetError, successMessage;
     private bool showForgotPassword = false, isLoading = false, isSending = false, isPasswordVisible = false;
@@ -178,51 +201,107 @@
             alertMessage = "Your session has expired. Please log in again or reset your password.";
         }
     }
-
+    private async Task ResendToOriginalEmailAsync()
+    {
+        isSending = true;
+        loginStepMessage = string.Empty;
+        try
+        {
+            // TODO: Replace with actual resend logic (API call)
+            await Task.Delay(1000); // Simulate API call
+            loginStepMessage = "Confirmation email sent. Please check your inbox.";
+        }
+        catch (Exception ex)
+        {
+            loginStepMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isSending = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+    private async Task SendToNewEmailAsync(string newEmail)
+    {
+        isSending = true;
+        loginStepMessage = string.Empty;
+        try
+        {
+            // TODO: Replace with actual resend logic (API call)
+            await Task.Delay(1000); // Simulate API call
+            loginStepMessage = $"Confirmation email sent to {newEmail}. Please check your inbox.";
+        }
+        catch (Exception ex)
+        {
+            loginStepMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isSending = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
     private async Task LoginAsync()
     {
         errorMessage = "";
+        loginStepCode = null;
+        loginStepMessage = null;
 
-        await UiExecutionHelper.SafeExecuteAsync(
-            async () =>
+        isLoading = true;
+        try
+        {
+            var response = await AuthService.LoginUserAsync(new AuthLoginRequest { Email = emailOrPhone, Password = password });
+            await TokenStorage.ClearAllAsync(); // Clear any existing tokens before saving new ones
+            await TokenStorage.SaveAccessTokenAsync(response.AccessToken);
+            await TokenStorage.SaveRefreshTokenAsync(response.RefreshToken);
+
+            SessionInfo sessionInfo = new SessionInfo
             {
-                var response = await AuthService.LoginUserAsync(new AuthLoginRequest { Email = emailOrPhone, Password = password });
-                await TokenStorage.ClearAllAsync(); // Clear any existing tokens before saving new ones
-                await TokenStorage.SaveAccessTokenAsync(response.AccessToken);
-                await TokenStorage.SaveRefreshTokenAsync(response.RefreshToken);
+                TokenValid = response.Success,
+                UserId = response.UserId,
+            };
 
-                SessionInfo sessionInfo = new SessionInfo
-                {
-                    TokenValid = response.Success,
-                    UserId = response.UserId,
-                };
+            // We need to set the AccessToken in the session context for API Controller authentication
+            SessionContext.SetFromSession(sessionInfo, response.AccessToken);
 
-                // We need to set the AccessToken in the session context for API Controller authentication
-                SessionContext.SetFromSession(sessionInfo, response.AccessToken);
+            var ActiveRole = await AuthService.GetActiveRoleAsync();       // string
+            var AvailableRoles = await AuthService.GetAllRolesAsync();     // List<string>
 
-                var ActiveRole = await AuthService.GetActiveRoleAsync();       // string
-                var AvailableRoles = await AuthService.GetAllRolesAsync();     // List<string>
+            // Update session context with available roles, and active role
+            SessionContext.Set(response.AccessToken, AvailableRoles, ActiveRole);
 
-                // Update session context with available roles, and active role
-                SessionContext.Set(response.AccessToken, AvailableRoles, ActiveRole);
+            var redirect = ActiveRole switch
+            {
+                "Customer" => AppRoutes.RequestFreight,
+                "Driver" => AppRoutes.PickupQueue,
+                "StoreClerk" => AppRoutes.RegisterStoreClerk,
+                _ => "/"
+            };
 
-                var redirect = ActiveRole switch
-                {
-                    "Customer" => AppRoutes.RequestFreight,
-                    "Driver" => AppRoutes.PickupQueue,
-                    "StoreClerk" => AppRoutes.RegisterStoreClerk,
-                    _ => "/"
-                };
+            Nav.NavigateTo(redirect, forceLoad: true);
+        }
+        catch (Truckero.Core.Exceptions.LoginStepException loginEx)
+        {
+            loginStepCode = loginEx.StepCode;
+            loginStepMessage = loginEx.Message;
+            ActiveBottomSheet = loginStepCode;
+            loginStepMessage = loginEx.Message;
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Login failed: {ex.Message}";
+            errorMessage = ex.Message;
+            ActiveBottomSheet = "generic_error";
+            await InvokeAsync(StateHasChanged);
+        }
+        finally
+        {
+            isLoading = false;
+        }
 
-                Nav.NavigateTo(redirect, forceLoad: true);
-            },
-            err => errorMessage = $"Login failed: {err}",
-            success => { },
-            loading => isLoading = loading,
-            defaultErrorMessage: ""
-        );
+        
     }
-
     private async Task SendResetLink()
     {
         await UiExecutionHelper.SafeExecuteAsync(
@@ -238,12 +317,10 @@
             successMessage: "Reset link sent! Check your inbox."
         );
     }
-
     private async Task HandleKeyPress(KeyboardEventArgs e)
     {
         if (e.Key == "Enter") await LoginAsync();
     }
-
     private void ToggleForgotPassword(bool show)
     {
         showForgotPassword = show;
@@ -251,31 +328,25 @@
         resetError = null;
         successMessage = null;
     }
-
     private bool ShouldDisableResetButton() => isSending || !string.IsNullOrWhiteSpace(resetError) || emailOrPhone.Trim().Length < 4;
-
     private string GetResetButtonClasses() =>
         ShouldDisableResetButton()
             ? "w-full bg-gray-300 text-white py-3 rounded-lg font-medium cursor-not-allowed"
             : "w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600";
-
     private string GetLoginButtonClasses() =>
         IsLoginDisabled
             ? "w-full bg-gray-300 text-white py-3 rounded-xl font-semibold cursor-not-allowed"
             : "w-full bg-[#FF6B00] text-white py-3 rounded-xl font-semibold hover:bg-[#e65100]";
-
     private async Task LoginWithGoogleAsync()
     {
         Console.WriteLine("Google login clicked");
         await Task.CompletedTask;
     }
-
     private async Task LoginWithFacebookAsync()
     {
         Console.WriteLine("Facebook login clicked");
         await Task.CompletedTask;
     }
-
     private bool IsLoginDisabled =>
         isLoading ||
         string.IsNullOrWhiteSpace(emailOrPhone) ||
@@ -283,7 +354,6 @@
         emailOrPhone.Trim().Length < 4 ||
         password.Trim().Length < 4 ||
         !IsValidEmail(emailOrPhone);
-
     private bool IsValidEmail(string input)
     {
         try

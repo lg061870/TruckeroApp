@@ -4,6 +4,7 @@
 		<TargetFramework>net9.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<Configurations>Debug;Release;UnitTesting</Configurations>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -11,12 +12,14 @@
 		<Folder Include="Diagnostics\" />
 		<Folder Include="Middleware\" />
 		<Folder Include="Mocks\APIControllers\" />
-		<Folder Include="TestData\" />
+		<Folder Include="CloneDBs\" />
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.5" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.5" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.5" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.5" />
 	</ItemGroup>
 
 	<ItemGroup>

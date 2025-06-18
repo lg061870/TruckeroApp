@@ -3,6 +3,7 @@ using Truckero.Infrastructure.Data;
 using Truckero.Infrastructure.Repositories;
 using Truckero.Diagnostics.Seeders;
 using Truckero.Core.Enums;
+using Xunit;
 
 namespace Truckero.Infrastructure.Tests.Repositories;
 

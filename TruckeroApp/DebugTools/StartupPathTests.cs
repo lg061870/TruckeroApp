@@ -78,7 +78,7 @@ public static class StartupTestPaths
 
         await tokenRepo.AddTokenAsync(tokenEntry);
 
-#if DEBUG
+#if DEBUG || UNITTESTING
         var confirm = await tokenRepo.GetTokenByUserIdAsync(userId);
         Console.WriteLine($"[TEST] ValidToken created. Role persisted for user: {confirm?.Role}");
 #endif

@@ -15,6 +15,12 @@ namespace Truckero.Core.Entities
 
         public string? PhoneNumber { get; set; }
 
+        // Common profile properties moved from CustomerProfile and DriverProfile
+        [Required]
+        public string FullName { get; set; } = string.Empty;
+        
+        public string? Address { get; set; }
+
         // 🔗 Default role (used for login/routing)
         public Guid RoleId { get; set; }
         public Role Role { get; set; } = null!;

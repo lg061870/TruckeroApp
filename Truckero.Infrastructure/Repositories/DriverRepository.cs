@@ -24,7 +24,7 @@ public class DriverRepository : IDriverRepository
     public async Task<DriverProfile?> GetWithVehiclesAsync(Guid userId)
     {
         return await _context.DriverProfiles
-            .Include(dp => dp.Vehicles)
+            .Include(dp => dp.Trucks)
             .FirstOrDefaultAsync(dp => dp.UserId == userId);
     }
 
@@ -46,35 +46,35 @@ public class DriverRepository : IDriverRepository
 
     public async Task<List<Truck>> GetVehiclesAsync(Guid userId)
     {
-        return await _context.Vehicles
+        return await _context.Trucks
             .Where(v => v.DriverProfile.UserId == userId)
             .ToListAsync();
     }
 
     public async Task<Truck?> GetVehicleByIdAsync(Guid vehicleId)
     {
-        return await _context.Vehicles
-            .Include(v => v.VehicleType)
+        return await _context.Trucks
+            .Include(v => v.TruckType)
             .FirstOrDefaultAsync(v => v.Id == vehicleId);
     }
 
     public async Task AddVehicleAsync(Truck vehicle)
     {
-        await _context.Vehicles.AddAsync(vehicle);
+        await _context.Trucks.AddAsync(vehicle);
     }
 
     public Task UpdateVehicleAsync(Truck vehicle)
     {
-        _context.Vehicles.Update(vehicle);
+        _context.Trucks.Update(vehicle);
         return Task.CompletedTask;
     }
 
     public async Task DeleteVehicleAsync(Guid vehicleId)
     {
-        var vehicle = await _context.Vehicles.FindAsync(vehicleId);
+        var vehicle = await _context.Trucks.FindAsync(vehicleId);
         if (vehicle != null)
         {
-            _context.Vehicles.Remove(vehicle);
+            _context.Trucks.Remove(vehicle);
         }
     }
 }

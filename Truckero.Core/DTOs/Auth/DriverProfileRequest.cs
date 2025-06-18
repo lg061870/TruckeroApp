@@ -51,6 +51,7 @@ public class DriverProfileRequest
     // 🚚 Optional: Trucks (can be added post-registration)
 
     public List<TruckDto> Trucks { get; set; } = new();
+    public List<PayoutAccountDto> PayoutAccounts { get; set; } = new();
 
     public class TruckDto
     {
@@ -58,10 +59,13 @@ public class DriverProfileRequest
         public string LicensePlate { get; set; } = null!;
 
         [Required]
-        public string Make { get; set; } = null!;
+        public Guid TruckMakeId { get; set; } // Use the ID, not the name
 
         [Required]
-        public string Model { get; set; } = null!;
+        public Guid TruckTypeId { get; set; } // Use the ID, not the name
+
+        [Required]
+        public Guid TruckModelId { get; set; } // Use the ID, not the name
 
         [Required]
         public int Year { get; set; }

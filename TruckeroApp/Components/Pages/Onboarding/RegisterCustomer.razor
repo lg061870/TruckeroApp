@@ -377,12 +377,12 @@
 
     private void NavigateBack()
     {
-        NavigationManager.NavigateTo("/register");
+        NavigationManager.NavigateTo(AppRoutes.StartupRouter, forceLoad: true);
     }
 
     private void NavigateToLogin()
     {
-        NavigationManager.NavigateTo("/login");
+        NavigationManager.NavigateTo(AppRoutes.Login);
     }
 
     private void TogglePasswordVisibility()

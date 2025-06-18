@@ -91,7 +91,7 @@ public class OnboardingController : ControllerBase
         }
         catch (OnboardingStepException ex)
         {
-            return BadRequest(new { error = ex.Message, code = ex.Step });
+            return BadRequest(new { error = ex.Message, code = ex.StepCode });
         }
         catch (InvalidOperationException ex)
         {
@@ -107,7 +107,7 @@ public class OnboardingController : ControllerBase
     /// <summary>
     /// Completes onboarding for a driver user.
     /// </summary>
-    [Authorize]
+    [AllowAnonymous]
     [HttpPost("driver")]
     public async Task<IActionResult> CompleteDriverOnboarding(
         [FromQuery] Guid userId,
@@ -124,7 +124,7 @@ public class OnboardingController : ControllerBase
         }
         catch (OnboardingStepException ex)
         {
-            return BadRequest(new { error = ex.Message, code = ex.Step });
+            return BadRequest(new { error = ex.Message, code = ex.StepCode });
         }
         catch (InvalidOperationException ex)
         {

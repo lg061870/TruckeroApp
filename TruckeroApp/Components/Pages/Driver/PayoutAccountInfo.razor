@@ -1,0 +1,48 @@
+@using Truckero.Core.DTOs.Onboarding
+
+<div id="payout-account-info-section" class="space-y-4 mt-6">
+    <h3 class="text-lg font-medium text-gray-800">Payout Accounts</h3>
+
+    @if (RegisteredPayoutAccounts?.Any() == true)
+    {
+        <div id="registered-payout-accounts" class="space-y-3">
+            @foreach (var account in RegisteredPayoutAccounts)
+            {
+                <PayoutAccountInfoCard PayoutAccount="account"
+                                      OnEdit="EditPayoutAccount"
+                                      OnRemove="RemovePayoutAccount" />
+            }
+        </div>
+    }
+
+    <button type="button" @onclick="AddNewPayoutAccount"
+            class="@GetAddPayoutAccountButtonClasses()"
+            disabled="@(!IsAddPayoutAccountEnabled)">
+        <i class="fa-solid fa-plus mr-2"></i>
+        <span>Add New Payout Account</span>
+    </button>
+</div>
+
+@code {
+    [Parameter]
+    public List<PayoutAccountDto> RegisteredPayoutAccounts { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<PayoutAccountDto> OnEditPayoutAccount { get; set; }
+
+    [Parameter]
+    public EventCallback<PayoutAccountDto> OnRemovePayoutAccount { get; set; }
+
+    [Parameter]
+    public EventCallback OnAddNewPayoutAccount { get; set; }
+
+    [Parameter]
+    public bool IsAddPayoutAccountEnabled { get; set; } = true;
+
+    [Parameter]
+    public Func<string> GetAddPayoutAccountButtonClasses { get; set; } = () => "w-full flex items-center justify-center px-4 py-3 bg-orange-50 text-orange-600 rounded-lg border border-orange-200 hover:bg-orange-100";
+
+    private void EditPayoutAccount(PayoutAccountDto account) => OnEditPayoutAccount.InvokeAsync(account);
+    private void RemovePayoutAccount(PayoutAccountDto account) => OnRemovePayoutAccount.InvokeAsync(account);
+    private void AddNewPayoutAccount() => OnAddNewPayoutAccount.InvokeAsync();
+}

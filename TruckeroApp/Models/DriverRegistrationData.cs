@@ -41,6 +41,11 @@ public class DriverRegistrationData
     public List<Truck> Trucks { get; set; } = new();
 
     /// <summary>
+    /// Payout accounts registered by the driver
+    /// </summary>
+    public List<PayoutAccountDto> PayoutAccounts { get; set; } = new();
+
+    /// <summary>
     /// Indicates whether this registration has been submitted to the API
     /// </summary>
     public bool IsRegisteredWithApi { get; set; } = false;
@@ -55,6 +60,7 @@ public class DriverRegistrationData
         string? licenseFrontUrl,
         string? licenseBackUrl, 
         List<Truck> trucks,
+        List<PayoutAccountDto> payoutAccounts,
         bool isRegisteredWithApi = false)
     {
         return new DriverRegistrationData
@@ -66,6 +72,7 @@ public class DriverRegistrationData
             LicenseFrontUrl = licenseFrontUrl,
             LicenseBackUrl = licenseBackUrl,
             Trucks = trucks,
+            PayoutAccounts = payoutAccounts,
             IsRegisteredWithApi = isRegisteredWithApi
         };
     }

@@ -18,16 +18,16 @@ public class UserRepository : IUserRepository
     {
         return await _context.Users
             .Include(u => u.Role)
-            .Include(u => u.Onboarding)
             .FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
     }
 
     public async Task<User?> GetUserByIdAsync(Guid id)
     {
-        return await _context.Users
+        var result = await _context.Users
             .Include(u => u.Role)
-            .Include(u => u.Onboarding)
             .FirstOrDefaultAsync(u => u.Id == id);
+
+        return result;
     }
 
     public async Task<User?> GetUserByAccessTokenAsync(string accessToken)
@@ -53,5 +53,4 @@ public class UserRepository : IUserRepository
         _context.Users.Remove(user);
         await _context.SaveChangesAsync();
     }
-
 }

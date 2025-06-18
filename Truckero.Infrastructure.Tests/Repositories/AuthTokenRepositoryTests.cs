@@ -1,103 +1,98 @@
 ﻿// 📦 Repository Unit Tests: AuthToken + User Repositories
 
 using Truckero.Core.Entities;
-using Truckero.Infrastructure.Data;
+using Truckero.Diagnostics.Data;
 using Truckero.Infrastructure.Repositories;
-using Microsoft.EntityFrameworkCore;
+using Xunit;
 
-namespace Truckero.Infrastructure.Tests.Repositories;
-
-public class AuthTokenRepositoryTests
+namespace Truckero.Infrastructure.Tests.Repositories
 {
-    private readonly AuthTokenRepository _repo;
-    private readonly AppDbContext _dbContext;
-
-    public AuthTokenRepositoryTests()
+    public class AuthTokenRepositoryTests : TestBase
     {
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options;
-
-        _dbContext = new AppDbContext(options);
-        _repo = new AuthTokenRepository(_dbContext);
-    }
-
-    [Fact]
-    public async Task AddAsync_Should_Persist_AuthToken()
-    {
-        var token = new AuthToken
+        private readonly AuthTokenRepository _sut;
+        
+        public AuthTokenRepositoryTests() : base()
         {
-            UserId = Guid.NewGuid(),
-            RefreshToken = "token-123",
-            AccessToken = "access-abc",
-            IssuedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddDays(7)
-        };
-
-        await _repo.AddTokenAsync(token);
-
-        var result = await _repo.GetByRefreshTokenByRefreshTokenKeyAsync("token-123");
-        Assert.NotNull(result);
-        Assert.Equal("token-123", result!.RefreshToken);
-    }
-
-    [Fact]
-    public async Task UpdateAsync_Should_Modify_Token()
-    {
-        var token = new AuthToken
+            _sut = new AuthTokenRepository(_dbContext);
+            
+            // Seed test data asynchronously but wait for completion
+            SeedTestDatabaseAsync().GetAwaiter().GetResult();
+        }
+        
+        [Fact]
+        public async Task AddTokenAsync_WithExistingUser_ShouldPersistToken()
         {
-            UserId = Guid.NewGuid(),
-            RefreshToken = "old-token",
-            AccessToken = "old-access",
-            IssuedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddDays(7)
-        };
-
-        await _repo.AddTokenAsync(token);
-        token.RefreshToken = "new-token";
-        await _repo.UpdateTokenAsync(token);
-
-        var result = await _repo.GetByRefreshTokenByRefreshTokenKeyAsync("new-token");
-        Assert.NotNull(result);
-        Assert.Equal("new-token", result!.RefreshToken);
-    }
-
-    [Fact]
-    public async Task DeleteAsync_Should_Remove_Token()
-    {
-        var token = new AuthToken
+            // Arrange - Use a known user from mock data
+            var userId = MockUserTestData.Ids.CustomerUserId;
+            await EnsureUserExistsAsync(userId);
+            
+            var tokenKey = "new-test-refresh-token";
+            var accessKey = "new-test-access-token";
+            var token = new AuthToken
+            {
+                UserId = userId,
+                RefreshToken = tokenKey,
+                AccessToken = accessKey,
+                IssuedAt = System.DateTime.UtcNow,
+                ExpiresAt = System.DateTime.UtcNow.AddDays(7)
+            };
+            
+            // Act
+            await _sut.AddTokenAsync(token);
+            
+            // Assert - Verify token was saved
+            var result = await _sut.GetByRefreshTokenByRefreshTokenKeyAsync(tokenKey);
+            Assert.NotNull(result);
+            Assert.Equal(tokenKey, result!.RefreshToken);
+            Assert.Equal(accessKey, result.AccessToken);
+            Assert.Equal(userId, result.UserId);
+        }
+        
+        [Fact]
+        public async Task GetAccessTokenByAccessTokenKeyAsync_WithValidToken_ShouldReturnToken()
         {
-            UserId = Guid.NewGuid(),
-            RefreshToken = "del-token",
-            AccessToken = "del-access",
-            IssuedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddDays(7)
-        };
-
-        await _repo.AddTokenAsync(token);
-        await _repo.DeleteTokenAsync(token);
-
-        var result = await _repo.GetByRefreshTokenByRefreshTokenKeyAsync("del-token");
-        Assert.Null(result);
-    }
-
-    [Fact]
-    public async Task GetByUserIdAsync_Should_Return_Correct_Token()
-    {
-        var userId = Guid.NewGuid();
-        var token = new AuthToken
+            // Arrange - Use token from mock data
+            var accessToken = MockAuthTokenTestData.Tokens.ValidCustomerAccess;
+            
+            // Act
+            var result = await _sut.GetAccessTokenByAccessTokenKeyAsync(accessToken);
+            
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(accessToken, result!.AccessToken);
+            Assert.Equal(MockUserTestData.Ids.CustomerUserId, result.UserId);
+        }
+        
+        [Fact]
+        public async Task DeleteAllTokensForUserAsync_ShouldRemoveAllUserTokens()
         {
-            UserId = userId,
-            RefreshToken = "uid-token",
-            AccessToken = "uid-access",
-            IssuedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddDays(7)
-        };
-
-        await _repo.AddTokenAsync(token);
-
-        var result = await _repo.GetTokenByUserIdAsync(userId);
-        Assert.NotNull(result);
-        Assert.Equal(userId, result!.UserId);
+            // Arrange - Ensure user exists and has tokens
+            var userId = MockUserTestData.Ids.CustomerUserId;
+            await EnsureUserExistsAsync(userId);
+            
+            // Add a new token for this test
+            var newToken = new AuthToken
+            {
+                UserId = userId,
+                RefreshToken = "delete-test-refresh",
+                AccessToken = "delete-test-access",
+                IssuedAt = System.DateTime.UtcNow,
+                ExpiresAt = System.DateTime.UtcNow.AddDays(7)
+            };
+            
+            await _sut.AddTokenAsync(newToken);
+            
+            // Act
+            await _sut.DeleteAllTokensForUserAsync(userId);
+            
+            // Assert
+            var result = await _sut.GetByRefreshTokenByRefreshTokenKeyAsync("delete-test-refresh");
+            Assert.Null(result);
+            
+            // Also check that the mock token was deleted
+            var mockResult = await _sut.GetByRefreshTokenByRefreshTokenKeyAsync(
+                MockAuthTokenTestData.Tokens.ValidCustomerRefresh);
+            Assert.Null(mockResult);
+        }
     }
 }

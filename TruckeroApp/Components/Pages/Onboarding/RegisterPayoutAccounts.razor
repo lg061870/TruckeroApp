@@ -1,9 +1,16 @@
-﻿@page "/registerpayoutaccounts"
+﻿@page "/"
+@* @page "/registerpayoutaccounts" *@
 @using Microsoft.AspNetCore.Components
 @using Truckero.Core.Entities
 @using Truckero.Core.Interfaces
 @using Truckero.Core.Interfaces.Services
-@inject IPaymentService PaymentService
+@using TruckeroApp.Models
+@using TruckeroApp.Components.BottomSheets
+@using Truckero.Core.DTOs.Onboarding
+
+@inject IPayoutAccountService PayoutAccountService
+@inject NavigationManager NavigationManager
+@inject ILocalStorageService LocalStorage
 
 <CenterWrapper>
     <div class="h-full text-base-content">
@@ -11,9 +18,16 @@
             <div id="payout-screen" class="p-6">
                 <!-- Header -->
                 <div id="payout-header" class="flex items-center mb-8">
-                    <button class="text-gray-600">
-                        <i class="fa-solid fa-arrow-left text-xl"></i>
-                    </button>
+                    @if (FromRegisterDriver)
+                    {
+                        <button class="text-gray-600" @onclick="NavigateBackToRegisterDriver">
+                            <i class="fa-solid fa-arrow-left text-xl"></i>
+                        </button>
+                    }
+                    else
+                    {
+                        <span style="width:40px;display:inline-block;"></span>
+                    }
                     <div class="text-center flex-1 mr-8">
                         <h2 class="text-xl font-semibold">Payout Accounts</h2>
                         <p class="text-sm text-gray-600 mt-1">Manage how you receive earnings from your deliveries</p>
@@ -23,12 +37,12 @@
                 <!-- Empty State -->
                 @if (!ExistingPayoutMethods.Any())
                 {
-                    <div id="empty-state" class="text-center py-12">
-                        <div class="w-24 h-24 mx-auto mb-6 text-gray-300">
-                            <i class="fa-solid fa-wallet text-6xl"></i>
+                    <div id="empty-state" class="text-center py-6">
+                        <div class="w-16 h-16 mx-auto mb-4 text-gray-300">
+                            <i class="fa-solid fa-wallet text-4xl"></i>
                         </div>
-                        <h3 class="text-lg font-medium mb-2">No Payout Methods Yet</h3>
-                        <p class="text-sm text-gray-600 mb-6">Add your first payout method to start receiving earnings</p>
+                        <h3 class="text-base font-medium mb-1">No Payout Methods Yet</h3>
+                        <p class="text-sm text-gray-600 mb-4">Add your first payout method to start receiving earnings</p>
                     </div>
                 }
 
@@ -61,19 +75,36 @@
                     }
                 </div>
 
-                <!-- Payment Method Selector -->
-                <div class="mb-6">
+            <!-- Payment Method Selector -->
+            <div class="mb-6">
+                <div class="text-center mb-4">
+                    <h2 class="text-lg font-medium text-gray-800">Click on Payout Type Option</h2>
+                    <h3 class="text-sm text-gray-600">to create a new Payout Account</h3>
+                </div>
+
+                @if (IsReferenceDataLoading)
+                {
+                    <p class="text-sm text-gray-400 text-center">Loading payout types...</p>
+                }
+                else if (!AvailablePayoutOptions.Any())
+                {
+                    <p class="text-sm text-red-500 text-center">No payout options available. Please try again later.</p>
+                }
+                else
+                {
                     <div class="grid grid-cols-2 gap-3">
                         @foreach (var method in AvailablePayoutOptions)
                         {
                             <div class="@GetPaymentOptionClass(method.Name)"
-                                 @onclick="() => SelectPayoutMethod(method.Name)">
+                                    @onclick="() => SelectPayoutMethod(method.Name)">
                                 <i class="@GetPayoutIcon(method.Name) text-2xl mb-2"></i>
                                 <p class="text-sm font-medium">@method.Name</p>
                             </div>
                         }
                     </div>
-                </div>
+                }
+            </div>
+
             </div>
 
             <!-- Backdrop Overlay -->
@@ -101,8 +132,6 @@
                 </div>
             </div>
 
-
-
             <!-- Delete Confirmation Bottom Sheet -->
             <div class="fixed inset-x-0 bottom-0 transition-transform duration-300 ease-in-out z-50"
                  style="@($"transform: translateY({(ShowDeleteSheet ? "0" : "100%")});")">
@@ -125,34 +154,98 @@
                     </div>
                 </div>
             </div>
+
+            <!-- BottomSheets for error/validation feedback -->
+            @if (!string.IsNullOrEmpty(ActiveBottomSheet))
+            {
+                @switch (ActiveBottomSheet)
+                {
+                    case "generic_error":
+                        <GenericErrorBottomSheet 
+                            Message="@ErrorMessage" 
+                            OnDismiss="HandleGenericErrorDismiss" />
+                        break;
+                    case "validation_failed":
+                        <ValidationFailedBottomSheet 
+                            ValidationErrors="@ValidationErrors" 
+                            OnDismiss="@(() => ActiveBottomSheet = null)" />
+                        break;
+                    case "referential_integrity":
+                        <ReferentialIntegrityBottomSheet
+                            ErrorCode="@ReferentialIntegrityBottomSheetErrorCode"
+                            Message="@ReferentialIntegrityBottomSheetMessage"
+                            OnDismiss="@(() => ActiveBottomSheet = null)" />
+                        break;
+                }
+            }
         </div>
     </div>
 </CenterWrapper>
 
 @code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public bool FromRegisterDriver { get; set; }
+
     private List<PaymentMethodType> ExistingPayoutMethods = new();
     private List<PaymentMethodType> AvailablePayoutOptions = new();
+    private List<Bank> AvailableBanks = new();
+    private List<Country> AvailableCountries = new();
+    private bool IsReferenceDataLoading = true;
+    private string? SelectedCountryCode = "CR"; // Default to Costa Rica, or set dynamically
     private string? SelectedPayoutMethod;
     private string MethodToDelete;
     private bool ShowAddSheet = false;
     private bool ShowDeleteSheet = false;
     private bool IsEditMode = false;
+    private PayoutAccountFormModel CurrentPayoutAccount { get; set; } = new();
+
+    // Error and bottom sheet state
+    private string ErrorMessage { get; set; } = string.Empty;
+    private string? ActiveBottomSheet { get; set; } = null;
+    private List<string> ValidationErrors { get; set; } = new();
+    private string? ReferentialIntegrityBottomSheetErrorCode { get; set; }
+    private string? ReferentialIntegrityBottomSheetMessage { get; set; }
+    private bool IsReferentialIntegrityBottomSheetVisible { get; set; } = false;
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadReferenceDataAsync();
         await LoadPayoutMethodsAsync();
+    }
+
+    private async Task LoadReferenceDataAsync()
+    {
+        IsReferenceDataLoading = true;
+        try
+        {
+            var refData = await PayoutAccountService.GetPayoutPageReferenceDataAsync(SelectedCountryCode ?? "CR");
+            AvailablePayoutOptions = refData.PayoutMethodTypes;
+            AvailableBanks = refData.Banks;
+            AvailableCountries = refData.Countries;
+        }
+        catch (Exception ex)
+        {
+            ShowGenericError($"Failed to load reference data: {ex.Message}");
+        }
+        finally
+        {
+            IsReferenceDataLoading = false;
+            StateHasChanged();
+        }
     }
 
     private async Task LoadPayoutMethodsAsync()
     {
-        var countryCode = "USA"; // Replace with dynamic user setting if needed
-        ExistingPayoutMethods = await PaymentService.GetAllPayoutMethods(countryCode);
-        AvailablePayoutOptions = new()
-            {
-            new() { Id = Guid.NewGuid(), Name = "BankAccount", Description = "Bank Account" },
-            new() { Id = Guid.NewGuid(), Name = "SINPE", Description = "SINPE Móvil" },
-            new() { Id = Guid.NewGuid(), Name = "PayPal", Description = "PayPal" },
-            };
+        var countryCode = SelectedCountryCode ?? "CR";
+        try
+        {
+            ExistingPayoutMethods = await PayoutAccountService.GetAllPayoutPaymentMethodsByCountryCodeAsync(countryCode);
+        }
+        catch (Exception ex)
+        {
+            ShowGenericError($"Failed to load payout methods: {ex.Message}");
+        }
     }
 
     private void SelectPayoutMethod(string methodName)
@@ -160,6 +253,11 @@
         SelectedPayoutMethod = methodName;
         IsEditMode = false;
         ShowAddSheet = true;
+        CurrentPayoutAccount = new PayoutAccountFormModel
+        {
+            PaymentMethodTypeId = AvailablePayoutOptions.FirstOrDefault(x => x.Name == methodName)?.Id ?? Guid.Empty,
+            IsDefault = !ExistingPayoutMethods.Any()
+        };
     }
 
     private void EditPayoutMethod(string methodName)
@@ -167,8 +265,8 @@
         SelectedPayoutMethod = methodName;
         IsEditMode = true;
         ShowAddSheet = true;
+        // TODO: Load the payout account details into CurrentPayoutAccount for editing
     }
-
 
     private void ConfirmDelete(string methodName)
     {
@@ -181,12 +279,16 @@
         ShowAddSheet = !ShowAddSheet;
         if (!ShowAddSheet)
         {
-            SelectedPayoutMethod = null; // reset selection on close
+            SelectedPayoutMethod = null;
         }
     }
 
     private void ToggleDeleteSheet() => ShowDeleteSheet = !ShowDeleteSheet;
 
+    private void NavigateBackToRegisterDriver()
+    {
+        NavigationManager.NavigateTo("/registerdriver");
+    }
 
     private string GetPayoutIcon(string methodName) => methodName switch
     {
@@ -204,65 +306,178 @@
         : $"{baseClass} border-gray-300";
     }
 
-    private void SavePayoutMethod()
+    private async Task SavePayoutMethodAsync()
     {
-        // Stub logic: extend this for actual persistence logic
-        Console.WriteLine($"{(IsEditMode ? "Updating" : "Saving")} {SelectedPayoutMethod}");
-
-        // Reset + close
+        CurrentPayoutAccount.BuildMetadataJson();
+        if (FromRegisterDriver)
+        {
+            var storageKey = "driver_registration_form";
+            var savedData = await LocalStorage.GetItemAsync<DriverRegistrationData>(storageKey);
+            if (savedData != null)
+            {
+                var req = new PayoutAccountRequest
+                {
+                    PaymentMethodTypeId = CurrentPayoutAccount.PaymentMethodTypeId,
+                    FullName = CurrentPayoutAccount.FullName,
+                    BankId = CurrentPayoutAccount.BankId,
+                    AccountNumberLast4 = CurrentPayoutAccount.AccountNumber,
+                    RoutingNumber = CurrentPayoutAccount.RoutingNumber,
+                    MobileNumber = CurrentPayoutAccount.MobileNumber,
+                    PayPalEmail = CurrentPayoutAccount.PayPalEmail,
+                    IsDefault = CurrentPayoutAccount.IsDefault,
+                    MetadataJson = CurrentPayoutAccount.MetadataJson
+                };
+                // You may need to map to your local storage DTO if different
+                // For now, just add to a list if compatible
+                // savedData.PayoutAccounts.Add(req);
+                // await LocalStorage.SetItemAsync(storageKey, savedData);
+            }
+            NavigationManager.NavigateTo(AppRoutes.RegisterDriver);
+        }
+        else
+        {
+            try
+            {
+                Guid userId = Guid.Empty; // Replace with actual userId
+                var req = new PayoutAccountRequest
+                {
+                    PaymentMethodTypeId = CurrentPayoutAccount.PaymentMethodTypeId,
+                    FullName = CurrentPayoutAccount.FullName,
+                    BankId = CurrentPayoutAccount.BankId,
+                    AccountNumberLast4 = CurrentPayoutAccount.AccountNumber,
+                    RoutingNumber = CurrentPayoutAccount.RoutingNumber,
+                    MobileNumber = CurrentPayoutAccount.MobileNumber,
+                    PayPalEmail = CurrentPayoutAccount.PayPalEmail,
+                    IsDefault = CurrentPayoutAccount.IsDefault,
+                    MetadataJson = CurrentPayoutAccount.MetadataJson
+                };
+                var result = await PayoutAccountService.AddPayoutAccountAsync(userId, req);
+                // Handle result as needed (result is PayoutAccountResponse)
+                await LoadPayoutMethodsAsync();
+            }
+            catch (Truckero.Core.Exceptions.PayoutAccountClientValidationException vex)
+            {
+                ShowValidationFailed(vex.ValidationMessages);
+            }
+            catch (Truckero.Core.Exceptions.ReferentialIntegrityClientException rex)
+            {
+                ShowReferentialIntegrityBottomSheet(rex.ErrorCode, rex.Message);
+            }
+            catch (Truckero.Core.Exceptions.PayoutAccountClientException cex)
+            {
+                ShowGenericError($"{cex.Message} (Code: {cex.Code})");
+            }
+            catch (HttpRequestException hrex)
+            {
+                ShowGenericError("Server communication failed. Please try again.");
+            }
+            catch (Exception ex)
+            {
+                ShowGenericError("Unexpected error: " + ex.Message);
+            }
+        }
         ToggleAddSheet();
     }
 
+    private void ShowReferentialIntegrityBottomSheet(string code, string message)
+    {
+        ActiveBottomSheet = "referential_integrity";
+        ReferentialIntegrityBottomSheetErrorCode = code;
+        ReferentialIntegrityBottomSheetMessage = message;
+        IsReferentialIntegrityBottomSheetVisible = true;
+    }
+
+    private void ShowGenericError(string message)
+    {
+        ErrorMessage = message;
+        ActiveBottomSheet = "generic_error";
+    }
+
+    private void ShowValidationFailed(List<string> errors)
+    {
+        ValidationErrors = errors;
+        ActiveBottomSheet = "validation_failed";
+    }
+
+    private void HandleGenericErrorDismiss()
+    {
+        ActiveBottomSheet = null;
+    }
+
+    private void ShowMethodSelector()
+    {
+        SelectedPayoutMethod = null;
+        ShowAddSheet = false;
+        StateHasChanged();
+    }
 
     private RenderFragment RenderSelectedPayoutForm() => SelectedPayoutMethod switch
     {
-        "BankAccount" => RenderBankAccountForm,
+        "Bank" => RenderBankAccountForm,
         "SINPE" => RenderSinpeForm,
         "PayPal" => RenderPayPalForm,
         _ => RenderGenericPayoutForm
     };
 
     private RenderFragment RenderBankAccountForm => @<div>
-        <!-- Bank Account Form -->
-        <div id="bank-account-form" class="space-y-4">
-            <div class="space-y-2">
-                <label class="block text-sm font-medium text-gray-700">Full Name</label>
-                <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300" placeholder="Enter account holder name">
+        <!-- Refined Bank Account Bottom Sheet -->
+        <div id="bank-account-form" class="space-y-6">
+            <!-- Intro Block -->
+            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-4">
+                <div class="flex items-center space-x-3">
+                    <i class="fa-solid fa-building-columns text-2xl text-gray-600"></i>
+                    <div>
+                        <p class="text-sm font-medium text-gray-700">Bank Account Details</p>
+                        <p class="text-xs text-gray-500">Secure your payout via a verified local bank</p>
+                    </div>
+                </div>
             </div>
 
-            <div class="space-y-2">
-                <label class="block text-sm font-medium text-gray-700">Bank Name</label>
-                <select class="w-full px-4 py-3 rounded-lg border border-gray-300">
-                    <option>Select your bank</option>
-                    <option>Banco Nacional</option>
-                    <option>BAC Credomatic</option>
-                    <option>Banco de Costa Rica</option>
-                </select>
+            <!-- Form Fields -->
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Account Holder Name</label>
+                    <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                           placeholder="Enter full name" @bind="CurrentPayoutAccount.FullName" />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
+                    <select class="w-full px-4 py-3 border border-gray-300 rounded-lg" @bind="CurrentPayoutAccount.BankId">
+                        <option value="">Select your bank</option>
+                        @foreach (var bank in AvailableBanks)
+                        {
+                            <option value="@bank.Id">@bank.Name</option>
+                        }
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
+                    <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                           placeholder="Enter account number" @bind="CurrentPayoutAccount.AccountNumber" />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Confirm Account Number</label>
+                    <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                           placeholder="Re-enter account number" @bind="CurrentPayoutAccount.ConfirmAccountNumber" />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Routing Number <span class="text-xs text-gray-400">(Optional)</span></label>
+                    <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                           placeholder="Enter routing number" @bind="CurrentPayoutAccount.RoutingNumber" />
+                </div>
             </div>
 
-            <div class="space-y-2">
-                <label class="block text-sm font-medium text-gray-700">Account Number</label>
-                <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300" placeholder="Enter account number">
-            </div>
-
-            <div class="space-y-2">
-                <label class="block text-sm font-medium text-gray-700">Confirm Account Number</label>
-                <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300" placeholder="Re-enter account number">
-            </div>
-
-            <div class="space-y-2">
-                <label class="block text-sm font-medium text-gray-700">Routing Number (Optional)</label>
-                <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300" placeholder="Enter routing number">
-            </div>
-
-            <!-- Save Button -->
+            <!-- Save Action -->
             <div class="pt-4">
                 <button class="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600"
-                        @onclick="SavePayoutMethod">
-                    @(IsEditMode ? $"Update {SelectedPayoutMethod}" : $"Save {SelectedPayoutMethod}")
+                        @onclick="SavePayoutMethodAsync">
+                    @(IsEditMode ? $"Update Bank Account" : $"Save Bank Account")
                 </button>
             </div>
-
         </div>
     </div>;
 
@@ -271,28 +486,29 @@
         <div id="sinpe-form" class="space-y-4">
             <div class="space-y-2">
                 <label class="block text-sm font-medium text-gray-700">Full Name</label>
-                <input type="text" required class="w-full px-4 py-3 rounded-lg border border-gray-300" placeholder="Enter full name">
+                <input type="text" required class="w-full px-4 py-3 rounded-lg border border-gray-300" placeholder="Enter full name" @bind="CurrentPayoutAccount.FullName">
             </div>
 
             <div class="space-y-2">
                 <label class="block text-sm font-medium text-gray-700">Mobile Number</label>
-                <input type="tel" required pattern="[0-9]{8}" class="w-full px-4 py-3 rounded-lg border border-gray-300" placeholder="Enter 8-digit SINPE mobile number">
+                <input type="tel" required pattern="[0-9]{8}" class="w-full px-4 py-3 rounded-lg border border-gray-300" placeholder="Enter 8-digit SINPE mobile number" @bind="CurrentPayoutAccount.MobileNumber">
             </div>
 
             <div class="space-y-2">
                 <label class="block text-sm font-medium text-gray-700">Bank Name (Optional)</label>
-                <select class="w-full px-4 py-3 rounded-lg border border-gray-300">
-                    <option>Select your bank</option>
-                    <option>Banco Nacional</option>
-                    <option>BAC Credomatic</option>
-                    <option>Banco de Costa Rica</option>
+                <select class="w-full px-4 py-3 rounded-lg border border-gray-300" @bind="CurrentPayoutAccount.BankId">
+                    <option value="">Select your bank</option>
+                    @foreach (var bank in AvailableBanks)
+                    {
+                        <option value="@bank.Id">@bank.Name</option>
+                    }
                 </select>
             </div>
 
             <!-- Save Button -->
             <div class="pt-4">
                 <button class="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600"
-                        @onclick="SavePayoutMethod">
+                        @onclick="SavePayoutMethodAsync">
                     @(IsEditMode ? $"Update {SelectedPayoutMethod}" : $"Save {SelectedPayoutMethod}")
                 </button>
             </div>
@@ -305,23 +521,23 @@
         <div id="paypal-form" class="space-y-4">
             <div class="space-y-2">
                 <label class="block text-sm font-medium text-gray-700">Full Name</label>
-                <input type="text" required class="w-full px-4 py-3 rounded-lg border border-gray-300" placeholder="Enter full name">
+                <input type="text" required class="w-full px-4 py-3 rounded-lg border border-gray-300" placeholder="Enter full name" @bind="CurrentPayoutAccount.FullName">
             </div>
 
             <div class="space-y-2">
                 <label class="block text-sm font-medium text-gray-700">PayPal Email</label>
-                <input type="email" id="paypalEmail" required class="w-full px-4 py-3 rounded-lg border border-gray-300" placeholder="Enter PayPal email">
+                <input type="email" id="paypalEmail" required class="w-full px-4 py-3 rounded-lg border border-gray-300" placeholder="Enter PayPal email" @bind="CurrentPayoutAccount.PayPalEmail">
             </div>
 
             <div class="space-y-2">
                 <label class="block text-sm font-medium text-gray-700">Confirm PayPal Email</label>
-                <input type="email" id="confirmPaypalEmail" required class="w-full px-4 py-3 rounded-lg border border-gray-300" placeholder="Confirm PayPal email">
+                <input type="email" id="confirmPaypalEmail" required class="w-full px-4 py-3 rounded-lg border border-gray-300" placeholder="Confirm PayPal email" @bind="CurrentPayoutAccount.ConfirmPayPalEmail">
             </div>
 
             <!-- Save Button -->
             <div class="pt-4">
                 <button class="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600"
-                        @onclick="SavePayoutMethod">
+                        @onclick="SavePayoutMethodAsync">
                     @(IsEditMode ? $"Update {SelectedPayoutMethod}" : $"Save {SelectedPayoutMethod}")
                 </button>
             </div>

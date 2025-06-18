@@ -2,6 +2,7 @@ using Azure.Identity;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Identity.Client;
 using Microsoft.Identity.Web;
 using Truckero.API;
 using Truckero.API.Auth;
@@ -98,26 +99,31 @@ builder.Services.AddRoleRepository();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<IDriverRepository, DriverRepository>();
-builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
+builder.Services.AddScoped<ITruckRepository, TruckRepository>();
 builder.Services.AddScoped<IOnboardingProgressRepository, OnboardingProgressRepository>();
 builder.Services.AddScoped<IConfirmationTokenRepository, ConfirmationTokenRepository>();
+builder.Services.AddScoped<IPayoutAccountRepository, PayoutAccountRepository>();
+builder.Services.AddScoped<IPaymentMethodRepository, PaymentMethodRepository>();
 
 // Register Services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IOnboardingService, OnboardingService>();
+builder.Services.AddScoped<ITruckService, TruckService>(); // Register TruckService for ITruckService
+builder.Services.AddScoped<IPayoutAccountService, PayoutAccountService>();
+builder.Services.AddScoped<IPaymentMethodService, PaymentMethodService>();
 builder.Services.AddScoped<IBlobStorageService, AzureBlobStorageService>();
 builder.Services.AddScoped<IMediaService, MediaService>();
 builder.Services.AddSingleton<IHashService, HashService>();
 
 // Register Email Service per environment
-#if DEBUG
+#if DEBUG || UNITTESTING
 builder.Services.AddScoped<IEmailService, DevEmailService>();
 #else
 builder.Services.AddScoped<IEmailService, EmailService>();
 #endif
 
 // Register Azure Confidential Client for Production
-#if !DEBUG
+#if !(DEBUG || UNITTESTING)
 builder.Services.AddSingleton<IConfidentialClientApplication>(provider =>
 {
     var config = builder.Configuration.GetSection("AzureAdB2C");
@@ -127,8 +133,6 @@ builder.Services.AddSingleton<IConfidentialClientApplication>(provider =>
         .Build();
 });
 #endif
-
-
 
 // Swagger (Dev/Test only)
 builder.Services.AddEndpointsApiExplorer();

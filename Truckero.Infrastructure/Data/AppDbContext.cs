@@ -23,10 +23,18 @@ public class AppDbContext : DbContext
     public DbSet<PaymentMethod> PaymentMethods => Set<PaymentMethod>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
-    public DbSet<Truck> Vehicles => Set<Truck>();
-    public DbSet<VehicleType> VehicleTypes => Set<VehicleType>();
+    public DbSet<TruckType> TruckTypes => Set<TruckType>();
     public DbSet<PaymentMethodType> PaymentMethodTypes => Set<PaymentMethodType>();
     public DbSet<CustomerProfile> CustomerProfiles => Set<CustomerProfile>();
+    public DbSet<Truck> Trucks { get; set; }
+    public DbSet<UseTag> UseTags { get; set; }
+    public DbSet<TruckUseTag> TruckUseTags { get; set; }
+    public DbSet<TruckMake> TruckMakes { get; set; }
+    public DbSet<TruckModel> TruckModels { get; set; }
+    public DbSet<TruckCategory> TruckCategories { get; set; }
+    public DbSet<BedType> BedTypes { get; set; }
+    public DbSet<Country> Countries { get; set; }
+    public DbSet<Bank> Banks { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -37,11 +45,17 @@ public class AppDbContext : DbContext
             .Property(r => r.Name)
             .HasConversion<string>();
 
+        // Map OwnershipType enum as string
+        modelBuilder.Entity<Truck>()
+            .Property(t => t.OwnershipType)
+            .HasConversion<string>();
+
         // 🧷 Relationships & Composite Keys
         modelBuilder.Entity<User>()
             .HasOne(u => u.Role)
             .WithMany(r => r.Users)
-            .HasForeignKey(u => u.RoleId);
+            .HasForeignKey(u => u.RoleId)
+            .IsRequired(true); // Explicitly mark this foreign key as required
 
         modelBuilder.Entity<User>()
             .Property(u => u.Id)
@@ -149,18 +163,100 @@ public class AppDbContext : DbContext
             .HasKey(s => s.Key);
 
         modelBuilder.Entity<Truck>()
-            .HasKey(v => v.Id);
+            .HasKey(t => t.Id);
 
         modelBuilder.Entity<Truck>()
-            .HasOne(v => v.VehicleType)
+            .HasOne(v => v.TruckType)
             .WithMany(vt => vt.Vehicles)
-            .HasForeignKey(v => v.VehicleTypeId);
+            .HasForeignKey(v => v.TruckTypeId);
 
         modelBuilder.Entity<Truck>()
             .HasOne(v => v.DriverProfile)
-            .WithMany(dp => dp.Vehicles)
+            .WithMany(dp => dp.Trucks)
             .HasForeignKey(v => v.DriverProfileId);
 
+        modelBuilder.Entity<Truck>()
+            .HasOne(t => t.TruckMake)
+            .WithMany()
+            .HasForeignKey(t => t.TruckMakeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Truck>()
+            .HasOne(t => t.TruckModel)
+            .WithMany()
+            .HasForeignKey(t => t.TruckModelId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Truck>()
+            .HasOne(t => t.TruckType)
+            .WithMany()
+            .HasForeignKey(t => t.TruckTypeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Truck>()
+            .HasOne(t => t.TruckCategory)
+            .WithMany()
+            .HasForeignKey(t => t.TruckCategoryId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Truck>()
+            .HasOne(t => t.BedTypeNav)
+            .WithMany()
+            .HasForeignKey(t => t.BedTypeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Configure many-to-many relationship between Truck and UseTag
+        modelBuilder.Entity<TruckUseTag>()
+            .HasKey(tut => new { tut.TruckId, tut.UseTagId });
+
+        modelBuilder.Entity<TruckUseTag>()
+            .HasOne(tut => tut.Truck)
+            .WithMany(t => t.UseTags)
+            .HasForeignKey(tut => tut.TruckId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<TruckUseTag>()
+            .HasOne(tut => tut.UseTag)
+            .WithMany(ut => ut.TruckUseTags)
+            .HasForeignKey(tut => tut.UseTagId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // TruckMake/TruckModel relationship
+        modelBuilder.Entity<TruckModel>()
+            .HasOne(m => m.Make)
+            .WithMany(mk => mk.Models)
+            .HasForeignKey(m => m.MakeId);
+
+        // Country & Bank
+        modelBuilder.Entity<Country>()
+            .HasKey(c => c.Code);
+        modelBuilder.Entity<Country>()
+            .Property(c => c.Code)
+            .HasMaxLength(2);
+        modelBuilder.Entity<Country>()
+            .Property(c => c.Name)
+            .HasMaxLength(100);
+        modelBuilder.Entity<Country>()
+            .HasMany(c => c.Banks)
+            .WithOne(b => b.Country)
+            .HasForeignKey(b => b.CountryCode);
+        modelBuilder.Entity<Bank>()
+            .HasKey(b => b.Id);
+        modelBuilder.Entity<Bank>()
+            .Property(b => b.Name)
+            .HasMaxLength(100);
+        modelBuilder.Entity<Bank>()
+            .Property(b => b.SwiftCode)
+            .HasMaxLength(11);
+        modelBuilder.Entity<Bank>()
+            .Property(b => b.CountryCode)
+            .HasMaxLength(2);
+        modelBuilder.Entity<Bank>()
+            .Property(b => b.BankCode)
+            .HasMaxLength(20);
+        modelBuilder.Entity<Bank>()
+            .Property(b => b.IbanPrefix)
+            .HasMaxLength(34);
 
         // 🌱 Seed initial roles
         modelBuilder.Entity<Role>().HasData(
@@ -171,15 +267,15 @@ public class AppDbContext : DbContext
             new Role { Id = Guid.Parse("00000000-0000-0000-0000-000000000005"), Name = RoleType.Admin.ToString() }
         );
 
-        modelBuilder.Entity<VehicleType>().HasData(
-            new VehicleType { Id = Guid.Parse("00000000-0000-0000-0000-000000000101"), Name = "Motorcycle" },
-            new VehicleType { Id = Guid.Parse("00000000-0000-0000-0000-000000000102"), Name = "Sedan" },
-            new VehicleType { Id = Guid.Parse("00000000-0000-0000-0000-000000000103"), Name = "SUV" },
-            new VehicleType { Id = Guid.Parse("00000000-0000-0000-0000-000000000104"), Name = "Pickup" },
-            new VehicleType { Id = Guid.Parse("00000000-0000-0000-0000-000000000105"), Name = "Cargo Van" },
-            new VehicleType { Id = Guid.Parse("00000000-0000-0000-0000-000000000106"), Name = "Box Truck" },
-            new VehicleType { Id = Guid.Parse("00000000-0000-0000-0000-000000000107"), Name = "Flatbed" },
-            new VehicleType { Id = Guid.Parse("00000000-0000-0000-0000-000000000108"), Name = "Trailer" }
+        modelBuilder.Entity<TruckType>().HasData(
+            new TruckType { Id = Guid.Parse("00000000-0000-0000-0000-000000000101"), Name = "Motorcycle" },
+            new TruckType { Id = Guid.Parse("00000000-0000-0000-0000-000000000102"), Name = "Sedan" },
+            new TruckType { Id = Guid.Parse("00000000-0000-0000-0000-000000000103"), Name = "SUV" },
+            new TruckType { Id = Guid.Parse("00000000-0000-0000-0000-000000000104"), Name = "Pickup" },
+            new TruckType { Id = Guid.Parse("00000000-0000-0000-0000-000000000105"), Name = "Cargo Van" },
+            new TruckType { Id = Guid.Parse("00000000-0000-0000-0000-000000000106"), Name = "Box Truck" },
+            new TruckType { Id = Guid.Parse("00000000-0000-0000-0000-000000000107"), Name = "Flatbed" },
+            new TruckType { Id = Guid.Parse("00000000-0000-0000-0000-000000000108"), Name = "Trailer" }
         );
 
         modelBuilder.Entity<PaymentMethodType>().HasData(
@@ -233,5 +329,62 @@ public class AppDbContext : DbContext
             }
         );
 
+        modelBuilder.Entity<UseTag>().HasData(
+            new UseTag { Id = Guid.Parse("00000000-0000-0000-0000-000000000201"), Name = "Furniture Move" },
+            new UseTag { Id = Guid.Parse("00000000-0000-0000-0000-000000000202"), Name = "Appliance Haul" },
+            new UseTag { Id = Guid.Parse("00000000-0000-0000-0000-000000000203"), Name = "Store Delivery" },
+            new UseTag { Id = Guid.Parse("00000000-0000-0000-0000-000000000204"), Name = "Junk Removal" },
+            new UseTag { Id = Guid.Parse("00000000-0000-0000-0000-000000000205"), Name = "Fragile Goods" },
+            new UseTag { Id = Guid.Parse("00000000-0000-0000-0000-000000000206"), Name = "Helper Included" }
+        );
+
+        // Seed TruckMakes
+        modelBuilder.Entity<TruckMake>().HasData(
+            new TruckMake { Id = Guid.Parse("00000000-0000-0000-0000-000000000301"), Name = "Ford" },
+            new TruckMake { Id = Guid.Parse("00000000-0000-0000-0000-000000000302"), Name = "Toyota" },
+            new TruckMake { Id = Guid.Parse("00000000-0000-0000-0000-000000000303"), Name = "Chevrolet" },
+            new TruckMake { Id = Guid.Parse("00000000-0000-0000-0000-000000000304"), Name = "Dodge" },
+            new TruckMake { Id = Guid.Parse("00000000-0000-0000-0000-000000000305"), Name = "GMC" },
+            new TruckMake { Id = Guid.Parse("00000000-0000-0000-0000-000000000306"), Name = "RAM" },
+            new TruckMake { Id = Guid.Parse("00000000-0000-0000-0000-000000000307"), Name = "Nissan" },
+            new TruckMake { Id = Guid.Parse("00000000-0000-0000-0000-000000000308"), Name = "Other" }
+        );
+
+        // Seed TruckModels
+        modelBuilder.Entity<TruckModel>().HasData(
+            new TruckModel { Id = Guid.Parse("00000000-0000-0000-0000-000000000401"), Name = "F-150", MakeId = Guid.Parse("00000000-0000-0000-0000-000000000301") },
+            new TruckModel { Id = Guid.Parse("00000000-0000-0000-0000-000000000402"), Name = "Tacoma", MakeId = Guid.Parse("00000000-0000-0000-0000-000000000302") },
+            new TruckModel { Id = Guid.Parse("00000000-0000-0000-0000-000000000403"), Name = "Silverado", MakeId = Guid.Parse("00000000-0000-0000-0000-000000000303") },
+            new TruckModel { Id = Guid.Parse("00000000-0000-0000-0000-000000000404"), Name = "RAM 1500", MakeId = Guid.Parse("00000000-0000-0000-0000-000000000306") },
+            new TruckModel { Id = Guid.Parse("00000000-0000-0000-0000-000000000405"), Name = "Sierra", MakeId = Guid.Parse("00000000-0000-0000-0000-000000000305") },
+            new TruckModel { Id = Guid.Parse("00000000-0000-0000-0000-000000000406"), Name = "Frontier", MakeId = Guid.Parse("00000000-0000-0000-0000-000000000307") },
+            new TruckModel { Id = Guid.Parse("00000000-0000-0000-0000-000000000407"), Name = "Other", MakeId = Guid.Parse("00000000-0000-0000-0000-000000000308") }
+        );
+
+        // Seed TruckCategories
+        modelBuilder.Entity<TruckCategory>().HasData(
+            new TruckCategory { Id = Guid.Parse("00000000-0000-0000-0000-000000000501"), Name = "Small Load" },
+            new TruckCategory { Id = Guid.Parse("00000000-0000-0000-0000-000000000502"), Name = "Standard Load" },
+            new TruckCategory { Id = Guid.Parse("00000000-0000-0000-0000-000000000503"), Name = "Heavy Load" },
+            new TruckCategory { Id = Guid.Parse("00000000-0000-0000-0000-000000000504"), Name = "Extra Heavy Duty" }
+        );
+
+        // Seed BedTypes
+        modelBuilder.Entity<BedType>().HasData(
+            new BedType { Id = Guid.Parse("00000000-0000-0000-0000-000000000601"), Name = "Open Bed" },
+            new BedType { Id = Guid.Parse("00000000-0000-0000-0000-000000000602"), Name = "Covered Bed" },
+            new BedType { Id = Guid.Parse("00000000-0000-0000-0000-000000000603"), Name = "Box Truck/Van" },
+            new BedType { Id = Guid.Parse("00000000-0000-0000-0000-000000000604"), Name = "Refrigerated" }
+        );
+
+        // Seed Costa Rica and banks
+        modelBuilder.Entity<Country>().HasData(
+            new Country { Code = "CR", Name = "Costa Rica" }
+        );
+        modelBuilder.Entity<Bank>().HasData(
+            new Bank { Id = Guid.Parse("10000000-0000-0000-0000-000000000001"), Name = "Banco Nacional de Costa Rica", SwiftCode = "BNCRCRSJ", CountryCode = "CR", BankCode = "151", IbanPrefix = "CR" },
+            new Bank { Id = Guid.Parse("10000000-0000-0000-0000-000000000002"), Name = "Banco de Costa Rica", SwiftCode = "BCRICRSJ", CountryCode = "CR", BankCode = "152", IbanPrefix = "CR" },
+            new Bank { Id = Guid.Parse("10000000-0000-0000-0000-000000000003"), Name = "BAC Credomatic", SwiftCode = "BCCRCRSJ", CountryCode = "CR", BankCode = "254", IbanPrefix = "CR" }
+        );
     }
 }

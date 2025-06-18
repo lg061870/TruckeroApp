@@ -9,6 +9,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using Truckero.Core.DTOs.Auth;
 using Truckero.Core.Entities;
+using Truckero.Core.Exceptions;
 using Truckero.Core.Interfaces;
 using Truckero.Core.Interfaces.Services;
 using Truckero.Infrastructure.Extensions;
@@ -49,6 +50,10 @@ public class AuthController : ControllerBase
             var response = await _authService.LoginUserAsync(request);
             _logger.LogInformation("User {Email} logged in.", request.Email);
             return Ok(response);
+        }
+        catch (LoginStepException ex)
+        {
+            return BadRequest(new { message = ex.Message, stepCode = ex.StepCode });
         }
         catch (UnauthorizedAccessException)
         {

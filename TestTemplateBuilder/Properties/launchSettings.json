@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "TestTemplateBuilder": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "UnitTesting": "true"
+      }
+    }
+  }
+}

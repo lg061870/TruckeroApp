@@ -1,4 +1,4 @@
-﻿@page "/"
+﻿@page "/start"
 @using Truckero.Core.DTOs.Auth
 @using TruckeroApp.Interfaces
 
@@ -14,7 +14,7 @@
     {
         _logger.LogInformation("🚀 StartupRoter initializing...");
 
-#if DEBUG
+#if DEBUG || UNITTESTING
     // Optional debug scenarios can be toggled here
     await StartupTestPaths.NoToken(TokenStorage);
 #endif

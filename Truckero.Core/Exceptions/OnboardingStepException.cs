@@ -1,14 +1,13 @@
 ﻿// 📁 Truckero.Core/Exceptions/OnboardingStepException.cs
 
+using System; // Added for Exception type
+
 namespace Truckero.Core.Exceptions;
 
-public class OnboardingStepException : Exception
+public class OnboardingStepException : BaseStepException // Changed from Exception
 {
-    public string Step { get; }
-
-    public OnboardingStepException(string message, string step, Exception? inner = null)
-        : base(message, inner)
+    public OnboardingStepException(string message, string stepCode, Exception? inner = null) // Renamed 'step' to 'stepCode' for consistency
+        : base(message, stepCode, inner) // Pass stepCode to base constructor
     {
-        Step = step;
     }
 }

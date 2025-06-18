@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Truckero.Core.DTOs.Auth;
 using Truckero.Core.Entities;
+using Truckero.Core.Exceptions;
 using Truckero.Core.Interfaces.Services;
 using TruckeroApp.Interfaces;
 using TruckeroApp.ServiceClients.ApiHelpers;
@@ -30,9 +31,28 @@ public class AuthApiClientService : IAuthService
     {
         var response = await _http.PostAsJsonAsync("auth/login", request);
         if (!response.IsSuccessStatusCode)
-            throw new UnauthorizedAccessException("Login failed");
-
+        {
+            var content = await response.Content.ReadAsStringAsync();
+            if (response.Content.Headers.ContentType?.MediaType?.Contains("json") == true)
+            {
+                try
+                {
+                    var error = JsonSerializer.Deserialize<LoginErrorResponse>(content, _jsonOptions);
+                    if (error != null && !string.IsNullOrWhiteSpace(error.StepCode))
+                        throw new LoginStepException(error.Message ?? "Login failed", error.StepCode);
+                }
+                catch (JsonException) { /* fallback below */ }
+            }
+            // fallback: throw with raw content
+            throw new UnauthorizedAccessException($"Login failed: {content}");
+        }
         return await response.Content.ReadFromJsonAsync<AuthResponse>() ?? throw new InvalidOperationException("Empty login response");
+    }
+
+    private class LoginErrorResponse
+    {
+        public string? Message { get; set; }
+        public string? StepCode { get; set; }
     }
 
     public async Task<(User NewUser, AuthToken Token)> RegisterUserAsync(RegisterUserRequest request)

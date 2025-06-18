@@ -1,11 +1,446 @@
 ﻿@page "/registertruck"
 @using Microsoft.AspNetCore.Components
+@using Truckero.Core.DTOs.Trucks
+@using Truckero.Core.Exceptions
+@using TruckeroApp.Models
+@using Truckero.Core.Entities
+@using Truckero.Core.DTOs.Media
+@using Truckero.Core.DTOs.Onboarding
+@using Truckero.Core.Extensions
+
+@using TruckeroApp.Components.Pages.Shared
+@using TruckeroApp.Components.BottomSheets
 
 @inject NavigationManager NavigationManager
+@inject ILocalStorageService LocalStorage
+@inject IOnboardingService OnboardingService
+@inject IMediaService MediaService
+@inject IAuthSessionContext AuthSession
+@inject ITruckService TruckService
+
+<CenterWrapper>
+    <div class="h-full text-base-content relative">
+        <div class="min-h-screen bg-gray-50 p-6">
+
+            <!-- Header -->
+            <div class="flex items-center mb-8">
+                @if (FromRegisterDriver)
+                {
+                    <button class="text-gray-600" @onclick="PreviousStep" disabled="@(currentStep == 1)">
+                        <i class="fa-solid fa-arrow-left text-xl"></i>
+                    </button>
+                }
+                <div class="text-center flex-1 mr-8">
+                    <h2 class="text-xl font-semibold">Truck Registration</h2>
+                </div>
+            </div>
+
+            <!-- Progress -->
+            <div class="mb-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm text-gray-600">Step @currentStep of @totalSteps</span>
+                    <span class="text-sm text-orange-500">
+                        @("Step " + currentStep)
+                    </span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="bg-orange-500 h-2 rounded-full" style="width:@($"{(currentStep * 100 / totalSteps)}%")"></div>
+                </div>
+            </div>
+
+            <!-- Step Navigation -->
+            <div class="flex justify-between mb-6">
+                <button class="text-orange-500 font-medium flex items-center" @onclick="PreviousStep" disabled="@(currentStep == 1)">
+                    <i class="fa-solid fa-chevron-left mr-2"></i>Previous
+                </button>
+                <div class="flex space-x-2">
+                    @for (int i = 1; i <= totalSteps; i++)
+                    {
+                        <span class="h-2 w-2 rounded-full @GetDotClass(i)"></span>
+                    }
+                </div>
+                <button class="text-orange-500 font-medium flex items-center" @onclick="NextStep" disabled="@(currentStep == totalSteps)">
+                    Next<i class="fa-solid fa-chevron-right ml-2"></i>
+                </button>
+            </div>
+
+            <!-- Step Panels -->
+            <div class="space-y-6">
+                @if (IsStepActive(1))
+                {
+                    <!-- Step 1: Truck Info -->
+                    <div id="step-1" class="step-content active">
+                        <div id="truck-info-section" class="space-y-4">
+                            <h3 class="text-lg font-medium text-gray-800">Truck Information</h3>
+                            <div class="space-y-4">
+
+                                <!-- Truck Make -->
+                                <div class="space-y-2">
+                                    <label class="block text-sm font-medium text-gray-700">Truck Make</label>
+                                    <!-- Truck Make -->
+                                    <select  class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white"
+                                             @bind="CurrentTruck.TruckMakeId">
+                                        <option value="@Guid.Empty" selected>Select truck make</option>
+                                        @foreach (var make in TruckMakes)
+                                        {
+                                            <option value="@make.Id">@make.Name</option>
+                                        }
+                                    </select>
+                                </div>
+
+                                <!-- Truck Model -->
+                                <div class="space-y-2">
+                                    <label class="block text-sm font-medium text-gray-700">Truck Model</label>
+                                    <select class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white"
+                                            @bind="CurrentTruck.TruckModelId">
+                                        <option value="@Guid.Empty" disabled selected>Select truck model</option>
+                                        @foreach (var model in TruckModels)
+                                        {
+                                            <option value="@model.Id">@model.Name</option>
+                                        }
+                                    </select>
+                                </div>
+
+                                <!-- Manufacturing Year -->
+                                <div class="space-y-2">
+                                    <label class="block text-sm font-medium text-gray-700">Manufacturing Year</label>
+                                    <select class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white"
+                                            @bind="CurrentTruck.Year">
+                                        <option value="" disabled selected>Select year</option>
+                                        <option value="2025">2025</option>
+                                        <option value="2024">2024</option>
+                                        <option value="2023">2023</option>
+                                        <option value="2022">2022</option>
+                                        <option value="2021">2021</option>
+                                        <option value="2020">2020</option>
+                                        <option value="2019">2019</option>
+                                        <option value="2018">2018</option>
+                                        <option value="2017">2017</option>
+                                        <option value="2016">2016</option>
+                                        <option value="2015">2015</option>
+                                    </select>
+                                </div>
+
+                                <!-- Plate Number Input -->
+                                <div class="space-y-2">
+                                    <label class="block text-sm font-medium text-gray-700">Plate Number</label>
+                                    <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                           placeholder="Enter plate number" @bind="CurrentTruck.LicensePlate" />
+                                </div>
+
+                                <!-- Truck Type -->
+                                <div class="space-y-2">
+                                    <label class="block text-sm font-medium text-gray-700">Vehicle Type</label>
+                                    <select class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white" 
+                                        @bind="CurrentTruck.TruckTypeId">
+                                        <option value="@Guid.Empty" disabled selected>Select vehicle type</option>
+                                        @foreach (var vt in TruckTypes)
+                                        {
+                                            <option value="@vt.Id">@vt.Name</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                @if (IsStepActive(2))
+                {
+                    <!-- Step 2: Truck Photos -->
+                    <div id="step-2" class="step-content">
+                        <div id="truck-photos-section" class="space-y-4 bg-white rounded-lg p-4">
+                            <button class="flex items-center justify-between w-full" onclick="return false;">
+                                <h3 class="text-lg font-medium text-gray-800">Truck Photos</h3>
+                                <i class="fa-solid fa-chevron-down text-gray-500 transition-transform"></i>
+                            </button>
+                            <div class="grid grid-cols-2 gap-3">
+                                <!-- Front View -->
+                                <PhotoCaptureField Label="Front View"
+                                                   FileType="truck-front"
+                                                   Placeholder="Front Photo"
+                                                   ImageUrl="@CurrentTruck.PhotoFrontUrl"
+                                                   OnUpload="@(url => CurrentTruck.PhotoFrontUrl = url)"
+                                                   OnUploadFailed="@(() => HandleTruckUploadFail("Front"))"
+                                                   UserId="@UserId" />
+
+                                <!-- Back View -->
+                                <PhotoCaptureField Label="Back View"
+                                                   FileType="truck-back"
+                                                   Placeholder="Back Photo"
+                                                   ImageUrl="@CurrentTruck.PhotoBackUrl"
+                                                   OnUpload="@(url => CurrentTruck.PhotoBackUrl = url)"
+                                                   OnUploadFailed="@(() => HandleTruckUploadFail("Back"))"
+                                                   UserId="@UserId" />
+
+                                <!-- Left Side -->
+                                <PhotoCaptureField Label="Left Side"
+                                                   FileType="truck-left"
+                                                   Placeholder="Left Side Photo"
+                                                   ImageUrl="@CurrentTruck.PhotoLeftUrl"
+                                                   OnUpload="@(url => CurrentTruck.PhotoLeftUrl = url)"
+                                                   OnUploadFailed="@(() => HandleTruckUploadFail("Left"))"
+                                                   UserId="@UserId" />
+
+                                <!-- Right Side -->
+                                <PhotoCaptureField Label="Right Side"
+                                                   FileType="truck-right"
+                                                   Placeholder="Right Side Photo"
+                                                   ImageUrl="@CurrentTruck.PhotoBackUrl"
+                                                   OnUpload="@(url => CurrentTruck.PhotoBackUrl = url)"
+                                                   OnUploadFailed="@(() => HandleTruckUploadFail("Back"))"
+                                                   UserId="@UserId" />
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                @if (IsStepActive(3))
+                {
+                    <div class="content space-y-6">
+
+                        <!-- Load Category -->
+                        <div class="space-y-3">
+                            <h4 class="text-sm font-medium text-gray-700">Category</h4>
+                            <div class="grid grid-cols-2 gap-3">
+                                @foreach (var cat in TruckCategories)
+                                {
+                                    <button class="@GetSelectableButtonClass(CurrentTruck.TruckCategoryId == cat.Id) flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors"
+                                            @onclick="@(() => { CurrentTruck.TruckCategoryId = cat.Id; CurrentTruck.LoadCategory = cat.Name; })">
+                                        <i class="fa-solid fa-box text-xl mb-2"></i>
+                                        <span class="text-xs">@cat.Name</span>
+                                    </button>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Bed Type -->
+                        <div class="space-y-3">
+                            <h4 class="text-sm font-medium text-gray-700">Bed Type</h4>
+                            <div class="grid grid-cols-2 gap-3">
+                                @foreach (var bed in BedTypes)
+                                {
+                                    <button class="@GetSelectableButtonClass(CurrentTruck.BedTypeId == bed.Id) flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors"
+                                            @onclick="@(() => CurrentTruck.BedTypeId = bed.Id)">
+                                        <i class="fa-solid fa-truck-pickup text-xl mb-2"></i>
+                                        <span class="text-xs">@bed.Name</span>
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                @if (IsStepActive(4))
+                {
+                    <div class="space-y-3">
+                        <h4 class="text-sm font-medium text-gray-700">Use Tags (Select Multiple)</h4>
+                        <div class="grid grid-cols-2 gap-3">
+                            @foreach (var tag in UseTags)
+                            {
+                                <button class="@GetSelectableButtonClass(IsTagSelected((tag.Name, tag.Id))) flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors"
+                                        @onclick="@(() => ToggleUseTag((tag.Name, tag.Id)))">
+                                    <i class="fa-solid fa-tag text-xl mb-2"></i>
+                                    <span class="text-xs">@tag.Name</span>
+                                </button>
+                            }
+                        </div>
+                        <!-- Step 4: Ownership Information -->
+                        <div id="step-4" class="step-content">
+                            <div id="ownership-section" class="space-y-4 bg-white rounded-lg p-4">
+                                <h3 class="text-lg font-medium text-gray-800">Ownership Information</h3>
+                                <div class="space-y-3">
+                                    <InputRadioGroup TValue="OwnershipType?" @bind-Value="CurrentTruck.OwnershipType" class="space-y-3">
+                                        <label class="flex items-center space-x-3">
+                                            <InputRadio TValue="OwnershipType?" Value="OwnershipType.Owned" class="h-4 w-4 text-orange-500 focus:ring-orange-500" />
+                                            <span class="text-sm text-gray-700">I own this truck</span>
+                                        </label>
+                                        <label class="flex items-center space-x-3">
+                                            <InputRadio TValue="OwnershipType?" Value="OwnershipType.Leased" class="h-4 w-4 text-orange-500 focus:ring-orange-500" />
+                                            <span class="text-sm text-gray-700">I lease this truck</span>
+                                        </label>
+                                    </InputRadioGroup>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                @if (IsStepActive(5))
+                {
+                    <div id="step-5" class="step-content space-y-4">
+                        <h3 class="text-lg font-medium text-gray-800">Insurance Information</h3>
+
+                        <!-- Insurance Provider -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">Insurance Provider</label>
+                            <input type="text"
+                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                   placeholder="Enter provider name"
+                                   @bind="CurrentTruck.InsuranceProvider" />
+                        </div>
+
+                        <!-- Policy Number -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">Policy Number</label>
+                            <input type="text"
+                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                   placeholder="Enter policy number"
+                                   @bind="CurrentTruck.PolicyNumber"
+                                   @bind:event="oninput" />
+                        </div>
+
+@*                         <!-- Expiration Date -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">Expiration Date</label>
+                            <input type="date"
+                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                   @bind="CurrentTruck.PolicyExpirationDate" />
+                        </div> *@
+                    </div>
+                }
+
+            </div>
+
+            <!-- Step Navigation -->
+            <div class="flex justify-between mb-6 mt-4">
+                <button class="text-orange-500 font-medium flex items-center" @onclick="PreviousStep" disabled="@(currentStep == 1)">
+                    <i class="fa-solid fa-chevron-left mr-2"></i>Previous
+                </button>
+                <div class="flex space-x-2">
+                    @for (int i = 1; i <= totalSteps; i++)
+                    {
+                        <span class="h-2 w-2 rounded-full @GetDotClass(i)"></span>
+                    }
+                </div>
+                <button class="text-orange-500 font-medium flex items-center" @onclick="NextStep" disabled="@(currentStep == totalSteps)">
+                    Next<i class="fa-solid fa-chevron-right ml-2"></i>
+                </button>
+            </div>
+
+
+            <!-- Submit -->
+            <div class="mt-8 flex justify-center">
+                <button type="button"
+                        class="px-8 py-3 rounded-lg font-semibold text-white bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 disabled:text-gray-500 flex items-center justify-center"
+                        @onclick="HandleSubmitAsync"
+                        disabled="@(IsLoading || IsReferenceDataLoading || !IsTruckMinimallyComplete())">
+                    @if (IsLoading)
+                    {
+                        <span class="mr-2 animate-spin"><i class="fa fa-spinner"></i></span>
+                        <span>Submitting...</span>
+                    }
+                    else
+                    {
+                        <span>Submit</span>
+                    }
+                </button>
+            </div>
+
+        <!-- BottomSheets for error/validation feedback -->
+        @if (!string.IsNullOrEmpty(ActiveBottomSheet))
+        {
+            @switch (ActiveBottomSheet)
+            {
+                case "generic_error":
+                    <GenericErrorBottomSheet 
+                        Message="@ErrorMessage" 
+                        OnDismiss="HandleGenericErrorDismiss" />
+                    break;
+
+                case "validation_failed":
+                    <ValidationFailedBottomSheet 
+                        ValidationErrors="@ValidationErrors" 
+                        OnDismiss="@(() => ActiveBottomSheet = null)" />
+                    break;
+
+                case "referential_integrity":
+                    <ReferentialIntegrityBottomSheet
+                        ErrorCode="@ReferentialIntegrityBottomSheetErrorCode"
+                        Message="@ReferentialIntegrityBottomSheetMessage"
+                        OnDismiss="@(() => ActiveBottomSheet = null)" />
+                    break;
+            }
+        }
+
+
+        </div>
+
+        <!-- Overlay and spinner -->
+        @if (IsReferenceDataLoading)
+        {
+            <div class="absolute inset-0 z-40 bg-white bg-opacity-70 flex flex-col items-center justify-center">
+                <span class="text-orange-500 text-lg font-semibold mb-2">Loading truck data...</span>
+                <span class="animate-spin text-3xl text-orange-500"><i class="fa fa-spinner"></i></span>
+            </div>
+        }
+
+    </div>
+</CenterWrapper>
+
 
 @code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public bool FromRegisterDriver { get; set; }
+
+    private Guid _userId;
+
+    private Guid UserId => _userId;
+
+    private Truck CurrentTruck { get; set; } = new Truck();
+    private bool IsEditMode { get; set; } = false;
+    private bool IsLoading { get; set; } = false;
+    private string ErrorMessage { get; set; } = string.Empty;
+    public string? ActiveBottomSheet { get; set; } = null;
+    private List<string> ValidationErrors { get; set; } = new();
+    private string? ReferentialIntegrityBottomSheetErrorCode { get; set; }  
+    private string? ReferentialIntegrityBottomSheetMessage { get; set; }  
+    private bool IsReferentialIntegrityBottomSheetVisible { get; set; } = false; 
+
     private int currentStep = 1;
     private readonly int totalSteps = 5;
+
+    private static TruckPageReferenceDataDto? _truckPageDataCache;
+    private TruckPageReferenceDataDto? TruckPageData { get; set; }
+    private bool IsReferenceDataLoading { get; set; } = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Assign only once: use AuthSession.UserId if available, otherwise generate a new one
+        _userId = AuthSession.UserId ?? Guid.NewGuid();
+
+        try
+        {
+            if (_truckPageDataCache == null)
+            {
+                TruckPageData = await TruckService.GetTruckPageDataAsync();
+                _truckPageDataCache = TruckPageData;
+            }
+            else
+            {
+                TruckPageData = _truckPageDataCache;
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Failed to load truck data: {ex.Message}";
+            ActiveBottomSheet = "generic_error";
+        }
+        finally
+        {
+            IsReferenceDataLoading = false;
+        }
+        base.OnInitialized();
+    }
+
+    // Helper properties for binding
+    private IEnumerable<TruckMake> TruckMakes => TruckPageData?.TruckMakes ?? Enumerable.Empty<TruckMake>();
+    private IEnumerable<TruckModel> TruckModels => TruckPageData?.TruckModels ?? Enumerable.Empty<TruckModel>();
+    private IEnumerable<TruckCategory> TruckCategories => TruckPageData?.TruckCategories ?? Enumerable.Empty<TruckCategory>();
+    private IEnumerable<BedType> BedTypes => TruckPageData?.BedTypes ?? Enumerable.Empty<BedType>();
+    private IEnumerable<UseTag> UseTags => TruckPageData?.UseTags ?? Enumerable.Empty<UseTag>();
+    private IEnumerable<TruckType> TruckTypes => TruckPageData?.TruckTypes ?? Enumerable.Empty<TruckType>();
 
     private void NextStep()
     {
@@ -31,343 +466,169 @@
     private string GetDotClass(int step) => currentStep >= step ? "bg-orange-500" : "bg-gray-300";
     private bool IsStepActive(int step) => currentStep == step;
     private string GetStepButtonText() => currentStep == totalSteps ? "Submit" : "Continue";
+    private async Task HandleSubmitAsync()
+    {
+        if (!IsTruckMinimallyComplete())
+        {
+            ShowValidationFailed(new List<string> { "Please complete all required fields before submitting." });
+            return;
+        }
+        if (FromRegisterDriver)
+        {
+            var storageKey = "driver_registration_form";
+            var savedData = await LocalStorage.GetItemAsync<DriverRegistrationData>(storageKey);
+            if (savedData != null)
+            {
+                savedData.Trucks.Add(CurrentTruck); // TODO: update logic for add/edit if needed
+                await LocalStorage.SetItemAsync(storageKey, savedData);
+            }
+            NavigationManager.NavigateTo("/registerdriver");
+        }
+        else
+        {
+            try
+            {
+                IsLoading = true;
+                ErrorMessage = string.Empty;
+
+                var truckDTO = CurrentTruck.ToTruckRequestDto();
+
+                await TruckService.AddDriverTruckAsync(UserId, truckDTO);
+                // Optionally, show success toast/snackbar here
+            }
+            catch (TruckClientValidationException vex)
+            {
+                ShowValidationFailed(vex.ValidationMessages);
+            }
+            catch (ReferentialIntegrityClientException rex)
+            {
+                // Show the bottom sheet component and pass error info (code/message)
+                ShowReferentialIntegrityBottomSheet(rex.ErrorCode, rex.Message);
+            }
+            catch (TruckClientException cex)
+            {
+                ShowGenericError($"{cex.Message} (Code: {cex.Code})");
+            }
+            catch (HttpRequestException hrex)
+            {
+                ShowGenericError("Server communication failed. Please try again.");
+            }
+            catch (Exception ex)
+            {
+                ShowGenericError("Unexpected error: " + ex.Message);
+            }
+            finally
+            {
+                IsLoading = false;
+            }
+        }
+    }
+
+    private void HandleTruckUploadFail(string side)
+    {
+        ShowGenericError($"Failed to upload {side.ToLower()} photo.");
+    }
+    private string GetSelectableButtonClass(bool isSelected) =>
+        $"flex flex-col items-center justify-center p-3 border-2 rounded-lg transition-colors " +
+        (isSelected
+            ? "border-orange-500 text-orange-500"
+            : "border-dashed border-gray-300 hover:border-orange-500 hover:text-orange-500");
+
+    private bool IsTagSelected((string Name, Guid Id) tag)
+    {
+        return CurrentTruck.UseTags.Any(tut => tut.UseTag != null && tut.UseTag.Name == tag.Name);
+    }
+
+    private void ToggleUseTag((string Name, Guid Id) tag)
+    {
+        var existing = CurrentTruck.UseTags.FirstOrDefault(tut => tut.UseTag != null && tut.UseTag.Name == tag.Name);
+        if (existing != null)
+        {
+            CurrentTruck.UseTags.Remove(existing);
+        }
+        else
+        {
+            CurrentTruck.UseTags.Add(new TruckUseTag
+            {
+                TruckId = CurrentTruck.Id,
+                UseTagId = tag.Id,
+                UseTag = new UseTag { Id = tag.Id, Name = tag.Name }
+            });
+        }
+    }
+
+    private async Task UploadInsuranceDocuments()
+    {
+        try
+        {
+            // 1. Use a file picker to get the file/stream (replace with your actual picker)
+            var fileResult = await MediaPicker.PickPhotoAsync(); // Or PickFileAsync, depending on your picker
+            if (fileResult == null)
+                return;
+
+            using var stream = await fileResult.OpenReadAsync();
+
+            // 2. Create the upload request
+            var request = new ImageUploadRequest
+            {
+                FileName = fileResult.FileName,
+                FileType = "insurance-document",
+                UserId = UserId, // or UserId.Value if nullable
+                FileStream = stream
+            };
+
+            // 3. Upload the image
+            var response = await MediaService.UploadImageAsync(request);
+
+            if (response.Success && !string.IsNullOrEmpty(response.Url))
+            {
+                CurrentTruck.InsuranceDocumentUrl = response.Url;
+            }
+            else
+            {
+                ShowGenericError(response.ErrorMessage ?? "Failed to upload insurance document.");
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowGenericError($"Upload failed: {ex.Message}");
+        }
+    }
+
+    private bool IsTruckMinimallyComplete()
+    {
+        return
+            CurrentTruck.TruckTypeId != Guid.Empty &&
+            CurrentTruck.TruckMakeId != Guid.Empty &&
+            CurrentTruck.TruckModelId != Guid.Empty &&
+            !string.IsNullOrWhiteSpace(CurrentTruck.LicensePlate) && CurrentTruck.LicensePlate.Length >= 4 &&
+            CurrentTruck.Year > 2000 && // or your minimum year
+            !string.IsNullOrWhiteSpace(CurrentTruck.InsuranceProvider) && CurrentTruck.InsuranceProvider.Length >= 4 &&
+            !string.IsNullOrWhiteSpace(CurrentTruck.PolicyNumber) && CurrentTruck.PolicyNumber.Length >= 4;
+    }
+
+    private void ShowValidationFailed(List<string> errors)
+    {
+        ValidationErrors = errors;
+        ActiveBottomSheet = "validation_failed";
+    }
+
+    private void ShowGenericError(string message)
+    {
+        ErrorMessage = message;
+        ActiveBottomSheet = "generic_error";
+    }
+
+    private void HandleGenericErrorDismiss()
+    {
+        NavigationManager.NavigateTo(AppRoutes.StartupRouter, forceLoad: true);
+    }
+
+    private void ShowReferentialIntegrityBottomSheet(string code, string message)
+    {
+        ActiveBottomSheet = "referential_integrity";
+        ReferentialIntegrityBottomSheetErrorCode = code;
+        ReferentialIntegrityBottomSheetMessage = message;
+        IsReferentialIntegrityBottomSheetVisible = true;
+    } 
 }
-
-<CenterWrapper>
-    <div class="h-full text-base-content">
-        <div class="min-h-screen bg-gray-50 p-6">
-            <!-- Header -->
-            <div class="flex items-center mb-8">
-                <button class="text-gray-600" @onclick="PreviousStep" disabled="@(currentStep == 1)">
-                    <i class="fa-solid fa-arrow-left text-xl"></i>
-                </button>
-                <div class="text-center flex-1 mr-8">
-                    <h2 class="text-xl font-semibold">Truck Registration</h2>
-                </div>
-            </div>
-
-            <!-- Progress -->
-            <div class="mb-6">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-sm text-gray-600">Step @currentStep of @totalSteps</span>
-                    <span class="text-sm text-orange-500">
-                        @("Step " + currentStep)
-                    </span>
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div class="bg-orange-500 h-2 rounded-full" style="width:@((currentStep * 100 / totalSteps))%"></div>
-                </div>
-            </div>
-
-            <!-- Step Navigation -->
-            <div class="flex justify-between mb-6">
-                <button class="text-orange-500 font-medium flex items-center" @onclick="PreviousStep" disabled="@(currentStep == 1)">
-                    <i class="fa-solid fa-chevron-left mr-2"></i>Previous
-                </button>
-                <div class="flex space-x-2">
-                    @for (int i = 1; i <= totalSteps; i++)
-                    {
-                        <span class="h-2 w-2 rounded-full @GetDotClass(i)"></span>
-                    }
-                </div>
-                <button class="text-orange-500 font-medium flex items0-center" @onclick="NextStep" disabled="@(currentStep == totalSteps)">
-                    Next<i class="fa-solid fa-chevron-right ml-2"></i>
-                </button>
-            </div>
-
-            <!-- Step Panels -->
-            <div class="space-y-6">
-                @if (IsStepActive(1))
-                {
-                    <div id="step-1" class="step-content active">
-                        <div id="truck-info-section" class="space-y-4">
-                            <h3 class="text-lg font-medium text-gray-800">Truck Information</h3>
-                            <div class="space-y-4">
-
-                                <!-- Truck Make -->
-                                <div class="space-y-2">
-                                    <label class="block text-sm font-medium text-gray-700">Truck Make</label>
-                                    <select class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white">
-                                        <option value="" disabled selected>Select truck make</option>
-                                        <option value="ford">Ford</option>
-                                        <option value="toyota">Toyota</option>
-                                        <option value="chevrolet">Chevrolet</option>
-                                        <option value="dodge">Dodge</option>
-                                        <option value="gmc">GMC</option>
-                                        <option value="ram">RAM</option>
-                                        <option value="nissan">Nissan</option>
-                                        <option value="other">Other</option>
-                                    </select>
-                                </div>
-
-                                <!-- Truck Model -->
-                                <div class="space-y-2">
-                                    <label class="block text-sm font-medium text-gray-700">Truck Model</label>
-                                    <select class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white">
-                                        <option value="" disabled selected>Select truck model</option>
-                                        <option value="f150">F-150</option>
-                                        <option value="tacoma">Tacoma</option>
-                                        <option value="silverado">Silverado</option>
-                                        <option value="ram1500">RAM 1500</option>
-                                        <option value="sierra">Sierra</option>
-                                        <option value="frontier">Frontier</option>
-                                        <option value="other">Other</option>
-                                    </select>
-                                </div>
-
-                                <!-- Manufacturing Year -->
-                                <div class="space-y-2">
-                                    <label class="block text-sm font-medium text-gray-700">Manufacturing Year</label>
-                                    <select class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white">
-                                        <option value="" disabled selected>Select year</option>
-                                        <option value="2025">2025</option>
-                                        <option value="2024">2024</option>
-                                        <option value="2023">2023</option>
-                                        <option value="2022">2022</option>
-                                        <option value="2021">2021</option>
-                                        <option value="2020">2020</option>
-                                        <option value="2019">2019</option>
-                                        <option value="2018">2018</option>
-                                        <option value="2017">2017</option>
-                                        <option value="2016">2016</option>
-                                        <option value="2015">2015</option>
-                                    </select>
-                                </div>
-
-                                <!-- Plate Section -->
-                                <div id="plate-section" class="space-y-4 mt-6 bg-white rounded-lg p-4">
-                                    <button class="flex items-center justify-between w-full" onclick="return false;">
-                                        <h3 class="text-lg font-medium text-gray-800">Truck's Plate</h3>
-                                        <i class="fa-solid fa-chevron-down text-gray-500 transition-transform"></i>
-                                    </button>
-
-                                    <!-- Plate Preview -->
-                                    <div class="space-y-2">
-                                        <label class="block text-sm font-medium text-gray-700">Plate Photo Preview</label>
-                                        <div class="relative group aspect-[3/1] bg-gray-100 rounded-lg overflow-hidden">
-                                            <img class="w-full h-full object-cover"
-                                                 src="https://storage.googleapis.com/uxpilot-auth.appspot.com/e3957fab62-5c352241b3435cd72397.png"
-                                                 alt="truck plate photo preview with good lighting" />
-                                            <div class="absolute inset-0 bg-black bg-opacity-40 group-hover:bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Secondary 
-
-                                    Below -->
-                                    <div class="flex justify-center">
-                                        <button class="px-4 py-3 rounded-lg bg-blue-100 text-blue-700 border border-blue-200 hover:border-orange-500 hover:text-orange-500 font-medium transition-colors">
-                                            Take Photo
-                                        </button>
-                                    </div>
-
-                                    <!-- Plate Number Input -->
-                                    <div class="space-y-2">
-                                        <label class="block text-sm font-medium text-gray-700">Plate Number</label>
-                                        <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="Enter plate number" />
-                                    </div>
-                                </div>
-
-
-
-
-
-
-                            </div>
-                        </div>
-                    </div>
-                }
-
-
-                @if (IsStepActive(2))
-                {
-                    <!-- Step 2: Truck Photos -->
-                    <div id="step-2" class="step-content">
-                        <div id="truck-photos-section" class="space-y-4 bg-white rounded-lg p-4">
-                            <button class="flex items-center justify-between w-full" onclick="return false;">
-                                <h3 class="text-lg font-medium text-gray-800">Truck Photos</h3>
-                                <i class="fa-solid fa-chevron-down text-gray-500 transition-transform"></i>
-                            </button>
-                            <div class="content">
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div class="space-y-2">
-                                        <label class="block text-sm font-medium text-gray-700">Front View</label>
-                                        <button class="w-full aspect-square flex flex-col items-center justify-center space-y-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500">
-                                            <i class="fa-solid fa-camera text-xl"></i>
-                                            <span class="text-xs">Add Photo</span>
-                                        </button>
-                                    </div>
-                                    <div class="space-y-2">
-                                        <label class="block text-sm font-medium text-gray-700">Back View</label>
-                                        <button class="w-full aspect-square flex flex-col items-center justify-center space-y-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500">
-                                            <i class="fa-solid fa-camera text-xl"></i>
-                                            <span class="text-xs">Add Photo</span>
-                                        </button>
-                                    </div>
-                                    <div class="space-y-2">
-                                        <label class="block text-sm font-medium text-gray-700">Left Side</label>
-                                        <button class="w-full aspect-square flex flex-col items-center justify-center space-y-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500">
-                                            <i class="fa-solid fa-camera text-xl"></i>
-                                            <span class="text-xs">Add Photo</span>
-                                        </button>
-                                    </div>
-                                    <div class="space-y-2">
-                                        <label class="block text-sm font-medium text-gray-700">Right Side</label>
-                                        <button class="w-full aspect-square flex flex-col items-center justify-center space-y-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500">
-                                            <i class="fa-solid fa-camera text-xl"></i>
-                                            <span class="text-xs">Add Photo</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                }
-
-                @if (IsStepActive(3))
-                {
-                    <div id="step-3" class="step-content">
-                        <div id="truck-categorization-section" class="space-y-4 bg-white rounded-lg p-4">
-                            <button class="flex items-center justify-between w-full" onclick="return false;">
-                                <h3 class="text-lg font-medium text-gray-800">Truck Categorization</h3>
-                                <i class="fa-solid fa-chevron-down text-gray-500 transition-transform"></i>
-                            </button>
-                            <div class="content space-y-6">
-                                <!-- Load Category -->
-                                <div class="space-y-3">
-                                    <h4 class="text-sm font-medium text-gray-700">Category</h4>
-                                    <div class="grid grid-cols-2 gap-3">
-                                        <button class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors">
-                                            <i class="fa-solid fa-box text-xl mb-2"></i>
-                                            <span class="text-xs">Small Load</span>
-                                        </button>
-                                        <button class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors">
-                                            <i class="fa-solid fa-boxes-stacked text-xl mb-2"></i>
-                                            <span class="text-xs">Standard Load</span>
-                                        </button>
-                                        <button class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors">
-                                            <i class="fa-solid fa-truck text-xl mb-2"></i>
-                                            <span class="text-xs">Heavy Load</span>
-                                        </button>
-                                        <button class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors">
-                                            <i class="fa-solid fa-truck-monster text-xl mb-2"></i>
-                                            <span class="text-xs">Extra Heavy Duty</span>
-                                        </button>
-                                    </div>
-                                </div>
-                                <!-- Bed Type -->
-                                <div class="space-y-3">
-                                    <h4 class="text-sm font-medium text-gray-700">Bed Type</h4>
-                                    <div class="grid grid-cols-2 gap-3">
-                                        <button class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors">
-                                            <i class="fa-solid fa-truck-pickup text-xl mb-2"></i>
-                                            <span class="text-xs">Open Bed</span>
-                                        </button>
-                                        <button class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors">
-                                            <i class="fa-solid fa-truck-ramp-box text-xl mb-2"></i>
-                                            <span class="text-xs">Covered Bed</span>
-                                        </button>
-                                        <button class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors">
-                                            <i class="fa-solid fa-truck-moving text-xl mb-2"></i>
-                                            <span class="text-xs">Box Truck/Van</span>
-                                        </button>
-                                        <button class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors">
-                                            <i class="fa-solid fa-temperature-low text-xl mb-2"></i>
-                                            <span class="text-xs">Refrigerated</span>
-                                        </button>
-                                    </div>
-                                </div>
-                                <!-- Use Tags -->
-                                <div class="space-y-3">
-                                    <h4 class="text-sm font-medium text-gray-700">Use Tags (Select Multiple)</h4>
-                                    <div class="grid grid-cols-2 gap-3">
-                                        <button class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors">
-                                            <i class="fa-solid fa-couch text-xl mb-2"></i>
-                                            <span class="text-xs">Furniture Move</span>
-                                        </button>
-                                        <button class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors">
-                                            <i class="fa-solid fa-washing-machine text-xl mb-2"></i>
-                                            <span class="text-xs">Appliance Haul</span>
-                                        </button>
-                                        <button class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors">
-                                            <i class="fa-solid fa-store text-xl mb-2"></i>
-                                            <span class="text-xs">Store Delivery</span>
-                                        </button>
-                                        <button class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors">
-                                            <i class="fa-solid fa-dumpster text-xl mb-2"></i>
-                                            <span class="text-xs">Junk Removal</span>
-                                        </button>
-                                        <button class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors">
-                                            <i class="fa-solid fa-wine-glass text-xl mb-2"></i>
-                                            <span class="text-xs">Fragile Goods</span>
-                                        </button>
-                                        <button class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors">
-                                            <i class="fa-solid fa-people-carry-box text-xl mb-2"></i>
-                                            <span class="text-xs">Helper Included</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                }
-
-                @if (IsStepActive(4))
-                {
-                    <!-- Step 4: Ownership Information -->
-                    <div id="step-4" class="step-content">
-                        <div id="ownership-section" class="space-y-4">
-                            <h3 class="text-lg font-medium text-gray-800">Ownership Information</h3>
-                            <div class="space-y-3">
-                                <div class="flex items-center space-x-3">
-                                    <input type="radio" name="ownership" id="owned" class="h-4 w-4 text-orange-500 focus:ring-orange-500">
-                                    <label for="owned" class="text-sm text-gray-700">I own this truck</label>
-                                </div>
-                                <div class="flex items-center space-x-3">
-                                    <input type="radio" name="ownership" id="leased" class="h-4 w-4 text-orange-500 focus:ring-orange-500">
-                                    <label for="leased" class="text-sm text-gray-700">I lease this truck</label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                }
-
-                @if (IsStepActive(5))
-                {
-                    <div id="step-5" class="step-content">
-                        <div id="insurance-section" class="space-y-4">
-                            <h3 class="text-lg font-medium text-gray-800">Insurance Information</h3>
-                            <div class="space-y-4">
-                                <div class="space-y-2">
-                                    <label class="block text-sm font-medium text-gray-700">Insurance Provider</label>
-                                    <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="Enter insurance provider">
-                                </div>
-                                <div class="space-y-2">
-                                    <label class="block text-sm font-medium text-gray-700">Policy Number</label>
-                                    <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="Enter policy number">
-                                </div>
-                                <div class="space-y-2">
-                                    <label class="block text-sm font-medium text-gray-700">Insurance Documents</label>
-                                    <button class="w-full flex items-center justify-center px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500">
-                                        <i class="fa-solid fa-upload mr-2"></i>
-                                        <span>Upload Insurance Documents</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                }
-
-                <!-- Footer Action -->
-                <div class="mt-6">
-                    <button class="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600">
-                        @GetStepButtonText()
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</CenterWrapper>

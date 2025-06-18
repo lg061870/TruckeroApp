@@ -9,5 +9,5 @@ public class AuthResponse
     public string? ErrorMessage { get; set; }
     public Guid UserId { get; set; }
     public DateTime ExpiresIn { get; set; }
-
+    public string? Role { get; set; }
 }

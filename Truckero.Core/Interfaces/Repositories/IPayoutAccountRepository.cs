@@ -1,7 +1,18 @@
-﻿public interface IPayoutAccountRepository
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Truckero.Core.Entities;
+
+namespace Truckero.Core.Interfaces.Repositories;
+
+public interface IPayoutAccountRepository
 {
-    Task<List<PayoutAccount>> GetByUserIdAsync(Guid userId);
-    Task<PayoutAccount?> GetDefaultByUserIdAsync(Guid userId);
-    Task AddAsync(PayoutAccount account);
-    Task DeleteAsync(Guid id);
+    Task<PayoutAccount?> GetPayoutAccountByIdAsync(Guid payoutAccountId);
+    Task<List<PayoutAccount>> GetPayoutAccountsByUserIdAsync(Guid userId);
+    Task<PayoutAccount?> GetDefaultPayoutAccountByUserIdAsync(Guid userId);
+    Task AddPayoutAccountAsync(PayoutAccount payoutAccount);
+    Task UpdatePayoutAccountAsync(PayoutAccount payoutAccount);
+    Task DeletePayoutAccountAsync(Guid payoutAccountId);
+    // Alias for legacy usage in OnboardingService
+    Task AddAsync(PayoutAccount payoutAccount) => AddPayoutAccountAsync(payoutAccount);
 }

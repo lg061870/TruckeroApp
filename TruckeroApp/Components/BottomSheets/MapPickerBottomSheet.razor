@@ -15,24 +15,26 @@
                 <div class="w-10 h-10 bg-orange-100 rounded-full border-4 border-white shadow pointer-events-none"></div>
             </div>
 
-@*             <button type="button"
-                    class="absolute top-4 right-4 bg-white text-gray-700 px-3 py-1 text-xs border border-gray-200 rounded shadow hover:bg-gray-100 z-10"
-                    @onclick="RecenterToUser">
-                My Location
-            </button> *@
             <button type="button"
                     class="absolute top-4 right-4 z-10 px-3 py-1 text-sm bg-white border rounded-lg shadow hover:bg-gray-100"
                     @onclick="CenterMapToUserLocation">
                 📍 My Location
             </button>
-
-
         </div>
 
         <!-- Details + Controls -->
         <div class="px-5 py-4 flex flex-col gap-3">
             <div class="text-xs text-gray-600">Detected Address:</div>
-            <div class="text-sm font-medium text-gray-800 truncate">@Address</div>
+            <div class="text-sm font-medium text-gray-800 truncate">
+                @if (IsAddressLoading)
+                {
+                    <span class="animate-pulse text-gray-400">Resolving address...</span>
+                }
+                else
+                {
+                    @Address
+                }
+            </div>
 
             <label class="block text-sm font-medium text-gray-700">Service Radius (km)</label>
             <div class="flex items-center">
@@ -41,7 +43,8 @@
             </div>
 
             <button type="button"
-                    class="w-full mt-3 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                    disabled="@(!CanConfirm)"
+                    class=@($"w-full mt-3 px-4 py-2 rounded-lg font-medium transition-colors duration-200 {(CanConfirm ? "bg-orange-500 text-white hover:bg-orange-600" : "bg-gray-300 text-gray-500 cursor-not-allowed")}")
                     @onclick="ConfirmSelection">
                 Confirm
             </button>
@@ -57,6 +60,13 @@
     private double Latitude;
     private double Longitude;
     private string Address = "Loading...";
+    private bool IsAddressLoading = true;
+
+    private bool CanConfirm =>
+        !IsAddressLoading &&
+        !string.IsNullOrWhiteSpace(Address) &&
+        Address != "Unknown Location" &&
+        Address != "Loading...";
 
     [Inject] private IJSRuntime JS { get; set; } = default!;
 
@@ -73,11 +83,22 @@
     {
         Latitude = lat;
         Longitude = lon;
+        IsAddressLoading = true;
+        StateHasChanged();
 
-        using var client = new HttpClient();
-        var url = $"https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat={lat}&lon={lon}";
-        var result = await client.GetFromJsonAsync<NominatimResponse>(url);
-        Address = result?.display_name ?? "Unknown Location";
+        try
+        {
+            using var client = new HttpClient();
+            var url = $"https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat={lat}&lon={lon}";
+            var result = await client.GetFromJsonAsync<NominatimResponse>(url);
+            Address = result?.display_name ?? "Unknown Location";
+        }
+        catch
+        {
+            Address = "Unknown Location";
+        }
+
+        IsAddressLoading = false;
         StateHasChanged();
     }
 
@@ -93,14 +114,14 @@
         await Hide();
     }
 
-    private async Task RecenterToUser()
-    {
-        await JS.InvokeVoidAsync("centerMapToUserLocation");
-    }
-
     private async Task Hide()
     {
         await OnDismiss.InvokeAsync();
+    }
+
+    private async Task CenterMapToUserLocation()
+    {
+        await JS.InvokeVoidAsync("centerMapToUserLocation");
     }
 
     private class NominatimResponse
@@ -115,10 +136,4 @@
         public int RadiusKm { get; set; }
         public string Address { get; set; } = "";
     }
-
-    private async Task CenterMapToUserLocation()
-    {
-        await JS.InvokeVoidAsync("centerMapToUserLocation");
-    }
-
 }

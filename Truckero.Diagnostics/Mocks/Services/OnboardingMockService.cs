@@ -2,6 +2,7 @@ using Truckero.Core.DTOs;
 using Truckero.Core.DTOs.Auth;
 using Truckero.Core.DTOs.Common;
 using Truckero.Core.DTOs.Onboarding;
+using Truckero.Core.DTOs.Trucks;
 using Truckero.Core.Entities;
 using Truckero.Core.Interfaces.Services;
 
@@ -80,17 +81,17 @@ public class OnboardingMockService : IOnboardingService
         throw new NotImplementedException();
     }
 
-    public Task<OperationResult> AddDriverTruckAsync(Guid userId, Truck truck)
+    public Task<TruckResponseDto> AddDriverTruckAsync(Guid userId, TruckRequestDto truck)
     {
         throw new NotImplementedException();
     }
 
-    public Task<OperationResult> UpdateDriverTruckAsync(Guid userId, Truck truck)
+    public Task<TruckResponseDto> UpdateDriverTruckAsync(Guid userId, Guid truckId, TruckRequestDto truck)
     {
         throw new NotImplementedException();
     }
 
-    public Task<OperationResult> DeleteDriverTruckAsync(Guid userId, Guid truckId)
+    public Task<TruckResponseDto> DeleteDriverTruckAsync(Guid userId, Guid truckId)
     {
         throw new NotImplementedException();
     }

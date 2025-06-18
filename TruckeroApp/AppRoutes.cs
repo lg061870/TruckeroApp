@@ -8,10 +8,11 @@ public static class AppRoutes
     public const string RegisterStoreClerk = "/registerstoreclerk";
     public const string RegisterTruck = "/registertruck";
     public const string RegisterPayout = "/registerpayout";
+    public const string RegisterPayoutAccounts = "/registerpayoutaccounts";
     public const string RegisterPayment = "/registerpayment";
     public const string Login = "/login";
     public const string RoleSwitcher = "/roleswitcher";
-    public const string StartupRouter = "/start";
+    public const string StartupRouter = "/";
     public const string PickupQueue = "/pickupqueue";
     public const string LoginExpired = "/login-expired";
     public const string ConfirmReset = "/confirm-reset";

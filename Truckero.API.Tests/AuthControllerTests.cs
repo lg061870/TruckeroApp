@@ -31,7 +31,7 @@ public class AuthControllerTests : IClassFixture<WebApplicationFactory<ProgramEn
             Email = "testuser@example.com",
             Password = "StrongPass123!",
             Role = "Customer",
-            Name = "Test User"
+            FullName = "Test User"
         };
 
         var response = await _client.PostAsJsonAsync("/auth/register", payload);
@@ -48,7 +48,7 @@ public class AuthControllerTests : IClassFixture<WebApplicationFactory<ProgramEn
             Email = "",
             Password = "123",
             Role = "",
-            Name = ""
+            FullName = ""
         };
 
         var response = await _client.PostAsJsonAsync("/auth/register", request);

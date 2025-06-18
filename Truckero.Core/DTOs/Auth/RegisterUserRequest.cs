@@ -16,7 +16,8 @@ public class RegisterUserRequest
     public string Role { get; set; } = null!;
 
     [Required]
-    public string Name { get; set; } = null!;
+    public string FullName { get; set; } = null!;
     public string? PaymentMetadataJson { get; set; }
-    public string PhoneNumber { get; set; }
+    public string? PhoneNumber { get; set; }
+    public string? Address { get; set; }
 }

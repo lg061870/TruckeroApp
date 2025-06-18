@@ -3,24 +3,22 @@
 @using System.Net
 @using System.Net.Http
 @using System.Text.Json
-@using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Routing
 @using Truckero.Core.DTOs.Auth
 @using Truckero.Core.DTOs.Common
 @using Truckero.Core.DTOs.Media
 @using Truckero.Core.DTOs.Onboarding
+@using Truckero.Core.DTOs.Trucks
 @using Truckero.Core.DataAnnotations
 @using Truckero.Core.Exceptions
-@using Truckero.Core.Interfaces.Services
 @using Truckero.Infrastructure.Services
 @using TruckeroApp.Components.BottomSheets
-@using TruckeroApp.DebugTools
-@using TruckeroApp.Interfaces
 @using TruckeroApp.ServiceClients
 @using TruckeroApp.Services.Media
 @using TruckeroApp.Components.Pages.Driver
 @using TruckeroApp.Models
+@using TruckeroApp.Components.Pages.Shared
 
 @inject IOnboardingService OnboardingService
 @inject NavigationManager NavigationManager
@@ -28,6 +26,7 @@
 @inject IMediaPicker MediaPicker
 @inject IMediaService MediaService
 @inject ILocalStorageService LocalStorage
+@inject ITruckService TruckService
 
 <CenterWrapper>
     <div class="h-full text-base-content">
@@ -57,10 +56,11 @@
                 <span class="text-sm text-orange-700">Registering as: <strong>DRIVER</strong></span>
             </div>
 
-            <EditForm EditContext="_editContext" OnValidSubmit="SubmitAsync" OnInvalidSubmit="HandleInvalidSubmit" id="registration-form" class="space-y-4">
+            <EditForm Model="DriverProfile" OnValidSubmit="SubmitAsync" OnInvalidSubmit="HandleInvalidSubmit" id="registration-form" class="space-y-4">
                 <DataAnnotationsValidator />
                 <ValidationSummary class="text-red-500 text-sm mb-4" />
 
+                <!-- Personal Information -->
                 <div id="personal-info-section" class="space-y-4">
                     <div class="space-y-2">
                         <label class="block text-sm font-medium text-gray-700">Full Name</label>
@@ -70,7 +70,11 @@
 
                     <div class="space-y-2">
                         <label class="block text-sm font-medium text-gray-700">Email Address</label>
-                        <InputText @bind-Value="DriverProfile.Email" type="email" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="Enter your email address" />
+                            <InputText @bind-Value="Email"
+                                       type="email"
+                                       class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                       placeholder="Enter your email address" />
+
                         <ValidationMessage For="@(() => DriverProfile.Email)" class="text-red-500 text-xs" />
                     </div>
 
@@ -81,6 +85,7 @@
                     </div>
                 </div>
 
+                <!-- License Section -->
                 <div id="license-section" class="space-y-4 mt-6">
                     <h3 class="text-lg font-medium text-gray-800">Driver's License</h3>
 
@@ -88,78 +93,54 @@
                     {
                         <div id="license-warning" class="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
                             <i class="fa-solid fa-triangle-exclamation text-red-500 mt-1"></i>
-                            <p class="text-sm text-red-600">The name on your driver's license doesn't match your registration name. Please ensure both names match exactly.</p>
+                            <p class="text-sm text-red-600">
+                                The name on your driver's license doesn't match your registration name. Please ensure both names match exactly.
+                            </p>
                         </div>
                     }
 
                     <div class="space-y-2">
                         <label class="block text-sm font-medium text-gray-700">License Number</label>
-                        <InputText @bind-Value="DriverProfile.LicenseNumber" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="Enter license number" />
+                        <InputText @bind-Value="DriverProfile.LicenseNumber"
+                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                   placeholder="Enter license number" />
                         <ValidationMessage For="@(() => DriverProfile.LicenseNumber)" class="text-red-500 text-xs" />
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
-                        <div class="space-y-2">
-                            <label class="block text-sm font-medium text-gray-700">Front Side</label>
-                            <button type="button" @onclick="UploadLicenseFront" class="w-full flex flex-col items-center justify-center space-y-2 border-2 border-dashed border-gray-300 p-4 rounded-lg hover:border-orange-500 hover:text-orange-500">
-                                <i class="fa-solid fa-camera text-xl"></i>
-                                <span class="text-sm">Front Photo</span>
-                            </button>
-                        </div>
-                        <div class="space-y-2">
-                            <label class="block text-sm font-medium text-gray-700">Back Side</label>
-                            <button type="button" @onclick="UploadLicenseBack" class="w-full flex flex-col items-center justify-center space-y-2 border-2 border-dashed border-gray-300 p-4 rounded-lg hover:border-orange-500 hover:text-orange-500">
-                                <i class="fa-solid fa-camera text-xl"></i>
-                                <span class="text-sm">Back Photo</span>
-                            </button>
-                        </div>
-                    </div>
+                            <PhotoCaptureField Label="Front Side"
+                                               FileType="license-front"
+                                               Placeholder="Front Photo"
+                                               ImageUrl="@LicenseFrontUrl"
+                                               UserId="@UserId"
+                                               OnUpload="HandleFrontPhotoUpload"
+                                               OnUploadFailed="HandleFrontUploadFail" />
 
-                    @if (LicenseFrontUrl != null || LicenseBackUrl != null)
-                    {
-                        <div id="license-preview" class="space-y-4">
-                            <h4 class="text-sm font-medium text-gray-700">License Photos Preview</h4>
-                            <div class="grid grid-cols-2 gap-4">
-                                @if (LicenseFrontUrl != null)
-                                {
-                                    <div class="relative group">
-                                        <div class="aspect-[1.6/1] bg-gray-100 rounded-lg overflow-hidden">
-                                            <img class="w-full h-full object-cover" src="@LicenseFrontUrl" alt="driver license front side photo preview with good lighting">
-                                            <div class="absolute inset-0 bg-black bg-opacity-40 group-hover:bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button type="button" @onclick="UploadLicenseFront" class="text-white">
-                                                    <i class="fa-solid fa-camera-rotate text-xl"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <span class="block text-xs text-gray-500 mt-1 text-center">Front Side</span>
-                                    </div>
-                                }
-                                @if (LicenseBackUrl != null)
-                                {
-                                    <div class="relative group">
-                                        <div class="aspect-[1.6/1] bg-gray-100 rounded-lg overflow-hidden">
-                                            <img class="w-full h-full object-cover" src="@LicenseBackUrl" alt="driver license back side photo preview with good lighting">
-                                            <div class="absolute inset-0 bg-black bg-opacity-40 group-hover:bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button type="button" @onclick="UploadLicenseBack" class="text-white">
-                                                    <i class="fa-solid fa-camera-rotate text-xl"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <span class="block text-xs text-gray-500 mt-1 text-center">Back Side</span>
-                                    </div>
-                                }
-                            </div>
-                        </div>
-                    }
+                            <PhotoCaptureField Label="Back Side"
+                                               FileType="license-back"
+                                               Placeholder="Back Photo"
+                                               ImageUrl="@LicenseBackUrl"
+                                               UserId="@UserId"
+                                               OnUpload="HandleBackPhotoUpload"
+                                               OnUploadFailed="HandleBackUploadFail" />
+                    </div>
                 </div>
 
                 <!-- Trucks Section -->
-
                 <TruckInfo RegisteredTrucks="RegisteredTrucks"
                            OnEditTruck="EditTruck"
                            OnRemoveTruck="RemoveTruck"
-                           OnAddNewTruck="AddNewTruck" />
+                           OnAddNewTruck="AddNewTruck"
+                           IsAddTruckEnabled="@IsValidEmail(DriverProfile.Email)"
+                           GetAddTruckButtonClasses="@GetAddTruckButtonClasses" />
 
+                <!-- Payout Accounts Section -->
+                <PayoutAccountInfo RegisteredPayoutAccounts="RegisteredPayoutAccounts"
+                                   OnEditPayoutAccount="EditPayoutAccount"
+                                   OnRemovePayoutAccount="RemovePayoutAccount"
+                                   OnAddNewPayoutAccount="AddNewPayoutAccount"
+                                   IsAddPayoutAccountEnabled="true"
+                                   GetAddPayoutAccountButtonClasses="@GetAddTruckButtonClasses" />
 
                 <!-- Driver HomeBase -->
                 <div class="space-y-5 mt-6">
@@ -239,7 +220,7 @@
                     }
                     else
                     {
-                        <span>Continue</span>
+                        <span>Submit</span>
                     }
                 </button>
 
@@ -356,14 +337,48 @@
     [Required]
     private Guid UserId { get; set; } = Guid.Empty;
 
-    [Required]
-    [MinLength(8, ErrorMessage = "Password must be at least 8 characters long")]
-    [StrongPassword(ErrorMessage = "Must include upper, lower, digit, and symbol")]
-    private string Password { get; set; } = string.Empty;
+    private string PasswordBacking = string.Empty;
+    private string Password
+    {
+        get => PasswordBacking;
+        set
+        {
+            PasswordBacking = value;
+            DriverProfile.Password = value;
+        }
+    }
 
-    [Required]
-    [Compare(nameof(Password), ErrorMessage = "Passwords do not match")]
-    private string ConfirmPassword { get; set; } = string.Empty;
+    private string ConfirmPasswordBacking = string.Empty;
+    private string ConfirmPassword
+    {
+        get => ConfirmPasswordBacking;
+        set
+        {
+            ConfirmPasswordBacking = value;
+        }
+    }
+
+    private string? _licenseFrontUrl;
+    private string? LicenseFrontUrl
+    {
+        get => _licenseFrontUrl;
+        set
+        {
+            _licenseFrontUrl = value;
+            DriverProfile.LicenseFrontUrl = value ?? string.Empty;
+        }
+    }
+
+    private string? _licenseBackUrl;
+    private string? LicenseBackUrl
+    {
+        get => _licenseBackUrl;
+        set
+        {
+            _licenseBackUrl = value;
+            DriverProfile.LicenseBackUrl = value ?? string.Empty;
+        }
+    }
 
     private bool AcceptTerms { get; set; } = false;
     private bool FormSubmitted { get; set; } = false;
@@ -371,60 +386,66 @@
     private bool ShowPassword { get; set; } = false;
     private bool ShowConfirmPassword { get; set; } = false;
     private bool IsNameMismatch { get; set; } = false;
-    private string? LicenseFrontUrl { get; set; }
-    private string? LicenseBackUrl { get; set; }
+
+    private string Email
+    {
+        get => DriverProfile.Email;
+        set
+        {
+            DriverProfile.Email = value;
+            ValidateEmailLive();
+        }
+    }
 
     private bool IsExistingRegistration { get; set; } = false;
 
     private bool IsEditMode => IsExistingRegistration && UserId != Guid.Empty;
 
     private List<Truck> RegisteredTrucks { get; set; } = new();
+    private List<PayoutAccountDto> RegisteredPayoutAccounts { get; set; } = new();
 
     private const string STORAGE_KEY = "driver_registration_form";
 
     protected override async Task OnInitializedAsync()
     {
-        // Try to load saved data from local storage first
+        // 🌐 If the user previously started registration but exited before completing,
+        // attempt to restore their last saved data from local storage so they can resume seamlessly.
         var savedData = await LocalStorage.GetItemAsync<DriverRegistrationData>(STORAGE_KEY);
-        
+
         if (savedData != null)
         {
-            // Restore from saved data
+            // 🧠 Restore state from saved local data
             UserId = savedData.UserId;
             DriverProfile = savedData.Profile;
             Password = savedData.Password;
-            ConfirmPassword = savedData.Password; // Re-populate both fields
+            ConfirmPassword = savedData.Password; // For validation to pass
             LicenseFrontUrl = savedData.LicenseFrontUrl;
             LicenseBackUrl = savedData.LicenseBackUrl;
             RegisteredTrucks = savedData.Trucks;
-            
-            // Mark as existing registration if it was previously submitted to the API
+            RegisteredPayoutAccounts = savedData.PayoutAccounts ?? new List<PayoutAccountDto>();
+
+            // ✅ Flag that this registration had previously reached the API
             IsExistingRegistration = savedData.IsRegisteredWithApi;
-            
-            // Show resume message to user
+
+            // 📢 Notify the user that the form has been restored
             ErrorMessage = $"Your previous registration has been restored. Last saved: {savedData.LastUpdated}";
             ActiveBottomSheet = "registration_restored";
         }
         else
         {
-            // If this is our first time loading the page, generate a new ID
+            // 🆕 No saved data — begin a fresh registration session
             UserId = Guid.NewGuid();
             DriverProfile.UserId = UserId;
             IsExistingRegistration = false;
+            RegisteredTrucks = new List<Truck>();
+            RegisteredPayoutAccounts = new List<PayoutAccountDto>();
         }
 
-        // Only load trucks from API if this is truly an edit of an existing profile
+        // 🚚 If editing a submitted registration, load their trucks from the API
         if (IsEditMode)
         {
             await LoadDriverTrucks();
         }
-
-        _editContext = new EditContext(DriverProfile);
-        _editContext.OnFieldChanged += (sender, args) => 
-        {
-            StateHasChanged();
-            _ = SaveFormToLocalStorage();
-        };
     }
 
     private async Task LoadDriverTrucks()
@@ -432,7 +453,7 @@
         try
         {
             IsLoading = true;
-            RegisteredTrucks = await OnboardingService.GetDriverTrucksAsync(UserId);
+            RegisteredTrucks = await TruckService.GetDriverTrucksAsync(UserId);
         }
         catch (Exception ex)
         {
@@ -455,7 +476,8 @@
             Password,
             LicenseFrontUrl,
             LicenseBackUrl,
-            RegisteredTrucks
+            RegisteredTrucks,
+            RegisteredPayoutAccounts
         );
         
         await LocalStorage.SetItemAsync(STORAGE_KEY, data);
@@ -466,8 +488,8 @@
         // Save the current form state before navigating
         await SaveFormToLocalStorage();
 
-        // Navigate to the truck registration page
-        NavigationManager.NavigateTo(AppRoutes.RegisterTruck);
+        // Navigate to the truck registration page with query param
+        NavigationManager.NavigateTo("/registertruck?FromRegisterDriver=true");
     }
 
     private async Task EditTruck(Truck truck)
@@ -479,8 +501,27 @@
                 IsLoading = true;
                 
                 truck.LicensePlate = truck.LicensePlate + " (Edited)";
+                var truckDTO = new TruckRequestDto
+                {
+                    TruckTypeId = truck.TruckTypeId,
+                    TruckMakeId = truck.TruckMakeId,
+                    TruckModelId = truck.TruckModelId,
+                    LicensePlate = truck.LicensePlate ?? string.Empty,
+                    Year = truck.Year,
+                    PhotoFrontUrl = truck.PhotoFrontUrl,
+                    PhotoBackUrl = truck.PhotoBackUrl,
+                    PhotoLeftUrl = truck.PhotoLeftUrl,
+                    PhotoRightUrl = truck.PhotoRightUrl,
+                    LoadCategory = truck.LoadCategory,
+                    BedTypeId = truck.BedTypeId,
+                    UseTagIds = truck.UseTags.Select(t => t.UseTagId).ToList(),
+                    OwnershipType = truck.OwnershipType,
+                    InsuranceProvider = truck.InsuranceProvider ?? string.Empty,
+                    PolicyNumber = truck.PolicyNumber ?? string.Empty,
+                    InsuranceDocumentUrl = truck.InsuranceDocumentUrl
+                };
                 
-                var result = await OnboardingService.UpdateDriverTruckAsync(UserId, truck);
+                var result = await TruckService.UpdateDriverTruckAsync(UserId, truck.Id, truckDTO);
                 
                 if (result.Success)
                 {
@@ -523,7 +564,7 @@
             {
                 IsLoading = true;
                 
-                var result = await OnboardingService.DeleteDriverTruckAsync(UserId, truck.Id);
+                var result = await TruckService.DeleteDriverTruckAsync(UserId, truck.Id);
                 
                 if (result.Success)
                 {
@@ -553,14 +594,36 @@
         }
     }
 
+    private async Task AddNewPayoutAccount()
+    {
+        // Save the current form state before navigating
+        await SaveFormToLocalStorage();
+        // Navigate to the payout account registration page with query param
+        NavigationManager.NavigateTo("/registerpayoutaccounts?FromRegisterDriver=true");
+    }
+
+    private async Task EditPayoutAccount(PayoutAccountDto account)
+    {
+        // Implement edit logic (e.g., open modal or navigate to edit page)
+        // For now, just a stub
+        await Task.CompletedTask;
+    }
+
+    private async Task RemovePayoutAccount(PayoutAccountDto account)
+    {
+        RegisteredPayoutAccounts.Remove(account);
+        await SaveFormToLocalStorage();
+    }
+
     private async Task SubmitAsync()
     {
         FormSubmitted = true;
         ActiveBottomSheet = null;
         ErrorMessage = string.Empty;
 
-        if (!(_editContext?.Validate() ?? false) || !AcceptTerms)
+        if (!AcceptTerms || !IsFormValid)
         {
+            Console.WriteLine("❌ Form invalid or terms not accepted.");
             ActiveBottomSheet = "validation_failed";
             return;
         }
@@ -569,65 +632,98 @@
 
         try
         {
+            Console.WriteLine("🚛 Submitting DriverProfileRequest...");
+
             DriverProfile.Password = Password;
             DriverProfile.UserId = UserId;
             DriverProfile.LicenseFrontUrl = LicenseFrontUrl ?? string.Empty;
             DriverProfile.LicenseBackUrl = LicenseBackUrl ?? string.Empty;
+
             DriverProfile.Trucks = RegisteredTrucks.Select(t => new DriverProfileRequest.TruckDto
             {
                 LicensePlate = t.LicensePlate,
-                Make = t.Make,
-                Model = t.Model,
+                TruckMakeId = t.TruckMakeId,
+                TruckTypeId = t.TruckTypeId,
+                TruckModelId = t.TruckModelId,
                 Year = t.Year,
             }).ToList();
 
+            DriverProfile.PayoutAccounts = RegisteredPayoutAccounts;
+
             var authTokenResponse = await OnboardingService.CompleteDriverOnboardingAsync(DriverProfile);
 
-            if (authTokenResponse == null || string.IsNullOrWhiteSpace(authTokenResponse.AccessToken))
+            if (authTokenResponse == null)
             {
-                ErrorMessage = "Unexpected error: access token not received.";
+                Console.WriteLine("❌ AuthTokenResponse is null.");
+                ErrorMessage = "Unexpected error: no token received.";
+                ActiveBottomSheet = "generic_error";
+                return;
+            }
+
+            Console.WriteLine($"✅ Token received. Access: {authTokenResponse.AccessToken}, Refresh: {authTokenResponse.RefreshToken}");
+
+            if (string.IsNullOrWhiteSpace(authTokenResponse.AccessToken))
+            {
+                Console.WriteLine("❌ Access token is missing.");
+                ErrorMessage = "Access token was not issued.";
                 ActiveBottomSheet = "generic_error";
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(authTokenResponse.RefreshToken))
             {
+                Console.WriteLine("⚠️ Refresh token is missing.");
                 ErrorMessage = "Refresh token was not issued.";
                 ActiveBottomSheet = "generic_error";
                 return;
             }
 
-            await TokenStorage.SaveAccessTokenAsync(authTokenResponse.AccessToken);
-            await TokenStorage.SaveRefreshTokenAsync(authTokenResponse.RefreshToken);
+            try
+            {
+                await TokenStorage.SaveAccessTokenAsync(authTokenResponse.AccessToken);
+                await TokenStorage.SaveRefreshTokenAsync(authTokenResponse.RefreshToken);
+                Console.WriteLine("💾 Tokens saved successfully.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Token storage failed: {ex.Message}");
+                ErrorMessage = "Failed to store login session.";
+                ActiveBottomSheet = "generic_error";
+                return;
+            }
 
             RegisteredUserId = authTokenResponse.UserId;
             ActiveBottomSheet = "email_confirmation";
 
-            // Clear the saved form data after successful submission
             await LocalStorage.RemoveItemAsync(STORAGE_KEY);
         }
         catch (OnboardingClientValidationException ex)
         {
             ValidationErrors = ex.Errors;
+            Console.WriteLine($"❌ Validation failed with {ValidationErrors.Count} error(s).");
             ActiveBottomSheet = "validation_failed";
         }
         catch (OnboardingClientException ex)
         {
             ActiveBottomSheet = ex.StepCode;
+
             if (ActiveBottomSheet == "generic_error")
                 ErrorMessage = ex.Message;
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Conflict)
         {
+            Console.WriteLine($"⚠️ Conflict: {ex.Message}");
             ActiveBottomSheet = "user_exists";
         }
         catch (HttpRequestException ex)
         {
+            Console.WriteLine($"❌ HTTP Error: {ex.StatusCode}, {ex.Message}");
             ErrorMessage = $"Server error: {ex.Message}";
             ActiveBottomSheet = "generic_error";
         }
         catch (Exception ex)
         {
+            Console.WriteLine($"❌ Unexpected error: {ex.Message}");
             ErrorMessage = "An unknown error occurred during registration.";
             ActiveBottomSheet = "generic_error";
         }
@@ -636,6 +732,7 @@
             IsLoading = false;
         }
     }
+
 
     private static Guid GenerateDeterministicGuidFromEmail(string email)
     {
@@ -649,53 +746,15 @@
         ActiveBottomSheet = "validation_failed";
     }
 
-    private void NavigateBack() => NavigationManager.NavigateTo("/register");
-    private void NavigateToLogin() => NavigationManager.NavigateTo("/login");
+    private void ValidateEmailLive()
+    {
+        // Any state-dependent UI changes here
+        StateHasChanged(); // If needed to refresh things like buttons
+    }
+    private void NavigateBack() => NavigationManager.NavigateTo(AppRoutes.StartupRouter);
+    private void NavigateToLogin() => NavigationManager.NavigateTo(AppRoutes.Login);
     private void TogglePasswordVisibility() => ShowPassword = !ShowPassword;
     private void ToggleConfirmPasswordVisibility() => ShowConfirmPassword = !ShowConfirmPassword;
-
-    private async Task UploadLicenseSide(string fileType, Action<string> setUrlAction)
-    {
-        var file = await MediaPicker.CapturePhotoAsync();
-        if (file == null) return;
-
-        IsLoading = true;
-
-        try
-        {
-            using var stream = await file.OpenReadAsync();
-
-            var uploadResult = await MediaService.UploadImageAsync(new ImageUploadRequest
-            {
-                FileStream = stream,
-                FileName = file.FileName,
-                FileType = fileType,
-                AllowedExtensions = new[] { ".jpg", ".jpeg", ".png" },
-                MaxSizeBytes = 5 * 1024 * 1024,
-                UserId = UserId
-            });
-
-            if (uploadResult.Success)
-            {
-                setUrlAction(uploadResult.Url);
-            }
-            else
-            {
-                ActiveBottomSheet = "generic_error";
-                ErrorMessage = uploadResult.ErrorMessage ?? string.Empty;
-            }
-        }
-        finally
-        {
-            IsLoading = false;
-        }
-    }
-
-    private Task UploadLicenseFront() =>
-        UploadLicenseSide("license-front", url => LicenseFrontUrl = url);
-
-    private Task UploadLicenseBack() =>
-        UploadLicenseSide("license-back", url => LicenseBackUrl = url);
 
     private bool IsFormValid =>
         IsTextValid(DriverProfile.FullName) &&
@@ -712,12 +771,14 @@
 
     private bool IsValidEmail(string? email)
     {
+        if (string.IsNullOrWhiteSpace(email))
+            return false;
         try
         {
-            var addr = new System.Net.Mail.MailAddress(email ?? "");
+            var addr = new System.Net.Mail.MailAddress(email);
             return addr.Address == email;
         }
-        catch
+        catch (Exception ex) 
         {
             return false;
         }
@@ -730,8 +791,13 @@
 
     private string GetContinueButtonClasses() =>
         !IsFormValid || IsLoading
-            ? "w-full bg-orange-300 text-white py-3 rounded-lg font-medium cursor-not-allowed mt-6"
+            ? "w-full bg-gray-300 text-white py-3 rounded-lg font-medium cursor-not-allowed mt-6"
             : "w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600 mt-6";
+
+    private string GetAddTruckButtonClasses() =>
+        IsValidEmail(DriverProfile.Email)
+            ? "w-full flex items-center justify-center px-4 py-3 bg-orange-50 text-orange-600 rounded-lg border border-orange-200 hover:bg-orange-100"
+            : "w-full flex items-center justify-center px-4 py-3 bg-gray-300 text-gray-400 rounded-lg border border-gray-200 cursor-not-allowed";
 
     #region BottomSheets Methods
 
@@ -827,6 +893,28 @@
         DriverProfile.Longitude = result.Longitude;
         DriverProfile.ServiceRadiusKm = result.RadiusKm;
         ShowMapPicker = false;
+    }
+
+    private void HandleFrontPhotoUpload(string url)
+    {
+        LicenseFrontUrl = url;
+        DriverProfile.LicenseFrontUrl = url;
+    }
+
+    private void HandleBackPhotoUpload(string url)
+    {
+        LicenseBackUrl = url;
+        DriverProfile.LicenseBackUrl = url;
+    }
+
+    private void HandleFrontUploadFail() => ShowUploadError("front");
+
+    private void HandleBackUploadFail() => ShowUploadError("back");
+
+    private void ShowUploadError(string side)
+    {
+        ErrorMessage = $"Failed to upload {side} photo.";
+        ActiveBottomSheet = "generic_error";
     }
 
     private void ShowMapPickerSheet() => ActiveBottomSheet = "map_picker";

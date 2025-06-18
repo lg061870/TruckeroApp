@@ -50,7 +50,12 @@ public class AuthService : IAuthService
         if (existingUser != null)
             throw new OnboardingStepException("User already exists", "email_already_exist");
 
-        var roleId = await _roleRepo.GetDefaultRoleIdAsync();
+
+        // Use the role from the request, not the default
+        var roleEntity = await _roleRepo.GetByNameAsync(request.Role);
+        if (roleEntity == null)
+            throw new OnboardingStepException($"Role '{request.Role}' does not exist.", "role_not_found");
+        var roleId = roleEntity.Id;
 
         var userId = request.UserId == Guid.Empty
             ? request.UserId
@@ -74,7 +79,7 @@ public class AuthService : IAuthService
             UserId = user.Id,
             AccessToken = $"token-{Guid.NewGuid()}",
             RefreshToken = $"refresh-{Guid.NewGuid()}",
-            Role = RoleType.Customer.ToString(),
+            Role = request.Role,
             IssuedAt = DateTime.UtcNow,
             ExpiresAt = DateTime.UtcNow.AddDays(7)
         };
@@ -92,13 +97,18 @@ public class AuthService : IAuthService
         if (user == null)
         {
             _logger.LogWarning("Login failed: user not found for email {Email}", request.Email);
-            throw new UnauthorizedAccessException(ExceptionCodes.AccountNotAvailable);
+            throw new LoginStepException("Account not available.", ExceptionCodes.AccountNotAvailable);
+        }
+
+        if (!user.EmailVerified)
+        {
+            throw new LoginStepException("Email not verified. Please check your inbox for a confirmation email.", ExceptionCodes.EmailNotVerified);
         }
 
         if (!_hashService.Verify(request.Password, user.PasswordHash))
         {
             _logger.LogWarning("Login failed: invalid password for email {Email}", request.Email);
-            throw new UnauthorizedAccessException(ExceptionCodes.LoginFailure);
+            throw new LoginStepException("Login failed: invalid credentials.", ExceptionCodes.LoginFailure);
         }
 
         // 🔄 Revoke stale tokens in one go for this User
@@ -137,7 +147,8 @@ public class AuthService : IAuthService
             AccessToken = newToken.AccessToken,
             RefreshToken = newToken.RefreshToken,
             Success = true,
-            UserId = user.Id
+            UserId = user.Id,
+            Role = user.Role?.Name?.ToString()
         };
     }
 

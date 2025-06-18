@@ -51,8 +51,7 @@ public class OnboardingApiClientService : IOnboardingService
 
     public async Task<AuthTokenResponse> CompleteDriverOnboardingAsync(DriverProfileRequest request)
     {
-        var envelope = AuthenticatedEnvelope.Create(RequireAccessToken(), _http, HttpMethod.Post, "/onboarding/driver", request);
-        var response = await envelope.SendAsync<HttpResponseMessage>();
+        var response = await _http.PostAsJsonAsync("/onboarding/driver", request);
 
         if (response.IsSuccessStatusCode)
         {
@@ -81,7 +80,7 @@ public class OnboardingApiClientService : IOnboardingService
 
             var error = JsonSerializer.Deserialize<ErrorResponse>(content);
 
-            if (error != null && !string.IsNullOrWhiteSpace(error.Error) && !string.IsNullOrWhiteSpace(error.Code))
+            if (error != null && !string.IsNullOrWhiteSpace(error.Error))
             {
                 throw new OnboardingClientException(error.Error, error.Code, response.StatusCode);
             }
@@ -100,7 +99,6 @@ public class OnboardingApiClientService : IOnboardingService
         //var response = await envelope.SendAsync<HttpResponseMessage>();
 
         var response = await _http.PostAsJsonAsync("/onboarding/customer", request);
-        response.EnsureSuccessStatusCode();
 
         if (response.IsSuccessStatusCode)
         {
@@ -198,125 +196,6 @@ public class OnboardingApiClientService : IOnboardingService
         {
             var errorContent = await response.Content.ReadAsStringAsync();
             return OperationResult.Failed($"Failed to confirm email: {errorContent}");
-        }
-    }
-
-    public async Task<List<Truck>> GetDriverTrucksAsync(Guid userId)
-    {
-        try
-        {
-            // Create an authenticated request to the API
-            var envelope = AuthenticatedEnvelope.Create(
-                RequireAccessToken(), 
-                _http, 
-                HttpMethod.Get, 
-                $"/api/driver/{userId}/trucks");
-            
-            var response = await envelope.SendAsync<HttpResponseMessage>();
-            
-            if (response.IsSuccessStatusCode)
-            {
-                return await response.Content.ReadFromJsonAsync<List<Truck>>() ?? new List<Truck>();
-            }
-            
-            // Handle different error cases
-            if (response.StatusCode == HttpStatusCode.NotFound)
-            {
-                // User or driver profile not found
-                return new List<Truck>();
-            }
-            
-            // Generic error
-            throw new HttpRequestException($"Failed to fetch driver trucks: {response.StatusCode}", null, response.StatusCode);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error fetching driver trucks: {ex.Message}");
-            // Return empty list rather than throwing to provide a more graceful degradation
-            return new List<Truck>();
-        }
-    }
-
-    public async Task<OperationResult> AddDriverTruckAsync(Guid userId, Truck truck)
-    {
-        try
-        {
-            var envelope = AuthenticatedEnvelope.Create(
-                RequireAccessToken(), 
-                _http, 
-                HttpMethod.Post, 
-                $"/api/driver/{userId}/trucks", 
-                truck);
-            
-            var response = await envelope.SendAsync<HttpResponseMessage>();
-            
-            if (response.IsSuccessStatusCode)
-            {
-                return await response.Content.ReadFromJsonAsync<OperationResult>() ?? 
-                       OperationResult.Succeeded("Truck added successfully.");
-            }
-            
-            string errorContent = await response.Content.ReadAsStringAsync();
-            return OperationResult.Failed($"Failed to add truck: {errorContent}");
-        }
-        catch (Exception ex)
-        {
-            return OperationResult.Failed($"Error: {ex.Message}");
-        }
-    }
-
-    public async Task<OperationResult> UpdateDriverTruckAsync(Guid userId, Truck truck)
-    {
-        try
-        {
-            var envelope = AuthenticatedEnvelope.Create(
-                RequireAccessToken(), 
-                _http, 
-                HttpMethod.Put, 
-                $"/api/driver/{userId}/trucks/{truck.Id}", 
-                truck);
-            
-            var response = await envelope.SendAsync<HttpResponseMessage>();
-            
-            if (response.IsSuccessStatusCode)
-            {
-                return await response.Content.ReadFromJsonAsync<OperationResult>() ?? 
-                       OperationResult.Succeeded("Truck updated successfully.");
-            }
-            
-            string errorContent = await response.Content.ReadAsStringAsync();
-            return OperationResult.Failed($"Failed to update truck: {errorContent}");
-        }
-        catch (Exception ex)
-        {
-            return OperationResult.Failed($"Error: {ex.Message}");
-        }
-    }
-
-    public async Task<OperationResult> DeleteDriverTruckAsync(Guid userId, Guid truckId)
-    {
-        try
-        {
-            var envelope = AuthenticatedEnvelope.Create(
-                RequireAccessToken(), 
-                _http, 
-                HttpMethod.Delete, 
-                $"/api/driver/{userId}/trucks/{truckId}");
-            
-            var response = await envelope.SendAsync<HttpResponseMessage>();
-            
-            if (response.IsSuccessStatusCode)
-            {
-                return await response.Content.ReadFromJsonAsync<OperationResult>() ?? 
-                       OperationResult.Succeeded("Truck deleted successfully.");
-            }
-            
-            string errorContent = await response.Content.ReadAsStringAsync();
-            return OperationResult.Failed($"Failed to delete truck: {errorContent}");
-        }
-        catch (Exception ex)
-        {
-            return OperationResult.Failed($"Error: {ex.Message}");
         }
     }
 }

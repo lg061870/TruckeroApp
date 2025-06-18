@@ -2,7 +2,7 @@ using CommunityToolkit.Maui;
 using Microsoft.Extensions.Logging;
 using Truckero.Core.Interfaces;
 using Truckero.Core.Interfaces.Services;
-using Truckero.Infrastructure.Storage;
+using Truckero.Infrastructure.Services;
 using TruckeroApp.Extensions;
 using TruckeroApp.Interfaces;
 using TruckeroApp.Services;
@@ -18,14 +18,14 @@ public static class MauiProgram
 
         builder
             .UseMauiApp<App>()
-            .UseMauiCommunityToolkit() 
+            .UseMauiCommunityToolkit()
             .ConfigureFonts(fonts =>
             {
                 fonts.AddFont("Inter-Regular.ttf", "InterRegular");
                 fonts.AddFont("Inter-Bold.ttf", "InterBold");
             });
 
-#if DEBUG
+#if DEBUG || UNITTESTING
         builder.Logging.AddDebug();
 #endif
 
@@ -40,33 +40,31 @@ public static class MauiProgram
         var apiBase = "https://localhost:7224";
 #endif
 
-        // 🔌 Modular API client registration
+        // Modular API client registration
         builder.Services
             .AddPaymentClient(apiBase)
             .AddCustomerClient(apiBase)
             .AddDriverClient(apiBase)
             .AddUserClient(apiBase)
-            .AddVehicleClient(apiBase)
+            .AddTruckClient(apiBase)
             .AddOnboardingClient(apiBase)
             .AddAuthClient(apiBase)
             .AddAuthTokenClient(apiBase)
-            .AddMediaClient(apiBase);
+            .AddMediaClient(apiBase)
+            .AddPayoutAccountClient(apiBase);
 
         builder.Services.AddToastService();
         builder.Services.AddSingleton<ITokenStorageService, SecureTokenStorageService>();
         builder.Services.AddSingleton<IAuthSessionContext, AuthSessionContextService>();
-        builder.Services.AddSingleton<IMediaService, MediaService>();
+        builder.Services.AddSingleton<IMediaService, TruckeroApp.Services.Media.MediaService>();
         builder.Services.AddSingleton<IMediaPicker>(MediaPicker.Default);
         builder.Services.AddScoped<ILocalStorageService, LocalStorageService>();
 
-#if DEBUG
+#if DEBUG || UNITTESTING
         builder.Services.AddSingleton<IBlobStorageService, MockBlobStorageService>();
 #else
-        builder.Services.AddSingleton<IBlobStorageService, AzureBlobStorageService>();  
+        builder.Services.AddSingleton<IBlobStorageService, AzureBlobStorageService>();
 #endif
-
-
-
 
         return builder.Build();
     }

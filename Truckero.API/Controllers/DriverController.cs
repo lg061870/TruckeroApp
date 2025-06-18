@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Truckero.Core.DTOs.Common;
+using Truckero.Core.DTOs.Trucks;
 using Truckero.Core.Entities;
 using Truckero.Core.Interfaces.Services;
 
@@ -12,12 +13,12 @@ namespace Truckero.API.Controllers;
 [Authorize]
 public class DriverController : ControllerBase
 {
-    private readonly IOnboardingService _onboardingService;
+    private readonly ITruckService _truckService;
     private readonly ILogger<DriverController> _logger;
 
-    public DriverController(IOnboardingService onboardingService, ILogger<DriverController> logger)
+    public DriverController(ITruckService truckService, ILogger<DriverController> logger)
     {
-        _onboardingService = onboardingService;
+        _truckService = truckService;
         _logger = logger;
     }
 
@@ -35,7 +36,7 @@ public class DriverController : ControllerBase
     {
         try
         {
-            var trucks = await _onboardingService.GetDriverTrucksAsync(userId);
+            var trucks = await _truckService.GetDriverTrucksAsync(userId);
             return Ok(trucks);
         }
         catch (Exception ex)
@@ -46,14 +47,13 @@ public class DriverController : ControllerBase
     }
 
     [HttpPost("{userId}/trucks")]
-    public async Task<ActionResult<OperationResult>> AddDriverTruck(Guid userId, [FromBody] Truck truck)
+    public async Task<ActionResult<TruckResponseDto>> AddDriverTruck(Guid userId, [FromBody] TruckRequestDto truck)
     {
         try
         {
-            var result = await _onboardingService.AddDriverTruckAsync(userId, truck);
+            var result = await _truckService.AddDriverTruckAsync(userId, truck);
             if (!result.Success)
                 return BadRequest(result);
-                
             return Ok(result);
         }
         catch (Exception ex)
@@ -64,17 +64,13 @@ public class DriverController : ControllerBase
     }
 
     [HttpPut("{userId}/trucks/{truckId}")]
-    public async Task<ActionResult<OperationResult>> UpdateDriverTruck(Guid userId, Guid truckId, [FromBody] Truck truck)
+    public async Task<ActionResult<TruckResponseDto>> UpdateDriverTruck(Guid userId, Guid truckId, [FromBody] TruckRequestDto truck)
     {
-        if (truck.Id != truckId)
-            return BadRequest("Truck ID mismatch");
-            
         try
         {
-            var result = await _onboardingService.UpdateDriverTruckAsync(userId, truck);
+            var result = await _truckService.UpdateDriverTruckAsync(userId, truckId, truck);
             if (!result.Success)
                 return BadRequest(result);
-                
             return Ok(result);
         }
         catch (Exception ex)
@@ -85,14 +81,13 @@ public class DriverController : ControllerBase
     }
 
     [HttpDelete("{userId}/trucks/{truckId}")]
-    public async Task<ActionResult<OperationResult>> DeleteDriverTruck(Guid userId, Guid truckId)
+    public async Task<ActionResult<TruckResponseDto>> DeleteDriverTruck(Guid userId, Guid truckId)
     {
         try
         {
-            var result = await _onboardingService.DeleteDriverTruckAsync(userId, truckId);
+            var result = await _truckService.DeleteDriverTruckAsync(userId, truckId);
             if (!result.Success)
                 return BadRequest(result);
-                
             return Ok(result);
         }
         catch (Exception ex)
