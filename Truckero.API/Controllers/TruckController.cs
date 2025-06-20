@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Truckero.Core.Constants;
 using Truckero.Core.DTOs.Trucks;
 using Truckero.Core.Entities;
 using Truckero.Core.Exceptions;
@@ -8,12 +9,10 @@ namespace Truckero.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class TruckController : ControllerBase
-{
+public class TruckController : ControllerBase {
     private readonly ITruckService _truckService;
 
-    public TruckController(ITruckService truckService)
-    {
+    public TruckController(ITruckService truckService) {
         _truckService = truckService;
     }
 
@@ -35,14 +34,13 @@ public class TruckController : ControllerBase
 
     // GET: api/truck/driver/{userId}
     [HttpGet("driver/{userId}")]
-    public async Task<ActionResult<List<Truck>>> GetDriverTrucks(Guid userId)
-    {
+    public async Task<ActionResult<List<Truck>>> GetDriverTrucks(Guid userId) {
         var trucks = await _truckService.GetDriverTrucksAsync(userId);
         return Ok(trucks);
     }
 
     [HttpPost("driver/{userId}")]
-    public async Task<ActionResult<TruckResponseDto>> AddDriverTruck(Guid userId, [FromBody] TruckRequestDto truck) {
+    public async Task<ActionResult<TruckResponse>> AddDriverTruck(Guid userId, [FromBody] TruckRequest truck) {
         try {
             var result = await _truckService.AddDriverTruckAsync(userId, truck);
             if (!result.Success)
@@ -50,11 +48,23 @@ public class TruckController : ControllerBase
                 return BadRequest(result);
 
             return Ok(result);
+        } catch (ReferentialIntegrityException rex) {
+            var error = new TruckResponse {
+                Success = false,
+                ErrorCode = rex.Code,
+                Message = rex.Message
+            };
+            // Pick HTTP status based on code or always use Conflict/NotFound
+            return rex.Code switch {
+                ExceptionCodes.DriverProfileNotFound => NotFound(error),
+                ExceptionCodes.TruckTypeNotFound => NotFound(error),
+                _ => Conflict(error)
+            };
         } catch (TruckStepException tex) {
             // You can be more granular with your codes here
             // For example: "DRIVER_PROFILE_NOT_FOUND", "TRUCK_MODEL_INVALID", etc.
 
-            var error = new TruckResponseDto {
+            var error = new TruckResponse {
                 Success = false,
                 ErrorCode = tex.StepCode,
                 Message = tex.Message
@@ -69,7 +79,7 @@ public class TruckController : ControllerBase
             };
         } catch (Exception ex) {
             // Unexpected/unhandled errors – log as needed
-            var error = new TruckResponseDto {
+            var error = new TruckResponse {
                 Success = false,
                 ErrorCode = "UNHANDLED_EXCEPTION",
                 Message = "An unexpected error occurred while adding the truck."
@@ -81,8 +91,7 @@ public class TruckController : ControllerBase
 
     // PUT: api/truck/driver/{userId}/{truckId}
     [HttpPut("driver/{userId}/{truckId}")]
-    public async Task<ActionResult<TruckResponseDto>> UpdateDriverTruck(Guid userId, Guid truckId, [FromBody] TruckRequestDto truck)
-    {
+    public async Task<ActionResult<TruckResponse>> UpdateDriverTruck(Guid userId, Guid truckId, [FromBody] TruckRequest truck) {
         var result = await _truckService.UpdateDriverTruckAsync(userId, truckId, truck);
         if (!result.Success)
             return BadRequest(result);
@@ -91,8 +100,7 @@ public class TruckController : ControllerBase
 
     // DELETE: api/truck/driver/{userId}/{truckId}
     [HttpDelete("driver/{userId}/{truckId}")]
-    public async Task<ActionResult<TruckResponseDto>> DeleteDriverTruck(Guid userId, Guid truckId)
-    {
+    public async Task<ActionResult<TruckResponse>> DeleteDriverTruck(Guid userId, Guid truckId) {
         var result = await _truckService.DeleteDriverTruckAsync(userId, truckId);
         if (!result.Success)
             return BadRequest(result);

@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Truckero.Core.DTOs.Onboarding;
+using Truckero.Core.DTOs.Trucks;
 using Truckero.Core.Entities;
 
 namespace TruckeroApp.Models;
@@ -38,12 +39,12 @@ public class DriverRegistrationData
     /// <summary>
     /// Trucks registered by the driver
     /// </summary>
-    public List<Truck> Trucks { get; set; } = new();
+    public List<TruckRequest> Trucks { get; set; } = new();
 
     /// <summary>
     /// Payout accounts registered by the driver
     /// </summary>
-    public List<PayoutAccountDto> PayoutAccounts { get; set; } = new();
+    public List<PayoutAccountRequest> PayoutAccounts { get; set; } = new();
 
     /// <summary>
     /// Indicates whether this registration has been submitted to the API
@@ -59,8 +60,8 @@ public class DriverRegistrationData
         string password,
         string? licenseFrontUrl,
         string? licenseBackUrl, 
-        List<Truck> trucks,
-        List<PayoutAccountDto> payoutAccounts,
+        List<TruckRequest> trucks,
+        List<PayoutAccountRequest> payoutAccounts,
         bool isRegisteredWithApi = false)
     {
         return new DriverRegistrationData

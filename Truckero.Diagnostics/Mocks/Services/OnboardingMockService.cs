@@ -81,17 +81,17 @@ public class OnboardingMockService : IOnboardingService
         throw new NotImplementedException();
     }
 
-    public Task<TruckResponseDto> AddDriverTruckAsync(Guid userId, TruckRequestDto truck)
+    public Task<TruckResponse> AddDriverTruckAsync(Guid userId, TruckRequest truck)
     {
         throw new NotImplementedException();
     }
 
-    public Task<TruckResponseDto> UpdateDriverTruckAsync(Guid userId, Guid truckId, TruckRequestDto truck)
+    public Task<TruckResponse> UpdateDriverTruckAsync(Guid userId, Guid truckId, TruckRequest truck)
     {
         throw new NotImplementedException();
     }
 
-    public Task<TruckResponseDto> DeleteDriverTruckAsync(Guid userId, Guid truckId)
+    public Task<TruckResponse> DeleteDriverTruckAsync(Guid userId, Guid truckId)
     {
         throw new NotImplementedException();
     }

@@ -1,12 +1,14 @@
-﻿@page "/"
-@* @page "/registerpayoutaccounts" *@
+﻿@* @page "/" *@
+@page "/registerpayoutaccount"
+@page "/registerpayoutaccount/{PayoutAccountId:guid}"
 @using Microsoft.AspNetCore.Components
 @using Truckero.Core.Entities
-@using Truckero.Core.Interfaces
+@using Truckero.Core.Exceptions
 @using Truckero.Core.Interfaces.Services
-@using TruckeroApp.Models
-@using TruckeroApp.Components.BottomSheets
 @using Truckero.Core.DTOs.Onboarding
+@using TruckeroApp.Models
+@using TruckeroApp.Extensions
+@using TruckeroApp.Components.BottomSheets
 
 @inject IPayoutAccountService PayoutAccountService
 @inject NavigationManager NavigationManager
@@ -34,14 +36,23 @@
                     </div>
                 </div>
 
+                <!-- Progress spinner overlay -->
+                @if (IsLoading || IsReferenceDataLoading)
+                {
+                    <div class="absolute inset-0 z-40 bg-white bg-opacity-70 flex flex-col items-center justify-center">
+                        <span class="text-orange-500 text-lg font-semibold mb-2">Loading payout data...</span>
+                        <span class="animate-spin text-3xl text-orange-500"><i class="fa fa-spinner"></i></span>
+                    </div>
+                }
+
                 <!-- Empty State -->
-                @if (!ExistingPayoutMethods.Any())
+                @if (!ExistingPayoutAccounts.Any() && !IsLoading)
                 {
                     <div id="empty-state" class="text-center py-6">
                         <div class="w-16 h-16 mx-auto mb-4 text-gray-300">
                             <i class="fa-solid fa-wallet text-4xl"></i>
                         </div>
-                        <h3 class="text-base font-medium mb-1">No Payout Methods Yet</h3>
+                        <h3 class="text-base font-medium mb-1">No Payout Accounts Yet</h3>
                         <p class="text-sm text-gray-600 mb-4">Add your first payout method to start receiving earnings</p>
                     </div>
                 }
@@ -50,84 +61,104 @@
                 <div id="payout-accounts-list"
                      class="overflow-y-scroll space-y-1 mb-8 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100"
                      style="max-height: 285px;">
-                    @foreach (var method in ExistingPayoutMethods)
-                    {
-                        <div class="bg-white rounded-lg p-3 border">
-                            <div class="flex justify-between items-center mb-2">
-                                <div class="flex items-center space-x-2">
-                                    <i class="@GetPayoutIcon(method.Name) text-lg"></i>
-                                    <span class="font-medium text-sm">@method.Name</span>
-                                </div>
+                @foreach (var account in ExistingPayoutAccounts)
+                {
+                    // Find the payment method display name
+                    var paymentMethodName = AvailablePayoutOptions.FirstOrDefault(x => x.Id == account.PaymentMethodTypeId)?.Name ?? "Payout Method";
+                    <div class="bg-white rounded-lg p-3 border">
+                        <div class="flex justify-between items-center mb-2">
+                            <div class="flex items-center space-x-2">
+                                <i class="@GetPayoutIcon(paymentMethodName) text-lg"></i>
+                                <span class="font-medium text-sm">@paymentMethodName</span>
+                            </div>
+                            @if (account.IsDefault)
+                            {
                                 <span class="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">Active</span>
+                            }
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <p class="text-xs text-gray-500">@account.AccountNumberLast4</p> @* You can adjust this for a custom description *@
+                            <div class="flex items-center space-x-2">
+                                <button class="text-gray-400 hover:text-gray-600" @onclick="() => EditPayoutAccount(account.Id)">
+                                    <i class="fa-solid fa-pen-to-square text-sm"></i>
+                                </button>
+                                <button class="text-gray-400 hover:text-red-600" @onclick="() => ConfirmDelete(account.Id)">
+                                    <i class="fa-solid fa-trash text-sm"></i>
+                                </button>
                             </div>
-                            <div class="flex justify-between items-center">
-                                <p class="text-xs text-gray-500">@method.Description</p>
-                                <div class="flex items-center space-x-2">
-                                    <button class="text-gray-400 hover:text-gray-600" @onclick="() => EditPayoutMethod(method.Name)">
-                                        <i class="fa-solid fa-pen-to-square text-sm"></i>
-                                    </button>
-                                    <button class="text-gray-400 hover:text-red-600" @onclick="() => ConfirmDelete(method.Name)">
-                                        <i class="fa-solid fa-trash text-sm"></i>
-                                    </button>
+                        </div>
+                    </div>
+                }
+
+                </div>
+
+                <!-- Payment Method Selector -->
+                <div class="mb-6">
+                    <div class="text-center mb-4">
+                        <h2 class="text-lg font-medium text-gray-800">Add a Payout Account</h2>
+                        <h3 class="text-sm text-gray-600">Select a payout option to continue</h3>
+                    </div>
+
+                    @if (IsReferenceDataLoading)
+                    {
+                        <p class="text-sm text-gray-400 text-center">Loading payout types...</p>
+                    }
+                    else if (!AvailablePayoutOptions.Any())
+                    {
+                        <p class="text-sm text-red-500 text-center">No payout options available. Please try again later.</p>
+                    }
+                    else
+                    {
+                        <div class="grid grid-cols-2 gap-3">
+                            @foreach (var method in AvailablePayoutOptions)
+                            {
+                                <div class="@GetPaymentOptionClass(method.Name)"
+                                        @onclick="() => StartAddPayoutAccount(method.Name)">
+                                    <i class="@GetPayoutIcon(method.Name) text-2xl mb-2"></i>
+                                    <p class="text-sm font-medium">@method.Name</p>
                                 </div>
-                            </div>
+                            }
                         </div>
                     }
                 </div>
 
-            <!-- Payment Method Selector -->
-            <div class="mb-6">
-                <div class="text-center mb-4">
-                    <h2 class="text-lg font-medium text-gray-800">Click on Payout Type Option</h2>
-                    <h3 class="text-sm text-gray-600">to create a new Payout Account</h3>
-                </div>
-
-                @if (IsReferenceDataLoading)
+                <!-- BottomSheets for error/validation feedback -->
+                @if (!string.IsNullOrEmpty(ActiveBottomSheet))
                 {
-                    <p class="text-sm text-gray-400 text-center">Loading payout types...</p>
-                }
-                else if (!AvailablePayoutOptions.Any())
-                {
-                    <p class="text-sm text-red-500 text-center">No payout options available. Please try again later.</p>
-                }
-                else
-                {
-                    <div class="grid grid-cols-2 gap-3">
-                        @foreach (var method in AvailablePayoutOptions)
-                        {
-                            <div class="@GetPaymentOptionClass(method.Name)"
-                                    @onclick="() => SelectPayoutMethod(method.Name)">
-                                <i class="@GetPayoutIcon(method.Name) text-2xl mb-2"></i>
-                                <p class="text-sm font-medium">@method.Name</p>
-                            </div>
-                        }
-                    </div>
+                    @switch (ActiveBottomSheet)
+                    {
+                        case "generic_error":
+                            <GenericErrorBottomSheet 
+                                Message="@ErrorMessage" 
+                                OnDismiss="HandleGenericErrorDismiss" />
+                            break;
+                        case "validation_failed":
+                            <ValidationFailedBottomSheet 
+                                ValidationErrors="@ValidationErrors" 
+                                OnDismiss="@(() => ActiveBottomSheet = null)" />
+                            break;
+                        case "referential_integrity":
+                            <ReferentialIntegrityBottomSheet
+                                ErrorCode="@ReferentialIntegrityBottomSheetErrorCode"
+                                Message="@ReferentialIntegrityBottomSheetMessage"
+                                OnDismiss="@(() => ActiveBottomSheet = null)" />
+                            break;
+                    }
                 }
             </div>
-
-            </div>
-
-            <!-- Backdrop Overlay -->
-            @if (ShowAddSheet || ShowDeleteSheet)
-            {
-                <div class="fixed inset-0 bg-gray-400 bg-opacity-40 z-40"></div>
-            }
 
             <!-- Add/Edit Bottom Sheet -->
             <div class="fixed inset-x-0 bottom-0 transition-transform duration-300 ease-in-out z-50"
                  style="@(ShowAddSheet ? "transform: translateY(0);" : "transform: translateY(100%);")">
                 <div class="bg-white rounded-t-2xl p-6 max-h-[90vh] overflow-y-auto">
-
-                    <!-- FLEX CONTAINER to align title and close button -->
                     <div class="flex justify-between items-center mb-6">
                         <h3 class="text-lg font-semibold">
-                            @(IsEditMode ? $"Edit {SelectedPayoutMethod}" : $"Add {SelectedPayoutMethod}")
+                            @(IsEditMode ? $"Edit {SelectedPayoutTypeName}" : $"Add {SelectedPayoutTypeName}")
                         </h3>
                         <button class="text-gray-400" @onclick="ToggleAddSheet">
                             <i class="fa-solid fa-xmark text-xl"></i>
                         </button>
                     </div>
-
                     @RenderSelectedPayoutForm()
                 </div>
             </div>
@@ -141,10 +172,11 @@
                             <i class="fa-solid fa-triangle-exclamation text-4xl"></i>
                         </div>
                         <h3 class="text-lg font-semibold mb-2">Delete this payout account?</h3>
-                        <p class="text-sm text-gray-600">@MethodToDelete</p>
+                        <p class="text-sm text-gray-600">@PayoutAccountToDeleteDescription</p>
                     </div>
                     <div class="space-y-3">
-                        <button class="w-full py-3 bg-red-600 text-white rounded-lg font-medium">
+                        <button class="w-full py-3 bg-red-600 text-white rounded-lg font-medium"
+                                @onclick="DeletePayoutAccountAsync">
                             Confirm Delete
                         </button>
                         <button class="w-full py-3 bg-gray-100 text-gray-600 rounded-lg font-medium"
@@ -155,29 +187,6 @@
                 </div>
             </div>
 
-            <!-- BottomSheets for error/validation feedback -->
-            @if (!string.IsNullOrEmpty(ActiveBottomSheet))
-            {
-                @switch (ActiveBottomSheet)
-                {
-                    case "generic_error":
-                        <GenericErrorBottomSheet 
-                            Message="@ErrorMessage" 
-                            OnDismiss="HandleGenericErrorDismiss" />
-                        break;
-                    case "validation_failed":
-                        <ValidationFailedBottomSheet 
-                            ValidationErrors="@ValidationErrors" 
-                            OnDismiss="@(() => ActiveBottomSheet = null)" />
-                        break;
-                    case "referential_integrity":
-                        <ReferentialIntegrityBottomSheet
-                            ErrorCode="@ReferentialIntegrityBottomSheetErrorCode"
-                            Message="@ReferentialIntegrityBottomSheetMessage"
-                            OnDismiss="@(() => ActiveBottomSheet = null)" />
-                        break;
-                }
-            }
         </div>
     </div>
 </CenterWrapper>
@@ -187,20 +196,33 @@
     [SupplyParameterFromQuery]
     public bool FromRegisterDriver { get; set; }
 
-    private List<PaymentMethodType> ExistingPayoutMethods = new();
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public Guid? PayoutAccountId { get; set; }
+
+    [Inject] private IAuthSessionContext AuthSession { get; set; }
+
+    private Guid UserId => AuthSession.UserId ?? Guid.Empty;
+
+    private List<PayoutAccountRequest> ExistingPayoutAccounts = new();
     private List<PaymentMethodType> AvailablePayoutOptions = new();
     private List<Bank> AvailableBanks = new();
     private List<Country> AvailableCountries = new();
-    private bool IsReferenceDataLoading = true;
-    private string? SelectedCountryCode = "CR"; // Default to Costa Rica, or set dynamically
-    private string? SelectedPayoutMethod;
-    private string MethodToDelete;
+    private string? SelectedCountryCode = "CR";
+    private string? SelectedPayoutTypeName;
+    private Guid EditingPayoutAccountId;
     private bool ShowAddSheet = false;
     private bool ShowDeleteSheet = false;
     private bool IsEditMode = false;
+    private bool IsLoading = false;
+    private bool IsReferenceDataLoading = true;
     private PayoutAccountFormModel CurrentPayoutAccount { get; set; } = new();
 
-    // Error and bottom sheet state
+    // Delete info
+    private Guid PayoutAccountToDeleteId;
+    private string PayoutAccountToDeleteDescription = "";
+
+    // Error/Feedback
     private string ErrorMessage { get; set; } = string.Empty;
     private string? ActiveBottomSheet { get; set; } = null;
     private List<string> ValidationErrors { get; set; } = new();
@@ -210,8 +232,43 @@
 
     protected override async Task OnInitializedAsync()
     {
+        IsLoading = true;
         await LoadReferenceDataAsync();
-        await LoadPayoutMethodsAsync();
+
+        if (PayoutAccountId.HasValue && PayoutAccountId.Value != Guid.Empty)
+        {
+            IsEditMode = true;
+            EditingPayoutAccountId = PayoutAccountId.Value;
+
+            if (FromRegisterDriver)
+            {
+                DriverRegistrationData? savedData = await LocalStorage.GetItemAsync<DriverRegistrationData>("driver_registration_form");
+                // Now acc is a PayoutAccountRequest!
+                PayoutAccountRequest? acc = savedData?.PayoutAccounts?.FirstOrDefault(p => p.PaymentMethodTypeId == EditingPayoutAccountId);
+                // ↑ If you want to match on another property, adjust here (e.g. if you add an Id to PayoutAccountRequest)
+                if (acc != null)
+                {
+                    CurrentPayoutAccount = acc.ToPayoutAccountFormModel(); // Use your extension!
+                    SelectedPayoutTypeName = AvailablePayoutOptions.FirstOrDefault(x => x.Id == acc.PaymentMethodTypeId)?.Name ?? ""; // Find name from options
+                    ShowAddSheet = true;
+                }
+            }
+            else
+            {
+                PayoutAccountResponse? response = await PayoutAccountService.GetPayoutAccountByIdAsync(EditingPayoutAccountId);
+                PayoutAccountRequest? acc = response?.PayoutAccount;
+                if (acc != null)
+                {
+                    CurrentPayoutAccount = acc.ToPayoutAccountFormModel(); // Use your extension!
+                    SelectedPayoutTypeName = AvailablePayoutOptions.FirstOrDefault(x => x.Id == acc.PaymentMethodTypeId)?.Name ?? "";
+                    ShowAddSheet = true;
+                }
+
+            }
+        }
+
+        await LoadPayoutAccountsAsync();
+        IsLoading = false;
     }
 
     private async Task LoadReferenceDataAsync()
@@ -235,51 +292,93 @@
         }
     }
 
-    private async Task LoadPayoutMethodsAsync()
+    private async Task LoadPayoutAccountsAsync()
     {
-        var countryCode = SelectedCountryCode ?? "CR";
-        try
+        if (FromRegisterDriver)
         {
-            ExistingPayoutMethods = await PayoutAccountService.GetAllPayoutPaymentMethodsByCountryCodeAsync(countryCode);
+            DriverRegistrationData? savedData = await LocalStorage.GetItemAsync<DriverRegistrationData>("driver_registration_form");
+            ExistingPayoutAccounts = savedData?.PayoutAccounts?.ToList() ?? new();
         }
-        catch (Exception ex)
+        else
         {
-            ShowGenericError($"Failed to load payout methods: {ex.Message}");
+            // API returns List<PayoutAccountResponse>
+            List<PayoutAccountResponse> apiList = await PayoutAccountService.GetPayoutAccountsByUserIdAsync(UserId);
+            ExistingPayoutAccounts = apiList
+                .Where(r => r.PayoutAccount != null)
+                .Select(r => r.PayoutAccount!)
+                .ToList();
         }
     }
 
-    private void SelectPayoutMethod(string methodName)
+
+
+    private void StartAddPayoutAccount(string typeName)
     {
-        SelectedPayoutMethod = methodName;
+        SelectedPayoutTypeName = typeName;
         IsEditMode = false;
         ShowAddSheet = true;
         CurrentPayoutAccount = new PayoutAccountFormModel
         {
-            PaymentMethodTypeId = AvailablePayoutOptions.FirstOrDefault(x => x.Name == methodName)?.Id ?? Guid.Empty,
-            IsDefault = !ExistingPayoutMethods.Any()
+            PaymentMethodTypeId = AvailablePayoutOptions.FirstOrDefault(x => x.Name == typeName)?.Id ?? Guid.Empty,
+            IsDefault = !ExistingPayoutAccounts.Any()
         };
     }
 
-    private void EditPayoutMethod(string methodName)
+    private async void EditPayoutAccount(Guid payoutAccountId)
     {
-        SelectedPayoutMethod = methodName;
         IsEditMode = true;
-        ShowAddSheet = true;
-        // TODO: Load the payout account details into CurrentPayoutAccount for editing
+        EditingPayoutAccountId = payoutAccountId;
+
+        if (FromRegisterDriver)
+        {
+            DriverRegistrationData? savedData = await LocalStorage.GetItemAsync<DriverRegistrationData>("driver_registration_form");
+            // PayoutAccountRequest is the type stored in registration
+            PayoutAccountRequest? acc = savedData?.PayoutAccounts?.FirstOrDefault(p => p.Id == payoutAccountId);
+            if (acc != null)
+            {
+                CurrentPayoutAccount = acc.ToPayoutAccountFormModel(); // Use your extension method!
+                SelectedPayoutTypeName = AvailablePayoutOptions.FirstOrDefault(x => x.Id == acc.PaymentMethodTypeId)?.Name ?? "";
+                ShowAddSheet = true;
+            }
+        }
+        else
+        {
+            PayoutAccountResponse? response = await PayoutAccountService.GetPayoutAccountByIdAsync(payoutAccountId);
+            PayoutAccountRequest? acc = response?.PayoutAccount;
+            if (acc != null)
+            {
+                CurrentPayoutAccount = acc.ToPayoutAccountFormModel();
+                SelectedPayoutTypeName = AvailablePayoutOptions.FirstOrDefault(x => x.Id == acc.PaymentMethodTypeId)?.Name ?? "";
+                ShowAddSheet = true;
+            }
+
+        }
+        StateHasChanged();
     }
 
-    private void ConfirmDelete(string methodName)
+    private void ConfirmDelete(Guid payoutAccountId)
     {
-        MethodToDelete = methodName;
+        var acc = ExistingPayoutAccounts.FirstOrDefault(a => a.Id == payoutAccountId);
+
+        // Get payment method name from options
+        string methodName = acc != null
+            ? (AvailablePayoutOptions.FirstOrDefault(x => x.Id == acc.PaymentMethodTypeId)?.Name ?? "Payout method")
+            : "";
+
+        string last4 = !string.IsNullOrEmpty(acc?.AccountNumberLast4) ? $"account-number# {acc.AccountNumberLast4}" : "";
+
+        PayoutAccountToDeleteId = payoutAccountId;
+        PayoutAccountToDeleteDescription = $"Delete {methodName} {last4}".Trim();
         ShowDeleteSheet = true;
     }
+
 
     private void ToggleAddSheet()
     {
         ShowAddSheet = !ShowAddSheet;
         if (!ShowAddSheet)
         {
-            SelectedPayoutMethod = null;
+            SelectedPayoutTypeName = null;
         }
     }
 
@@ -290,80 +389,73 @@
         NavigationManager.NavigateTo("/registerdriver");
     }
 
-    private string GetPayoutIcon(string methodName) => methodName switch
+    private string GetPayoutIcon(string typeName) => typeName switch
     {
-        "BankAccount" => "fa-solid fa-building-columns text-gray-600",
+        "BankAccount" or "Bank" => "fa-solid fa-building-columns text-gray-600",
         "SINPE" => "fa-solid fa-mobile-screen text-green-600",
         "PayPal" => "fa-brands fa-paypal text-[#003087]",
         _ => "fa-solid fa-wallet text-gray-500"
     };
 
-    private string GetPaymentOptionClass(string methodName)
+    private string GetPaymentOptionClass(string typeName)
     {
         var baseClass = "border rounded-lg p-4 cursor-pointer hover:border-orange-500";
-        return SelectedPayoutMethod == methodName
+        return SelectedPayoutTypeName == typeName
         ? $"{baseClass} border-2 border-orange-500 bg-orange-50"
         : $"{baseClass} border-gray-300";
     }
 
-    private async Task SavePayoutMethodAsync()
+    private async Task SavePayoutAccountAsync()
     {
         CurrentPayoutAccount.BuildMetadataJson();
+
         if (FromRegisterDriver)
         {
-            var storageKey = "driver_registration_form";
-            var savedData = await LocalStorage.GetItemAsync<DriverRegistrationData>(storageKey);
-            if (savedData != null)
-            {
-                var req = new PayoutAccountRequest
-                {
-                    PaymentMethodTypeId = CurrentPayoutAccount.PaymentMethodTypeId,
-                    FullName = CurrentPayoutAccount.FullName,
-                    BankId = CurrentPayoutAccount.BankId,
-                    AccountNumberLast4 = CurrentPayoutAccount.AccountNumber,
-                    RoutingNumber = CurrentPayoutAccount.RoutingNumber,
-                    MobileNumber = CurrentPayoutAccount.MobileNumber,
-                    PayPalEmail = CurrentPayoutAccount.PayPalEmail,
-                    IsDefault = CurrentPayoutAccount.IsDefault,
-                    MetadataJson = CurrentPayoutAccount.MetadataJson
-                };
-                // You may need to map to your local storage DTO if different
-                // For now, just add to a list if compatible
-                // savedData.PayoutAccounts.Add(req);
-                // await LocalStorage.SetItemAsync(storageKey, savedData);
-            }
-            NavigationManager.NavigateTo(AppRoutes.RegisterDriver);
+            string storageKey = "driver_registration_form";
+            DriverRegistrationData savedData = await LocalStorage.GetItemAsync<DriverRegistrationData>(storageKey) ?? new DriverRegistrationData();
+
+            // Convert form to request DTO for storage
+            PayoutAccountRequest req = CurrentPayoutAccount.ToPayoutAccountRequest();
+
+            // If this is an edit, replace; else, add
+            int idx = savedData.PayoutAccounts?.FindIndex(p => p.PaymentMethodTypeId == req.PaymentMethodTypeId) ?? -1;
+            if (idx >= 0)
+                savedData.PayoutAccounts[idx] = req;
+            else
+                (savedData.PayoutAccounts ??= new()).Add(req);
+
+            await LocalStorage.SetItemAsync(storageKey, savedData);
+            ShowAddSheet = false;
+            await LoadPayoutAccountsAsync();
+            NavigationManager.NavigateTo("/registerdriver");
         }
         else
         {
             try
             {
-                Guid userId = Guid.Empty; // Replace with actual userId
-                var req = new PayoutAccountRequest
+                IsLoading = true;
+                PayoutAccountRequest req = CurrentPayoutAccount.ToPayoutAccountRequest();
+
+                if (IsEditMode)
                 {
-                    PaymentMethodTypeId = CurrentPayoutAccount.PaymentMethodTypeId,
-                    FullName = CurrentPayoutAccount.FullName,
-                    BankId = CurrentPayoutAccount.BankId,
-                    AccountNumberLast4 = CurrentPayoutAccount.AccountNumber,
-                    RoutingNumber = CurrentPayoutAccount.RoutingNumber,
-                    MobileNumber = CurrentPayoutAccount.MobileNumber,
-                    PayPalEmail = CurrentPayoutAccount.PayPalEmail,
-                    IsDefault = CurrentPayoutAccount.IsDefault,
-                    MetadataJson = CurrentPayoutAccount.MetadataJson
-                };
-                var result = await PayoutAccountService.AddPayoutAccountAsync(userId, req);
-                // Handle result as needed (result is PayoutAccountResponse)
-                await LoadPayoutMethodsAsync();
+                    await PayoutAccountService.UpdatePayoutAccountAsync(UserId, EditingPayoutAccountId, req);
+                }
+                else
+                {
+                    await PayoutAccountService.AddPayoutAccountAsync(UserId, req);
+                }
+                ShowAddSheet = false;
+                await LoadPayoutAccountsAsync();
             }
-            catch (Truckero.Core.Exceptions.PayoutAccountClientValidationException vex)
+            catch (PayoutAccountClientValidationException vex)
             {
                 ShowValidationFailed(vex.ValidationMessages);
             }
-            catch (Truckero.Core.Exceptions.ReferentialIntegrityClientException rex)
+            catch (ReferentialIntegrityClientException rex)
             {
                 ShowReferentialIntegrityBottomSheet(rex.ErrorCode, rex.Message);
             }
-            catch (Truckero.Core.Exceptions.PayoutAccountClientException cex)
+            catch (PayoutAccountClientException cex)
             {
                 ShowGenericError($"{cex.Message} (Code: {cex.Code})");
             }
@@ -375,16 +467,33 @@
             {
                 ShowGenericError("Unexpected error: " + ex.Message);
             }
+            finally
+            {
+                IsLoading = false;
+            }
         }
-        ToggleAddSheet();
     }
 
-    private void ShowReferentialIntegrityBottomSheet(string code, string message)
+    private async Task DeletePayoutAccountAsync()
     {
-        ActiveBottomSheet = "referential_integrity";
-        ReferentialIntegrityBottomSheetErrorCode = code;
-        ReferentialIntegrityBottomSheetMessage = message;
-        IsReferentialIntegrityBottomSheetVisible = true;
+        if (FromRegisterDriver)
+        {
+            var storageKey = "driver_registration_form";
+            var savedData = await LocalStorage.GetItemAsync<DriverRegistrationData>(storageKey);
+            if (savedData != null)
+            {
+                savedData.PayoutAccounts?.RemoveAll(p => p.Id == PayoutAccountToDeleteId);
+                await LocalStorage.SetItemAsync(storageKey, savedData);
+                ShowDeleteSheet = false;
+                await LoadPayoutAccountsAsync();
+            }
+        }
+        else
+        {
+            await PayoutAccountService.DeletePayoutAccountAsync(UserId, PayoutAccountToDeleteId);
+            ShowDeleteSheet = false;
+            await LoadPayoutAccountsAsync();
+        }
     }
 
     private void ShowGenericError(string message)
@@ -399,21 +508,22 @@
         ActiveBottomSheet = "validation_failed";
     }
 
+    private void ShowReferentialIntegrityBottomSheet(string code, string message)
+    {
+        ActiveBottomSheet = "referential_integrity";
+        ReferentialIntegrityBottomSheetErrorCode = code;
+        ReferentialIntegrityBottomSheetMessage = message;
+        IsReferentialIntegrityBottomSheetVisible = true;
+    }
+
     private void HandleGenericErrorDismiss()
     {
         ActiveBottomSheet = null;
     }
 
-    private void ShowMethodSelector()
+    private RenderFragment RenderSelectedPayoutForm() => SelectedPayoutTypeName switch
     {
-        SelectedPayoutMethod = null;
-        ShowAddSheet = false;
-        StateHasChanged();
-    }
-
-    private RenderFragment RenderSelectedPayoutForm() => SelectedPayoutMethod switch
-    {
-        "Bank" => RenderBankAccountForm,
+        "Bank" or "BankAccount" => RenderBankAccountForm,
         "SINPE" => RenderSinpeForm,
         "PayPal" => RenderPayPalForm,
         _ => RenderGenericPayoutForm
@@ -474,7 +584,7 @@
             <!-- Save Action -->
             <div class="pt-4">
                 <button class="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600"
-                        @onclick="SavePayoutMethodAsync">
+                        @onclick="SavePayoutAccountAsync">
                     @(IsEditMode ? $"Update Bank Account" : $"Save Bank Account")
                 </button>
             </div>
@@ -508,8 +618,8 @@
             <!-- Save Button -->
             <div class="pt-4">
                 <button class="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600"
-                        @onclick="SavePayoutMethodAsync">
-                    @(IsEditMode ? $"Update {SelectedPayoutMethod}" : $"Save {SelectedPayoutMethod}")
+                        @onclick="SavePayoutAccountAsync">
+                    @(IsEditMode ? $"Update {SelectedPayoutTypeName}" : $"Save {SelectedPayoutTypeName}")
                 </button>
             </div>
 
@@ -537,8 +647,8 @@
             <!-- Save Button -->
             <div class="pt-4">
                 <button class="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600"
-                        @onclick="SavePayoutMethodAsync">
-                    @(IsEditMode ? $"Update {SelectedPayoutMethod}" : $"Save {SelectedPayoutMethod}")
+                        @onclick="SavePayoutAccountAsync">
+                    @(IsEditMode ? $"Update {SelectedPayoutTypeName}" : $"Save {SelectedPayoutTypeName}")
                 </button>
             </div>
 
@@ -549,3 +659,5 @@
         <p>Generic Form Placeholder</p>
     </div>;
 }
+
+    

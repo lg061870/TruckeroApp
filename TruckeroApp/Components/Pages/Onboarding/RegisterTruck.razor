@@ -1,4 +1,6 @@
-﻿@page "/registertruck"
+﻿ @* @page "/" *@
+@page "/registertruck"
+@page "/registertruck/{TruckId:guid}"
 @using Microsoft.AspNetCore.Components
 @using Truckero.Core.DTOs.Trucks
 @using Truckero.Core.Exceptions
@@ -26,10 +28,11 @@
             <div class="flex items-center mb-8">
                 @if (FromRegisterDriver)
                 {
-                    <button class="text-gray-600" @onclick="PreviousStep" disabled="@(currentStep == 1)">
+                    <button class="text-gray-600" @onclick="OnBackToRegisterDriver">
                         <i class="fa-solid fa-arrow-left text-xl"></i>
                     </button>
                 }
+
                 <div class="text-center flex-1 mr-8">
                     <h2 class="text-xl font-semibold">Truck Registration</h2>
                 </div>
@@ -186,10 +189,11 @@
                                 <PhotoCaptureField Label="Right Side"
                                                    FileType="truck-right"
                                                    Placeholder="Right Side Photo"
-                                                   ImageUrl="@CurrentTruck.PhotoBackUrl"
-                                                   OnUpload="@(url => CurrentTruck.PhotoBackUrl = url)"
-                                                   OnUploadFailed="@(() => HandleTruckUploadFail("Back"))"
+                                                   ImageUrl="@CurrentTruck.PhotoRightUrl"
+                                                   OnUpload="@(url => CurrentTruck.PhotoRightUrl = url)"
+                                                   OnUploadFailed="@(() => HandleTruckUploadFail("Right"))"
                                                    UserId="@UserId" />
+
                             </div>
                         </div>
                     </div>
@@ -206,7 +210,7 @@
                                 @foreach (var cat in TruckCategories)
                                 {
                                     <button class="@GetSelectableButtonClass(CurrentTruck.TruckCategoryId == cat.Id) flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:text-orange-500 transition-colors"
-                                            @onclick="@(() => { CurrentTruck.TruckCategoryId = cat.Id; CurrentTruck.LoadCategory = cat.Name; })">
+                                            @onclick="@(() => CurrentTruck.TruckCategoryId = cat.Id)">
                                         <i class="fa-solid fa-box text-xl mb-2"></i>
                                         <span class="text-xs">@cat.Name</span>
                                     </button>
@@ -318,7 +322,6 @@
                 </button>
             </div>
 
-
             <!-- Submit -->
             <div class="mt-8 flex justify-center">
                 <button type="button"
@@ -328,14 +331,27 @@
                     @if (IsLoading)
                     {
                         <span class="mr-2 animate-spin"><i class="fa fa-spinner"></i></span>
-                        <span>Submitting...</span>
+                        <span>
+                            @(FromRegisterDriver ? "Committing..." : "Submitting...")
+                        </span>
                     }
                     else
                     {
-                        <span>Submit</span>
+                        <span class="flex items-center">
+                            @if (FromRegisterDriver)
+                            {
+                                <i class="fa-solid fa-arrow-left mr-2"></i>
+                                <p>Commit</p>
+                            }
+                            else
+                            {
+                                <p>Submit</p>
+                            }
+                        </span>
                     }
                 </button>
             </div>
+
 
         <!-- BottomSheets for error/validation feedback -->
         @if (!string.IsNullOrEmpty(ActiveBottomSheet))
@@ -356,9 +372,9 @@
 
                 case "referential_integrity":
                     <ReferentialIntegrityBottomSheet
-                        ErrorCode="@ReferentialIntegrityBottomSheetErrorCode"
                         Message="@ReferentialIntegrityBottomSheetMessage"
                         OnDismiss="@(() => ActiveBottomSheet = null)" />
+
                     break;
             }
         }
@@ -383,12 +399,15 @@
     [Parameter]
     [SupplyParameterFromQuery]
     public bool FromRegisterDriver { get; set; }
+    
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public Guid? TruckId { get; set; }   // <--- supports /registertruck?TruckId=...
 
     private Guid _userId;
-
     private Guid UserId => _userId;
 
-    private Truck CurrentTruck { get; set; } = new Truck();
+    private TruckRequest CurrentTruck { get; set; } = new TruckRequest();
     private bool IsEditMode { get; set; } = false;
     private bool IsLoading { get; set; } = false;
     private string ErrorMessage { get; set; } = string.Empty;
@@ -401,17 +420,17 @@
     private int currentStep = 1;
     private readonly int totalSteps = 5;
 
-    private static TruckPageReferenceDataDto? _truckPageDataCache;
-    private TruckPageReferenceDataDto? TruckPageData { get; set; }
+    private static TruckReferenceData _truckPageDataCache;
+    private TruckReferenceData TruckPageData { get; set; }
     private bool IsReferenceDataLoading { get; set; } = true;
 
     protected override async Task OnInitializedAsync()
     {
-        // Assign only once: use AuthSession.UserId if available, otherwise generate a new one
         _userId = AuthSession.UserId ?? Guid.NewGuid();
 
         try
         {
+            // Reference data caching
             if (_truckPageDataCache == null)
             {
                 TruckPageData = await TruckService.GetTruckPageDataAsync();
@@ -421,6 +440,43 @@
             {
                 TruckPageData = _truckPageDataCache;
             }
+
+            // 👇 Support editing (query param TruckId)
+            if (TruckId.HasValue && TruckId.Value != Guid.Empty)
+            {
+                IsEditMode = true;
+
+                TruckRequest? loadedTruck = null;
+
+                if (FromRegisterDriver)
+                {
+                    // Pending trucks (LocalStorage)
+                    var storageKey = "driver_registration_form";
+                    var savedData = await LocalStorage.GetItemAsync<DriverRegistrationData>(storageKey);
+                    loadedTruck = savedData?.Trucks.FirstOrDefault(t => t.Id == TruckId.Value);
+                }
+                else
+                {
+                    // Persisted trucks (API)
+                    var allTrucks = await TruckService.GetDriverTrucksAsync(UserId);
+                    loadedTruck = allTrucks.FirstOrDefault(t => t.Id == TruckId.Value);
+                }
+
+                if (loadedTruck != null)
+                {
+                    CurrentTruck = loadedTruck;
+                }
+                else
+                {
+                    ShowGenericError("Truck not found.");
+                }
+            }
+            else
+            {
+                CurrentTruck = new TruckRequest();
+                IsEditMode = false;
+            }
+
         }
         catch (Exception ex)
         {
@@ -442,6 +498,37 @@
     private IEnumerable<UseTag> UseTags => TruckPageData?.UseTags ?? Enumerable.Empty<UseTag>();
     private IEnumerable<TruckType> TruckTypes => TruckPageData?.TruckTypes ?? Enumerable.Empty<TruckType>();
 
+    // Truck --> Driver navigation
+    private async void OnBackToRegisterDriver()
+    {
+        // If coming from RegisterDriver and form is minimally complete, save as pending
+        if (FromRegisterDriver && IsTruckMinimallyComplete())
+        {
+            var storageKey = "driver_registration_form";
+            var savedData = await LocalStorage.GetItemAsync<DriverRegistrationData>(storageKey);
+            if (savedData != null)
+            {
+                CurrentTruck.IsActive = false;
+                CurrentTruck.IsVerified = false;
+
+                // Convert the entity to TruckRequest using your reference data cache
+                TruckRequest truckDto =  CurrentTruck;
+
+                // Add or update truck by Id
+                var idx = savedData.Trucks.FindIndex(t => t.Id == truckDto.Id);
+                if (idx >= 0)
+                    savedData.Trucks[idx] = truckDto;
+                else
+                    savedData.Trucks.Add(truckDto);
+
+                await LocalStorage.SetItemAsync(storageKey, savedData);
+            }
+        }
+    }
+
+
+
+    // Wizard Navigation
     private void NextStep()
     {
         if (currentStep < totalSteps)
@@ -449,7 +536,6 @@
             currentStep++;
         }
     }
-
     private void PreviousStep()
     {
         if (currentStep > 1)
@@ -458,7 +544,6 @@
         }
         else
         {
-            // Navigate back to the driver registration page when clicking back on the first step
             NavigationManager.NavigateTo(AppRoutes.RegisterDriver);
         }
     }
@@ -466,6 +551,8 @@
     private string GetDotClass(int step) => currentStep >= step ? "bg-orange-500" : "bg-gray-300";
     private bool IsStepActive(int step) => currentStep == step;
     private string GetStepButtonText() => currentStep == totalSteps ? "Submit" : "Continue";
+
+    // ---------- KEY CHANGE: Handle submit now supports edit mode (both contexts)
     private async Task HandleSubmitAsync()
     {
         if (!IsTruckMinimallyComplete())
@@ -473,16 +560,25 @@
             ShowValidationFailed(new List<string> { "Please complete all required fields before submitting." });
             return;
         }
+
         if (FromRegisterDriver)
         {
             var storageKey = "driver_registration_form";
             var savedData = await LocalStorage.GetItemAsync<DriverRegistrationData>(storageKey);
             if (savedData != null)
             {
-                savedData.Trucks.Add(CurrentTruck); // TODO: update logic for add/edit if needed
+                // Pending flags
+                CurrentTruck.IsActive = false;
+                CurrentTruck.IsVerified = false;
+                // Add or update the truck in the local list
+                var idx = savedData.Trucks.FindIndex(t => t.Id == CurrentTruck.Id);
+                if (idx >= 0)
+                    savedData.Trucks[idx] = CurrentTruck;
+                else
+                    savedData.Trucks.Add(CurrentTruck);
                 await LocalStorage.SetItemAsync(storageKey, savedData);
             }
-            NavigationManager.NavigateTo("/registerdriver");
+            NavigationManager.NavigateTo(AppRoutes.RegisterDriver);
         }
         else
         {
@@ -491,9 +587,16 @@
                 IsLoading = true;
                 ErrorMessage = string.Empty;
 
-                var truckDTO = CurrentTruck.ToTruckRequestDto();
+                var truckDTO =  CurrentTruck;
 
-                await TruckService.AddDriverTruckAsync(UserId, truckDTO);
+                if (IsEditMode)
+                {
+                    await TruckService.UpdateDriverTruckAsync(UserId, CurrentTruck.Id, truckDTO);
+                }
+                else
+                {
+                    await TruckService.AddDriverTruckAsync(UserId, truckDTO);
+                }
                 // Optionally, show success toast/snackbar here
             }
             catch (TruckClientValidationException vex)
@@ -502,7 +605,6 @@
             }
             catch (ReferentialIntegrityClientException rex)
             {
-                // Show the bottom sheet component and pass error info (code/message)
                 ShowReferentialIntegrityBottomSheet(rex.ErrorCode, rex.Message);
             }
             catch (TruckClientException cex)
@@ -523,6 +625,7 @@
             }
         }
     }
+    // ---------- END KEY CHANGE
 
     private void HandleTruckUploadFail(string side)
     {
@@ -536,48 +639,35 @@
 
     private bool IsTagSelected((string Name, Guid Id) tag)
     {
-        return CurrentTruck.UseTags.Any(tut => tut.UseTag != null && tut.UseTag.Name == tag.Name);
+        return CurrentTruck.UseTagIds.Contains(tag.Id);
     }
 
     private void ToggleUseTag((string Name, Guid Id) tag)
     {
-        var existing = CurrentTruck.UseTags.FirstOrDefault(tut => tut.UseTag != null && tut.UseTag.Name == tag.Name);
-        if (existing != null)
-        {
-            CurrentTruck.UseTags.Remove(existing);
-        }
+        if (CurrentTruck.UseTagIds.Contains(tag.Id))
+            CurrentTruck.UseTagIds.Remove(tag.Id);
         else
-        {
-            CurrentTruck.UseTags.Add(new TruckUseTag
-            {
-                TruckId = CurrentTruck.Id,
-                UseTagId = tag.Id,
-                UseTag = new UseTag { Id = tag.Id, Name = tag.Name }
-            });
-        }
+            CurrentTruck.UseTagIds.Add(tag.Id);
     }
 
     private async Task UploadInsuranceDocuments()
     {
         try
         {
-            // 1. Use a file picker to get the file/stream (replace with your actual picker)
-            var fileResult = await MediaPicker.PickPhotoAsync(); // Or PickFileAsync, depending on your picker
+            var fileResult = await MediaPicker.PickPhotoAsync();
             if (fileResult == null)
                 return;
 
             using var stream = await fileResult.OpenReadAsync();
 
-            // 2. Create the upload request
             var request = new ImageUploadRequest
             {
                 FileName = fileResult.FileName,
                 FileType = "insurance-document",
-                UserId = UserId, // or UserId.Value if nullable
+                UserId = UserId,
                 FileStream = stream
             };
 
-            // 3. Upload the image
             var response = await MediaService.UploadImageAsync(request);
 
             if (response.Success && !string.IsNullOrEmpty(response.Url))
@@ -594,7 +684,6 @@
             ShowGenericError($"Upload failed: {ex.Message}");
         }
     }
-
     private bool IsTruckMinimallyComplete()
     {
         return
@@ -602,28 +691,24 @@
             CurrentTruck.TruckMakeId != Guid.Empty &&
             CurrentTruck.TruckModelId != Guid.Empty &&
             !string.IsNullOrWhiteSpace(CurrentTruck.LicensePlate) && CurrentTruck.LicensePlate.Length >= 4 &&
-            CurrentTruck.Year > 2000 && // or your minimum year
+            CurrentTruck.Year > 2000 &&
             !string.IsNullOrWhiteSpace(CurrentTruck.InsuranceProvider) && CurrentTruck.InsuranceProvider.Length >= 4 &&
             !string.IsNullOrWhiteSpace(CurrentTruck.PolicyNumber) && CurrentTruck.PolicyNumber.Length >= 4;
     }
-
     private void ShowValidationFailed(List<string> errors)
     {
         ValidationErrors = errors;
         ActiveBottomSheet = "validation_failed";
     }
-
     private void ShowGenericError(string message)
     {
         ErrorMessage = message;
         ActiveBottomSheet = "generic_error";
     }
-
     private void HandleGenericErrorDismiss()
     {
         NavigationManager.NavigateTo(AppRoutes.StartupRouter, forceLoad: true);
     }
-
     private void ShowReferentialIntegrityBottomSheet(string code, string message)
     {
         ActiveBottomSheet = "referential_integrity";

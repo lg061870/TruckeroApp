@@ -1,27 +1,40 @@
-﻿@using Truckero.Core.Entities
+﻿@using Truckero.Core.DTOs.Trucks
+@using Truckero.Core.Entities
 
 @code {
     [Parameter]
-    public Truck Truck { get; set; } = new();
+    public TruckRequest Truck { get; set; } = new();
 
     [Parameter]
-    public EventCallback<Truck> OnEdit { get; set; }
+    public EventCallback<TruckRequest> OnEdit { get; set; }
 
     [Parameter]
-    public EventCallback<Truck> OnRemove { get; set; }
+    public EventCallback<TruckRequest> OnRemove { get; set; }
+
+    // 👇 Add this parameter so parent can set Pending status
+    [Parameter]
+    public bool Pending { get; set; }
 
     private Task Edit() => OnEdit.InvokeAsync(Truck);
     private Task Remove() => OnRemove.InvokeAsync(Truck);
 }
-
 
 <div class="bg-white rounded-lg border border-gray-200 p-4">
     <div class="flex items-center justify-between">
         <div class="flex items-center space-x-3">
             <i class="fa-solid fa-truck-moving text-gray-600"></i>
             <div>
-                <h4 class="font-medium">@Truck.LicensePlate</h4>
-                <p class="text-sm text-gray-500">@Truck.TruckMake.Name @Truck.TruckModel.Name • @Truck.Year</p>
+                <h4 class="font-medium">
+                    @Truck.LicensePlate
+                    @* Show Pending badge if necessary *@
+                    @if (Pending)
+                    {
+                        <span class="ml-2 px-2 py-0.5 text-xs bg-yellow-100 text-yellow-800 rounded-full align-middle">Pending</span>
+                    }
+                </h4>
+                <p class="text-sm text-gray-500">
+                    @Truck.TruckMake @Truck.TruckModel • @Truck.Year
+                </p>
             </div>
         </div>
         <div class="flex items-center space-x-3">
@@ -43,4 +56,3 @@
         </div>
     </div>
 </div>
-

@@ -49,8 +49,6 @@ public class Truck {
     [ForeignKey(nameof(BedTypeId))]
     public BedType? BedTypeNav { get; set; }
 
-    public string? LoadCategory { get; set; } = null;
-
     // Tags
     public ICollection<TruckUseTag> UseTags { get; set; } = new List<TruckUseTag>();
 

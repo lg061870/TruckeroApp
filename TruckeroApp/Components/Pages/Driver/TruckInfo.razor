@@ -1,4 +1,5 @@
-﻿@using Truckero.Core.Entities
+﻿@using Truckero.Core.DTOs.Trucks
+@using Truckero.Core.Entities
 
 <div id="truck-info-section" class="space-y-4 mt-6">
     <h3 class="text-lg font-medium text-gray-800">Truck Information</h3>
@@ -9,6 +10,7 @@
             @foreach (var truck in RegisteredTrucks)
             {
                 <TruckInfoCard Truck="truck"
+                               Pending="@(PendingTruckIds != null && PendingTruckIds.Contains(truck.Id))"
                                OnEdit="EditTruck"
                                OnRemove="RemoveTruck" />
             }
@@ -25,13 +27,16 @@
 
 @code {
     [Parameter]
-    public List<Truck> RegisteredTrucks { get; set; } = new();
+    public List<TruckRequest> RegisteredTrucks { get; set; } = new();
 
     [Parameter]
-    public EventCallback<Truck> OnEditTruck { get; set; }
+    public List<Guid> PendingTruckIds { get; set; } = new(); // <-- NEW
 
     [Parameter]
-    public EventCallback<Truck> OnRemoveTruck { get; set; }
+    public EventCallback<TruckRequest> OnEditTruck { get; set; }
+
+    [Parameter]
+    public EventCallback<TruckRequest> OnRemoveTruck { get; set; }
 
     [Parameter]
     public EventCallback OnAddNewTruck { get; set; }
@@ -40,9 +45,10 @@
     public bool IsAddTruckEnabled { get; set; } = true;
 
     [Parameter]
-    public Func<string> GetAddTruckButtonClasses { get; set; } = () => "w-full flex items-center justify-center px-4 py-3 bg-orange-50 text-orange-600 rounded-lg border border-orange-200 hover:bg-orange-100";
+    public Func<string> GetAddTruckButtonClasses { get; set; } = () => 
+        "w-full flex items-center justify-center px-4 py-3 bg-orange-50 text-orange-600 rounded-lg border border-orange-200 hover:bg-orange-100";
 
-    private void EditTruck(Truck truck) => OnEditTruck.InvokeAsync(truck);
-    private void RemoveTruck(Truck truck) => OnRemoveTruck.InvokeAsync(truck);
+    private void EditTruck(TruckRequest truck) => OnEditTruck.InvokeAsync(truck);
+    private void RemoveTruck(TruckRequest truck) => OnRemoveTruck.InvokeAsync(truck);
     private void AddNewTruck() => OnAddNewTruck.InvokeAsync();
 }

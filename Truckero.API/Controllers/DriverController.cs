@@ -47,7 +47,7 @@ public class DriverController : ControllerBase
     }
 
     [HttpPost("{userId}/trucks")]
-    public async Task<ActionResult<TruckResponseDto>> AddDriverTruck(Guid userId, [FromBody] TruckRequestDto truck)
+    public async Task<ActionResult<TruckResponse>> AddDriverTruck(Guid userId, [FromBody] TruckRequest truck)
     {
         try
         {
@@ -64,7 +64,7 @@ public class DriverController : ControllerBase
     }
 
     [HttpPut("{userId}/trucks/{truckId}")]
-    public async Task<ActionResult<TruckResponseDto>> UpdateDriverTruck(Guid userId, Guid truckId, [FromBody] TruckRequestDto truck)
+    public async Task<ActionResult<TruckResponse>> UpdateDriverTruck(Guid userId, Guid truckId, [FromBody] TruckRequest truck)
     {
         try
         {
@@ -81,7 +81,7 @@ public class DriverController : ControllerBase
     }
 
     [HttpDelete("{userId}/trucks/{truckId}")]
-    public async Task<ActionResult<TruckResponseDto>> DeleteDriverTruck(Guid userId, Guid truckId)
+    public async Task<ActionResult<TruckResponse>> DeleteDriverTruck(Guid userId, Guid truckId)
     {
         try
         {

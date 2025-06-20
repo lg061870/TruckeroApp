@@ -7,6 +7,6 @@ public class PayoutAccountResponse
 {
     public bool Success { get; set; }
     public string? Message { get; set; }
-    public PayoutAccount? PayoutAccount { get; set; }
+    public PayoutAccountRequest? PayoutAccount { get; set; }
     public string? ErrorCode { get; set; }
 }

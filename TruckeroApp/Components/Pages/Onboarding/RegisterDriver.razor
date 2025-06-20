@@ -127,12 +127,15 @@
                 </div>
 
                 <!-- Trucks Section -->
-                <TruckInfo RegisteredTrucks="RegisteredTrucks"
-                           OnEditTruck="EditTruck"
-                           OnRemoveTruck="RemoveTruck"
-                           OnAddNewTruck="AddNewTruck"
-                           IsAddTruckEnabled="@IsValidEmail(DriverProfile.Email)"
-                           GetAddTruckButtonClasses="@GetAddTruckButtonClasses" />
+                <TruckInfo 
+                            RegisteredTrucks="RegisteredTrucks"
+                            PendingTruckIds="@(RegisteredTrucks.Where(t => !t.IsActive && !t.IsVerified).Select(t => t.Id).ToList())"
+                            OnEditTruck="EditTruck"
+                            OnRemoveTruck="RemoveTruck"
+                            OnAddNewTruck="AddNewTruck"
+                            IsAddTruckEnabled="@IsValidEmail(DriverProfile.Email)"
+                            GetAddTruckButtonClasses="@GetAddTruckButtonClasses" />
+
 
                 <!-- Payout Accounts Section -->
                 <PayoutAccountInfo RegisteredPayoutAccounts="RegisteredPayoutAccounts"
@@ -310,8 +313,8 @@
 
                     case "registration_restored":
                         <RegistrationRestoredBottomSheet 
-                            LastSaved="@LastSavedFormatted"
-                            OnDismiss="@(() => ActiveBottomSheet = null)" />
+                          LastSaved="@savedData.LastUpdated.ToShortDateString()"
+                          OnDismiss="@(() => ActiveBottomSheet = null)" />
                         break;
                 }
             }
@@ -333,6 +336,7 @@
     private string ResendEmailMessage = string.Empty;
     private bool IsResendingEmail = false;
     private bool ShowMapPicker = false;
+    private bool _bottomSheetWasShown = false;
 
     [Required]
     private Guid UserId { get; set; } = Guid.Empty;
@@ -401,51 +405,68 @@
 
     private bool IsEditMode => IsExistingRegistration && UserId != Guid.Empty;
 
-    private List<Truck> RegisteredTrucks { get; set; } = new();
-    private List<PayoutAccountDto> RegisteredPayoutAccounts { get; set; } = new();
+    private List<TruckRequest> RegisteredTrucks { get; set; } = new();
+
+    private List<PayoutAccountRequest> RegisteredPayoutAccounts { get; set; } = new();
 
     private const string STORAGE_KEY = "driver_registration_form";
 
+    private DriverRegistrationData savedData = null!;
+
     protected override async Task OnInitializedAsync()
     {
-        // 🌐 If the user previously started registration but exited before completing,
-        // attempt to restore their last saved data from local storage so they can resume seamlessly.
-        var savedData = await LocalStorage.GetItemAsync<DriverRegistrationData>(STORAGE_KEY);
+        try {
+            // 🌐 If the user previously started registration but exited before completing,
+            // attempt to restore their last saved data from local storage so they can resume seamlessly.
+            savedData = await LocalStorage.GetItemAsync<DriverRegistrationData>(STORAGE_KEY);
 
-        if (savedData != null)
+            if (savedData != null) {
+                // 🧠 Restore state from saved local data
+                UserId = savedData.UserId;
+                DriverProfile = savedData.Profile;
+                Password = savedData.Password;
+                ConfirmPassword = savedData.Password; // For validation to pass
+                LicenseFrontUrl = savedData.LicenseFrontUrl;
+                LicenseBackUrl = savedData.LicenseBackUrl;
+                RegisteredTrucks = savedData.Trucks;
+                RegisteredPayoutAccounts = savedData.PayoutAccounts ?? new List<PayoutAccountRequest>();
+
+                // ✅ Flag that this registration had previously reached the API
+                // IsExistingRegistration = savedData.IsRegisteredWithApi;
+            }
+            else {
+                // 🆕 No saved data — begin a fresh registration session
+                UserId = Guid.NewGuid();
+                DriverProfile.UserId = UserId;
+                IsExistingRegistration = false;
+                RegisteredTrucks = new List<TruckRequest>();
+                RegisteredPayoutAccounts = new List<PayoutAccountRequest>();
+            }
+
+            // 🚚 If editing a submitted registration, load their trucks from the API
+            if (IsEditMode) {
+                await LoadDriverTrucks();
+            }
+        }
+        catch (Exception ex)
         {
-            // 🧠 Restore state from saved local data
-            UserId = savedData.UserId;
-            DriverProfile = savedData.Profile;
-            Password = savedData.Password;
-            ConfirmPassword = savedData.Password; // For validation to pass
-            LicenseFrontUrl = savedData.LicenseFrontUrl;
-            LicenseBackUrl = savedData.LicenseBackUrl;
-            RegisteredTrucks = savedData.Trucks;
-            RegisteredPayoutAccounts = savedData.PayoutAccounts ?? new List<PayoutAccountDto>();
+            Console.WriteLine($"[RegisterDriver] Initialization failed: {ex}");
+            // Optionally surface a UI message
+            ErrorMessage = $"Initialization failed: {ex.Message}";
+            // Maybe set ActiveBottomSheet = "generic_error";
+        }
+    }
 
-            // ✅ Flag that this registration had previously reached the API
-            IsExistingRegistration = savedData.IsRegisteredWithApi;
-
-            // 📢 Notify the user that the form has been restored
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && savedData != null && !_bottomSheetWasShown)
+        {
             ErrorMessage = $"Your previous registration has been restored. Last saved: {savedData.LastUpdated}";
             ActiveBottomSheet = "registration_restored";
+            _bottomSheetWasShown = true;
+            StateHasChanged(); // <-- Triggers a *single* re-render to show the bottom sheet.
         }
-        else
-        {
-            // 🆕 No saved data — begin a fresh registration session
-            UserId = Guid.NewGuid();
-            DriverProfile.UserId = UserId;
-            IsExistingRegistration = false;
-            RegisteredTrucks = new List<Truck>();
-            RegisteredPayoutAccounts = new List<PayoutAccountDto>();
-        }
-
-        // 🚚 If editing a submitted registration, load their trucks from the API
-        if (IsEditMode)
-        {
-            await LoadDriverTrucks();
-        }
+        await base.OnAfterRenderAsync(firstRender);
     }
 
     private async Task LoadDriverTrucks()
@@ -464,6 +485,14 @@
         {
             IsLoading = false;
         }
+    }
+
+    private async Task HandleDismiss()
+    {
+        // Clear the saved form data
+        await LocalStorage.RemoveItemAsync("driver_registration_form");
+        
+        Console.Write("dafdsfsdfs");
     }
 
     private async Task SaveFormToLocalStorage()
@@ -492,71 +521,13 @@
         NavigationManager.NavigateTo("/registertruck?FromRegisterDriver=true");
     }
 
-    private async Task EditTruck(Truck truck)
+    private void EditTruck(TruckRequest truck)
     {
-        if (IsEditMode) // If editing existing driver, use API
-        {
-            try
-            {
-                IsLoading = true;
-                
-                truck.LicensePlate = truck.LicensePlate + " (Edited)";
-                var truckDTO = new TruckRequestDto
-                {
-                    TruckTypeId = truck.TruckTypeId,
-                    TruckMakeId = truck.TruckMakeId,
-                    TruckModelId = truck.TruckModelId,
-                    LicensePlate = truck.LicensePlate ?? string.Empty,
-                    Year = truck.Year,
-                    PhotoFrontUrl = truck.PhotoFrontUrl,
-                    PhotoBackUrl = truck.PhotoBackUrl,
-                    PhotoLeftUrl = truck.PhotoLeftUrl,
-                    PhotoRightUrl = truck.PhotoRightUrl,
-                    LoadCategory = truck.LoadCategory,
-                    BedTypeId = truck.BedTypeId,
-                    UseTagIds = truck.UseTags.Select(t => t.UseTagId).ToList(),
-                    OwnershipType = truck.OwnershipType,
-                    InsuranceProvider = truck.InsuranceProvider ?? string.Empty,
-                    PolicyNumber = truck.PolicyNumber ?? string.Empty,
-                    InsuranceDocumentUrl = truck.InsuranceDocumentUrl
-                };
-                
-                var result = await TruckService.UpdateDriverTruckAsync(UserId, truck.Id, truckDTO);
-                
-                if (result.Success)
-                {
-                    // Refresh the truck list
-                    await LoadDriverTrucks();
-                }
-                else
-                {
-                    ErrorMessage = result.Message ?? "Failed to update truck";
-                    ActiveBottomSheet = "generic_error";
-                }
-            }
-            catch (Exception ex)
-            {
-                ErrorMessage = $"Failed to update truck: {ex.Message}";
-                ActiveBottomSheet = "generic_error";
-            }
-            finally
-            {
-                IsLoading = false;
-            }
-        }
-        else // During initial registration
-        {
-            var index = RegisteredTrucks.FindIndex(t => t == truck);
-            if (index >= 0)
-            {
-                truck.LicensePlate += " (Edited)";
-                RegisteredTrucks[index] = truck;
-                await SaveFormToLocalStorage(); // Save after editing truck
-            }
-        }
+        // Use route navigation, passing the truck ID
+        NavigationManager.NavigateTo($"/registertruck/{truck.Id}?fromRegisterDriver=true");
     }
 
-    private async Task RemoveTruck(Truck truck)
+    private async Task RemoveTruck(TruckRequest truck)
     {
         if (IsEditMode) // If editing existing driver, use API
         {
@@ -602,14 +573,14 @@
         NavigationManager.NavigateTo("/registerpayoutaccounts?FromRegisterDriver=true");
     }
 
-    private async Task EditPayoutAccount(PayoutAccountDto account)
+    private async Task EditPayoutAccount(PayoutAccountRequest account)
     {
         // Implement edit logic (e.g., open modal or navigate to edit page)
         // For now, just a stub
         await Task.CompletedTask;
     }
 
-    private async Task RemovePayoutAccount(PayoutAccountDto account)
+    private async Task RemovePayoutAccount(PayoutAccountRequest account)
     {
         RegisteredPayoutAccounts.Remove(account);
         await SaveFormToLocalStorage();
@@ -639,16 +610,9 @@
             DriverProfile.LicenseFrontUrl = LicenseFrontUrl ?? string.Empty;
             DriverProfile.LicenseBackUrl = LicenseBackUrl ?? string.Empty;
 
-            DriverProfile.Trucks = RegisteredTrucks.Select(t => new DriverProfileRequest.TruckDto
-            {
-                LicensePlate = t.LicensePlate,
-                TruckMakeId = t.TruckMakeId,
-                TruckTypeId = t.TruckTypeId,
-                TruckModelId = t.TruckModelId,
-                Year = t.Year,
-            }).ToList();
+            DriverProfile.Trucks = RegisteredTrucks.ToList();
 
-            DriverProfile.PayoutAccounts = RegisteredPayoutAccounts;
+            DriverProfile.PayoutAccounts = RegisteredPayoutAccounts.ToList();
 
             var authTokenResponse = await OnboardingService.CompleteDriverOnboardingAsync(DriverProfile);
 
@@ -732,7 +696,6 @@
             IsLoading = false;
         }
     }
-
 
     private static Guid GenerateDeterministicGuidFromEmail(string email)
     {

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Truckero.Core.Constants;
 using Truckero.Core.DTOs;
 using Truckero.Core.DTOs.Common;
 using Truckero.Core.DTOs.Onboarding;
@@ -23,17 +24,17 @@ public class TruckApiClientService : ITruckService {
     private string RequireAccessToken()
         => _session.AccessToken ?? throw new UnauthorizedAccessException("No access token present in session.");
 
-    public async Task<List<Truck>> GetDriverTrucksAsync(Guid userId) {
+    public async Task<List<TruckRequest>> GetDriverTrucksAsync(Guid userId) {
         var envelope = AuthenticatedEnvelope.Create(
             RequireAccessToken(), _http, HttpMethod.Get, $"/api/truck/driver/{userId}");
-        return await envelope.SendAsync<List<Truck>>();
+        return await envelope.SendAsync<List<TruckRequest>>();
     }
 
-    public async Task<TruckResponseDto> AddDriverTruckAsync(Guid userId, TruckRequestDto truck) {
+    public async Task<TruckResponse> AddDriverTruckAsync(Guid userId, TruckRequest truck) {
         var response = await _http.PostAsJsonAsync($"/api/truck/driver/{userId}", truck);
 
         if (response.IsSuccessStatusCode) {
-            return await response.Content.ReadFromJsonAsync<TruckResponseDto>()
+            return await response.Content.ReadFromJsonAsync<TruckResponse>()
                    ?? throw new Exception("Empty truck response");
         }
 
@@ -55,16 +56,18 @@ public class TruckApiClientService : ITruckService {
             }
 
             // Handle structured error response
-            var error = JsonSerializer.Deserialize<ErrorResponse>(content);
+            var error = JsonSerializer.Deserialize<TruckResponse>(content);
 
-            if (error != null && !string.IsNullOrWhiteSpace(error.Error)) {
+            if (error != null && !string.IsNullOrWhiteSpace(error.ErrorCode)) {
                 // Recognize referential integrity error codes (expand list as needed)
-                if (IsReferentialIntegrityCode(error.Code)) {
+                if (IsReferentialIntegrityCode(error.ErrorCode)) {
                     throw new ReferentialIntegrityClientException(
-                        error.Error, error.Code, response.StatusCode);
+                        error.Message ?? "Referential integrity error.", error.ErrorCode, response.StatusCode);
                 }
-                throw new TruckClientException(error.Error, error.Code, response.StatusCode);
+                throw new TruckClientException(
+                    error.Message ?? "API truck error.", error.ErrorCode, response.StatusCode);
             }
+
         } catch (JsonException) {
             // Fall through to generic failure
         }
@@ -72,32 +75,29 @@ public class TruckApiClientService : ITruckService {
         throw new HttpRequestException($"Unrecognized error response: {content}", null, response.StatusCode);
     }
 
-    /// <summary>
-    /// Helper to check if the error code is referential integrity-related.
-    /// Update this list as you add more codes.
-    /// </summary>
     private bool IsReferentialIntegrityCode(string? code) {
         if (string.IsNullOrWhiteSpace(code))
             return false;
 
         return code switch {
-            "MISSING_DRIVER_PROFILE" => true,
-            "MISSING_TRUCK_TYPE" => true,
-            "MISSING_TRUCK_MODEL" => true,
-            "DUPLICATE_LICENSE_PLATE" => true,
-            "FOREIGN_KEY_NOT_FOUND" => true,
-            // Add more codes here...
+            ExceptionCodes.DriverProfileNotFound => true,
+            ExceptionCodes.TruckTypeNotFound => true,
+            ExceptionCodes.TruckModelNotFound => true,
+            ExceptionCodes.DuplicateLicensePlate => true,
+            ExceptionCodes.ForeignKeyNotFound => true,
+            ExceptionCodes.ReferentialIntegrityViolation => true, // <--- add this if you have it
+                                                                  // Add more standardized codes here as needed
             _ => false
         };
     }
 
-    public async Task<TruckResponseDto> UpdateDriverTruckAsync(Guid userId, Guid truckId, TruckRequestDto truck) {
+    public async Task<TruckResponse> UpdateDriverTruckAsync(Guid userId, Guid truckId, TruckRequest truck) {
         var envelope = AuthenticatedEnvelope.Create(
             RequireAccessToken(), _http, HttpMethod.Put, $"/api/truck/driver/{userId}/{truckId}", truck);
         var response = await envelope.SendAsync<HttpResponseMessage>();
 
         if (response.IsSuccessStatusCode) {
-            return await response.Content.ReadFromJsonAsync<TruckResponseDto>()
+            return await response.Content.ReadFromJsonAsync<TruckResponse>()
                    ?? throw new Exception("Empty truck response");
         }
 
@@ -129,13 +129,13 @@ public class TruckApiClientService : ITruckService {
         throw new HttpRequestException($"Unrecognized error response: {content}", null, response.StatusCode);
     }
 
-    public async Task<TruckResponseDto> DeleteDriverTruckAsync(Guid userId, Guid truckId) {
+    public async Task<TruckResponse> DeleteDriverTruckAsync(Guid userId, Guid truckId) {
         var envelope = AuthenticatedEnvelope.Create(
             RequireAccessToken(), _http, HttpMethod.Delete, $"/api/truck/driver/{userId}/{truckId}");
         var response = await envelope.SendAsync<HttpResponseMessage>();
 
         if (response.IsSuccessStatusCode) {
-            return await response.Content.ReadFromJsonAsync<TruckResponseDto>()
+            return await response.Content.ReadFromJsonAsync<TruckResponse>()
                    ?? throw new Exception("Empty truck response");
         }
 
@@ -167,8 +167,8 @@ public class TruckApiClientService : ITruckService {
         throw new HttpRequestException($"Unrecognized error response: {content}", null, response.StatusCode);
     }
 
-    public async Task<IEnumerable<Truck>> GetTrucksForDriverAsync(Guid driverProfileId)
-        => await _http.GetFromJsonAsync<List<Truck>>($"/api/truck/driver/{driverProfileId}") ?? new List<Truck>();
+    public async Task<IEnumerable<TruckRequest>> GetTrucksForDriverAsync(Guid driverProfileId)
+        => await _http.GetFromJsonAsync<List<TruckRequest>>($"api/truck/driver/{driverProfileId}") ?? new List<TruckRequest>();
 
     public async Task<List<TruckMake>> GetTruckMakesAsync()
         => await _http.GetFromJsonAsync<List<TruckMake>>("/api/truck/makes") ?? new List<TruckMake>();
@@ -188,11 +188,11 @@ public class TruckApiClientService : ITruckService {
     public async Task<List<TruckType>> GetTruckTypesAsync()
         => await _http.GetFromJsonAsync<List<TruckType>>("/api/truck/types") ?? new List<TruckType>();
 
-    public async Task<TruckPageReferenceDataDto> GetTruckPageDataAsync()
+    public async Task<TruckReferenceData> GetTruckPageDataAsync()
     {
         try
         {
-            var result = await _http.GetFromJsonAsync<TruckPageReferenceDataDto>("/api/TruckeroViewProvider/truck-page-data");
+            var result = await _http.GetFromJsonAsync<TruckReferenceData>("/api/TruckeroViewProvider/truck-page-data");
             if (result == null)
             {
                 // Optionally log or throw a more descriptive exception

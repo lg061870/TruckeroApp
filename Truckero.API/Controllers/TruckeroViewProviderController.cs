@@ -19,9 +19,9 @@ public class TruckeroViewProviderController : ControllerBase
 
     [AllowAnonymous]
     [HttpGet("truck-page-data")]
-    public async Task<ActionResult<TruckPageReferenceDataDto>> GetTruckPageData()
+    public async Task<ActionResult<TruckReferenceData>> GetTruckPageData()
     {
-        var dto = new TruckPageReferenceDataDto
+        var dto = new TruckReferenceData
         {
             TruckMakes = await _truckService.GetTruckMakesAsync(),
             TruckModels = await _truckService.GetTruckModelsAsync(),

@@ -1,14 +1,18 @@
 @using Truckero.Core.DTOs.Onboarding
+@using Truckero.Core.Extensions
 
 @code {
     [Parameter]
-    public PayoutAccountDto PayoutAccount { get; set; } = new();
+    public PayoutAccountRequest PayoutAccount { get; set; } = new();
 
     [Parameter]
-    public EventCallback<PayoutAccountDto> OnEdit { get; set; }
+    public IEnumerable<PaymentMethodType> PaymentMethodTypes { get; set; } = Enumerable.Empty<PaymentMethodType>();
 
     [Parameter]
-    public EventCallback<PayoutAccountDto> OnRemove { get; set; }
+    public EventCallback<PayoutAccountRequest> OnEdit { get; set; }
+
+    [Parameter]
+    public EventCallback<PayoutAccountRequest> OnRemove { get; set; }
 
     private Task Edit() => OnEdit.InvokeAsync(PayoutAccount);
     private Task Remove() => OnRemove.InvokeAsync(PayoutAccount);
@@ -19,7 +23,7 @@
         <div class="flex items-center space-x-3">
             <i class="fa-solid fa-wallet text-gray-600"></i>
             <div>
-                <h4 class="font-medium">@PayoutAccount.PaymentMethodTypeName</h4>
+                <h4 class="font-medium">@PaymentMethodTypes.GetNameById(PayoutAccount.PaymentMethodTypeId)</h4>
                 <p class="text-sm text-gray-500">@PayoutAccount.AccountNumberLast4</p>
             </div>
         </div>
