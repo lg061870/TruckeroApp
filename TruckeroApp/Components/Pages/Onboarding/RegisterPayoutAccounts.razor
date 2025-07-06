@@ -1,18 +1,23 @@
 ﻿@* @page "/" *@
 @page "/registerpayoutaccount"
 @page "/registerpayoutaccount/{PayoutAccountId:guid}"
+@using System.Text.Json
 @using Microsoft.AspNetCore.Components
+@using Truckero.Core.DTOs.Onboarding
+@using Truckero.Core.DTOs.PaymentMethodType
+@using Truckero.Core.DTOs.PayoutAccount
+@using Truckero.Core.DTOs.Shared
 @using Truckero.Core.Entities
 @using Truckero.Core.Exceptions
 @using Truckero.Core.Interfaces.Services
-@using Truckero.Core.DTOs.Onboarding
-@using TruckeroApp.Models
-@using TruckeroApp.Extensions
 @using TruckeroApp.Components.BottomSheets
+@using TruckeroApp.Extensions
+@using TruckeroApp.Models
 
 @inject IPayoutAccountService PayoutAccountService
 @inject NavigationManager NavigationManager
 @inject ILocalStorageService LocalStorage
+@inject IViewProviderApiClientService ViewProviderApiClientService
 
 <CenterWrapper>
     <div class="h-full text-base-content">
@@ -45,52 +50,14 @@
                     </div>
                 }
 
-                <!-- Empty State -->
-                @if (!ExistingPayoutAccounts.Any() && !IsLoading)
-                {
-                    <div id="empty-state" class="text-center py-6">
-                        <div class="w-16 h-16 mx-auto mb-4 text-gray-300">
-                            <i class="fa-solid fa-wallet text-4xl"></i>
-                        </div>
-                        <h3 class="text-base font-medium mb-1">No Payout Accounts Yet</h3>
-                        <p class="text-sm text-gray-600 mb-4">Add your first payout method to start receiving earnings</p>
-                    </div>
-                }
-
-                <!-- Payout Account Cards -->
-                <div id="payout-accounts-list"
-                     class="overflow-y-scroll space-y-1 mb-8 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100"
-                     style="max-height: 285px;">
-                @foreach (var account in ExistingPayoutAccounts)
-                {
-                    // Find the payment method display name
-                    var paymentMethodName = AvailablePayoutOptions.FirstOrDefault(x => x.Id == account.PaymentMethodTypeId)?.Name ?? "Payout Method";
-                    <div class="bg-white rounded-lg p-3 border">
-                        <div class="flex justify-between items-center mb-2">
-                            <div class="flex items-center space-x-2">
-                                <i class="@GetPayoutIcon(paymentMethodName) text-lg"></i>
-                                <span class="font-medium text-sm">@paymentMethodName</span>
-                            </div>
-                            @if (account.IsDefault)
-                            {
-                                <span class="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">Active</span>
-                            }
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <p class="text-xs text-gray-500">@account.AccountNumberLast4</p> @* You can adjust this for a custom description *@
-                            <div class="flex items-center space-x-2">
-                                <button class="text-gray-400 hover:text-gray-600" @onclick="() => EditPayoutAccount(account.Id)">
-                                    <i class="fa-solid fa-pen-to-square text-sm"></i>
-                                </button>
-                                <button class="text-gray-400 hover:text-red-600" @onclick="() => ConfirmDelete(account.Id)">
-                                    <i class="fa-solid fa-trash text-sm"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                }
-
-                </div>
+                <!-- Existing Payout Accounts -->
+                <PayoutAccountList
+                    Accounts="ExistingPayoutAccounts"
+                    GetPaymentMethodName="GetPaymentMethodName"
+                    GetPayoutIcon="GetPayoutIcon"
+                    OnEdit="EditPayoutAccount"
+                    OnDelete="ConfirmDelete"
+                    OnSetDefault="MakeDefault" />
 
                 <!-- Payment Method Selector -->
                 <div class="mb-6">
@@ -112,10 +79,23 @@
                         <div class="grid grid-cols-2 gap-3">
                             @foreach (var method in AvailablePayoutOptions)
                             {
-                                <div class="@GetPaymentOptionClass(method.Name)"
-                                        @onclick="() => StartAddPayoutAccount(method.Name)">
+                                // UX: If only one allowed for this method, disable or hide if already exists
+                                bool isUniqueType = method.Name == "Google Wallet" || method.Name == "Apple Wallet";
+                                bool alreadyAdded = ExistingPayoutAccounts.Any(a =>
+                                    a.PaymentMethodTypeId == method.Id);
+
+
+                                var isDisabled = isUniqueType && alreadyAdded;
+
+                                <div class="@GetPaymentOptionClass(method.Name) @(isDisabled ? "opacity-50 pointer-events-none" : "")"
+                                     @onclick="!isDisabled ? (() => StartAddPayoutAccount(method.Name)) : null"
+                                     aria-disabled="@isDisabled">
                                     <i class="@GetPayoutIcon(method.Name) text-2xl mb-2"></i>
                                     <p class="text-sm font-medium">@method.Name</p>
+                                    @if (isDisabled)
+                                    {
+                                        <span class="text-xs text-gray-400">(Already added)</span>
+                                    }
                                 </div>
                             }
                         </div>
@@ -159,7 +139,15 @@
                             <i class="fa-solid fa-xmark text-xl"></i>
                         </button>
                     </div>
-                    @RenderSelectedPayoutForm()
+                    @if (ShowAddSheet && !string.IsNullOrEmpty(SelectedPayoutTypeName))
+                    {
+                        <PayoutAccountForm
+                            PaymentMethodType="@SelectedPayoutTypeName"
+                            AvailableBanks="@AvailableBanks"
+                            EditFields="@(IsEditMode ? new Dictionary<string, string>(CurrentPayoutAccountJSON?.Fields ?? new()) : null)"
+                            IsEditMode="@IsEditMode"
+                            OnSubmit="HandlePayoutAccountSubmitted" />
+                    }
                 </div>
             </div>
 
@@ -204,10 +192,22 @@
 
     private Guid UserId => AuthSession.UserId ?? Guid.Empty;
 
+    // Holds payout accounts already registered for the user
     private List<PayoutAccountRequest> ExistingPayoutAccounts = new();
-    private List<PaymentMethodType> AvailablePayoutOptions = new();
-    private List<Bank> AvailableBanks = new();
-    private List<Country> AvailableCountries = new();
+
+    // Options user can select for payout (e.g. Bank, SINPE, PayPal)
+    private List<PaymentMethodTypeRequest> AvailablePayoutOptions = new();
+
+    // Banks available for selected country (for dropdown)
+    private List<BankRequest> AvailableBanks = new();
+
+    // List of all countries supported by payout feature
+    private List<CountryRequest> AvailableCountries = new();
+
+    // This will be the in-progress account used for the add/edit form
+    private PayoutAccountJSONType CurrentPayoutAccountJSON { get; set; }
+
+
     private string? SelectedCountryCode = "CR";
     private string? SelectedPayoutTypeName;
     private Guid EditingPayoutAccountId;
@@ -243,27 +243,25 @@
             if (FromRegisterDriver)
             {
                 DriverRegistrationData? savedData = await LocalStorage.GetItemAsync<DriverRegistrationData>("driver_registration_form");
-                // Now acc is a PayoutAccountRequest!
-                PayoutAccountRequest? acc = savedData?.PayoutAccounts?.FirstOrDefault(p => p.PaymentMethodTypeId == EditingPayoutAccountId);
-                // ↑ If you want to match on another property, adjust here (e.g. if you add an Id to PayoutAccountRequest)
+                // Find by Id (unique payout account), or if you want by PaymentMethodTypeId, but it's better to use Id if you have it.
+                PayoutAccountRequest? acc = savedData?.PayoutAccounts?.FirstOrDefault(p => p.Id == EditingPayoutAccountId);
                 if (acc != null)
                 {
                     CurrentPayoutAccount = acc.ToPayoutAccountFormModel(); // Use your extension!
-                    SelectedPayoutTypeName = AvailablePayoutOptions.FirstOrDefault(x => x.Id == acc.PaymentMethodTypeId)?.Name ?? ""; // Find name from options
+                    SelectedPayoutTypeName = GetPaymentMethodName(acc.PaymentMethodTypeId);
                     ShowAddSheet = true;
                 }
             }
             else
             {
                 PayoutAccountResponse? response = await PayoutAccountService.GetPayoutAccountByIdAsync(EditingPayoutAccountId);
-                PayoutAccountRequest? acc = response?.PayoutAccount;
+                PayoutAccountRequest? acc = response?.PayoutAccounts?.FirstOrDefault(p => p.Id == EditingPayoutAccountId);
                 if (acc != null)
                 {
                     CurrentPayoutAccount = acc.ToPayoutAccountFormModel(); // Use your extension!
-                    SelectedPayoutTypeName = AvailablePayoutOptions.FirstOrDefault(x => x.Id == acc.PaymentMethodTypeId)?.Name ?? "";
+                    SelectedPayoutTypeName = GetPaymentMethodName(acc.PaymentMethodTypeId);
                     ShowAddSheet = true;
                 }
-
             }
         }
 
@@ -276,14 +274,19 @@
         IsReferenceDataLoading = true;
         try
         {
-            var refData = await PayoutAccountService.GetPayoutPageReferenceDataAsync(SelectedCountryCode ?? "CR");
-            AvailablePayoutOptions = refData.PayoutMethodTypes;
-            AvailableBanks = refData.Banks;
-            AvailableCountries = refData.Countries;
+            var countryCode = string.IsNullOrWhiteSpace(SelectedCountryCode) ? "CR" : SelectedCountryCode.Trim().ToUpperInvariant();
+            var refData = await ViewProviderApiClientService.GetPayoutPageReferenceDataAsync(countryCode);
+
+            AvailablePayoutOptions = refData?.PayoutMethodTypes ?? new List<PaymentMethodTypeRequest>();
+            AvailableBanks = refData?.Banks ?? new List<BankRequest>();
+            AvailableCountries = refData?.Countries ?? new List<CountryRequest>();
         }
         catch (Exception ex)
         {
-            ShowGenericError($"Failed to load reference data: {ex.Message}");
+            ShowGenericError($"Failed to load payout reference data: {ex.Message}");
+            AvailablePayoutOptions = new List<PaymentMethodTypeRequest>();
+            AvailableBanks = new List<BankRequest>();
+            AvailableCountries = new List<CountryRequest>();
         }
         finally
         {
@@ -301,26 +304,24 @@
         }
         else
         {
-            // API returns List<PayoutAccountResponse>
-            List<PayoutAccountResponse> apiList = await PayoutAccountService.GetPayoutAccountsByUserIdAsync(UserId);
-            ExistingPayoutAccounts = apiList
-                .Where(r => r.PayoutAccount != null)
-                .Select(r => r.PayoutAccount!)
-                .ToList();
+            // API returns List<PayoutAccountResponse> and each response has List<PayoutAccountRequest>
+            PayoutAccountResponse apiList = await PayoutAccountService.GetPayoutAccountsByUserIdAsync(UserId);
+            ExistingPayoutAccounts = apiList.PayoutAccounts;
         }
     }
-
-
 
     private void StartAddPayoutAccount(string typeName)
     {
         SelectedPayoutTypeName = typeName;
         IsEditMode = false;
         ShowAddSheet = true;
-        CurrentPayoutAccount = new PayoutAccountFormModel
+
+        // Assign a new Guid as the unique key
+        CurrentPayoutAccountJSON = new PayoutAccountJSONType
         {
-            PaymentMethodTypeId = AvailablePayoutOptions.FirstOrDefault(x => x.Name == typeName)?.Id ?? Guid.Empty,
-            IsDefault = !ExistingPayoutAccounts.Any()
+            Id = Guid.NewGuid(), // <-- Ensures uniqueness even for same type
+            PayoutMethodType = typeName,
+            Fields = new Dictionary<string, string>() // Default empty fields, can pre-populate if needed
         };
     }
 
@@ -329,30 +330,51 @@
         IsEditMode = true;
         EditingPayoutAccountId = payoutAccountId;
 
+        PayoutAccountRequest? acc = null;
         if (FromRegisterDriver)
         {
-            DriverRegistrationData? savedData = await LocalStorage.GetItemAsync<DriverRegistrationData>("driver_registration_form");
-            // PayoutAccountRequest is the type stored in registration
-            PayoutAccountRequest? acc = savedData?.PayoutAccounts?.FirstOrDefault(p => p.Id == payoutAccountId);
-            if (acc != null)
-            {
-                CurrentPayoutAccount = acc.ToPayoutAccountFormModel(); // Use your extension method!
-                SelectedPayoutTypeName = AvailablePayoutOptions.FirstOrDefault(x => x.Id == acc.PaymentMethodTypeId)?.Name ?? "";
-                ShowAddSheet = true;
-            }
+            var savedData = await LocalStorage.GetItemAsync<DriverRegistrationData>("driver_registration_form");
+            acc = savedData?.PayoutAccounts?.FirstOrDefault(p => p.Id == payoutAccountId);
         }
         else
         {
-            PayoutAccountResponse? response = await PayoutAccountService.GetPayoutAccountByIdAsync(payoutAccountId);
-            PayoutAccountRequest? acc = response?.PayoutAccount;
-            if (acc != null)
+            var response = await PayoutAccountService.GetPayoutAccountByIdAsync(payoutAccountId);
+            // Adjusted for the list-style response (per your recent changes):
+            acc = response?.PayoutAccounts?.FirstOrDefault(p => p.Id == payoutAccountId);
+        }
+
+        if (acc != null)
+        {
+            SelectedPayoutTypeName = GetPaymentMethodName(acc.PaymentMethodTypeId);
+
+            Dictionary<string, string> fields = new();
+            if (!string.IsNullOrWhiteSpace(acc.MetadataJson))
             {
-                CurrentPayoutAccount = acc.ToPayoutAccountFormModel();
-                SelectedPayoutTypeName = AvailablePayoutOptions.FirstOrDefault(x => x.Id == acc.PaymentMethodTypeId)?.Name ?? "";
-                ShowAddSheet = true;
+                try
+                {
+                    fields = JsonSerializer.Deserialize<Dictionary<string, string>>(acc.MetadataJson)
+                            ?? new Dictionary<string, string>();
+                }
+                catch
+                {
+                    fields = new Dictionary<string, string>();
+                }
             }
 
+            CurrentPayoutAccountJSON = new PayoutAccountJSONType
+            {
+                Id = acc.Id,
+                IsSaved = true,
+                PayoutMethodType = SelectedPayoutTypeName,
+                Fields = fields
+            };
+            ShowAddSheet = true;
         }
+        else
+        {
+            ShowGenericError("Payout account not found for editing.");
+        }
+
         StateHasChanged();
     }
 
@@ -360,18 +382,16 @@
     {
         var acc = ExistingPayoutAccounts.FirstOrDefault(a => a.Id == payoutAccountId);
 
-        // Get payment method name from options
-        string methodName = acc != null
-            ? (AvailablePayoutOptions.FirstOrDefault(x => x.Id == acc.PaymentMethodTypeId)?.Name ?? "Payout method")
-            : "";
+        // Get payment method name from options using helper
+        string methodName = acc != null ? GetPaymentMethodName(acc.PaymentMethodTypeId) : "";
 
         string last4 = !string.IsNullOrEmpty(acc?.AccountNumberLast4) ? $"account-number# {acc.AccountNumberLast4}" : "";
 
         PayoutAccountToDeleteId = payoutAccountId;
         PayoutAccountToDeleteDescription = $"Delete {methodName} {last4}".Trim();
         ShowDeleteSheet = true;
+        StateHasChanged();
     }
-
 
     private void ToggleAddSheet()
     {
@@ -407,18 +427,26 @@
 
     private async Task SavePayoutAccountAsync()
     {
-        CurrentPayoutAccount.BuildMetadataJson();
+        // Find the Guid directly for the selected payout method type name
+        var methodGuid = AvailablePayoutOptions
+            .FirstOrDefault(x => x.Name == CurrentPayoutAccountJSON.PayoutMethodType)?.Id ?? Guid.Empty;
+
+        var req = new PayoutAccountRequest
+        {
+            Id = CurrentPayoutAccountJSON.Id, // <-- Key part: unique per account
+            PaymentMethodTypeId = methodGuid,
+            MetadataJson = JsonSerializer.Serialize(CurrentPayoutAccountJSON.Fields),
+            IsDefault = !ExistingPayoutAccounts.Any(),
+            // Populate other fields as needed
+        };
 
         if (FromRegisterDriver)
         {
             string storageKey = "driver_registration_form";
             DriverRegistrationData savedData = await LocalStorage.GetItemAsync<DriverRegistrationData>(storageKey) ?? new DriverRegistrationData();
 
-            // Convert form to request DTO for storage
-            PayoutAccountRequest req = CurrentPayoutAccount.ToPayoutAccountRequest();
-
-            // If this is an edit, replace; else, add
-            int idx = savedData.PayoutAccounts?.FindIndex(p => p.PaymentMethodTypeId == req.PaymentMethodTypeId) ?? -1;
+            // Find by Id, not by PaymentMethodTypeId!
+            int idx = savedData.PayoutAccounts?.FindIndex(p => p.Id == req.Id) ?? -1;
             if (idx >= 0)
                 savedData.PayoutAccounts[idx] = req;
             else
@@ -434,11 +462,9 @@
             try
             {
                 IsLoading = true;
-                PayoutAccountRequest req = CurrentPayoutAccount.ToPayoutAccountRequest();
-
                 if (IsEditMode)
                 {
-                    await PayoutAccountService.UpdatePayoutAccountAsync(UserId, EditingPayoutAccountId, req);
+                    await PayoutAccountService.UpdatePayoutAccountAsync(UserId, req.Id, req);
                 }
                 else
                 {
@@ -459,7 +485,7 @@
             {
                 ShowGenericError($"{cex.Message} (Code: {cex.Code})");
             }
-            catch (HttpRequestException hrex)
+            catch (HttpRequestException)
             {
                 ShowGenericError("Server communication failed. Please try again.");
             }
@@ -496,6 +522,29 @@
         }
     }
 
+    private async Task MakeDefault(Guid payoutAccountId)
+    {
+        if (FromRegisterDriver)
+        {
+            // Update in LocalStorage
+            string storageKey = "driver_registration_form";
+            var savedData = await LocalStorage.GetItemAsync<DriverRegistrationData>(storageKey) ?? new DriverRegistrationData();
+            if (savedData.PayoutAccounts != null)
+            {
+                foreach (var acc in savedData.PayoutAccounts)
+                    acc.IsDefault = acc.Id == payoutAccountId;
+                await LocalStorage.SetItemAsync(storageKey, savedData);
+                await LoadPayoutAccountsAsync();
+            }
+        }
+        else
+        {
+            // Call your API/service to set default on the server
+            await PayoutAccountService.SetDefaultPayoutAccountAsync(UserId, payoutAccountId);
+            await LoadPayoutAccountsAsync();
+        }
+    }
+
     private void ShowGenericError(string message)
     {
         ErrorMessage = message;
@@ -521,143 +570,96 @@
         ActiveBottomSheet = null;
     }
 
-    private RenderFragment RenderSelectedPayoutForm() => SelectedPayoutTypeName switch
+    private async Task HandlePayoutAccountSubmitted((string PayoutMethodType, string MetadataJson) result)
     {
-        "Bank" or "BankAccount" => RenderBankAccountForm,
-        "SINPE" => RenderSinpeForm,
-        "PayPal" => RenderPayPalForm,
-        _ => RenderGenericPayoutForm
-    };
+        var (methodType, metadataJson) = result;
+        var fields = JsonSerializer.Deserialize<Dictionary<string, string>>(metadataJson ?? "{}");
 
-    private RenderFragment RenderBankAccountForm => @<div>
-        <!-- Refined Bank Account Bottom Sheet -->
-        <div id="bank-account-form" class="space-y-6">
-            <!-- Intro Block -->
-            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-4">
-                <div class="flex items-center space-x-3">
-                    <i class="fa-solid fa-building-columns text-2xl text-gray-600"></i>
-                    <div>
-                        <p class="text-sm font-medium text-gray-700">Bank Account Details</p>
-                        <p class="text-xs text-gray-500">Secure your payout via a verified local bank</p>
-                    </div>
-                </div>
-            </div>
+        // Extract the nickname from the deserialized fields (safe for missing/null)
+        var payoutAccountNickName = fields != null && fields.TryGetValue("PayoutAccountNickName", out var nicknameVal)
+            ? nicknameVal
+            : string.Empty;
 
-            <!-- Form Fields -->
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Account Holder Name</label>
-                    <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg"
-                           placeholder="Enter full name" @bind="CurrentPayoutAccount.FullName" />
-                </div>
+        // Find method type Guid directly
+        var methodGuid = AvailablePayoutOptions
+            .FirstOrDefault(x => x.Name == methodType)?.Id ?? Guid.Empty;
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
-                    <select class="w-full px-4 py-3 border border-gray-300 rounded-lg" @bind="CurrentPayoutAccount.BankId">
-                        <option value="">Select your bank</option>
-                        @foreach (var bank in AvailableBanks)
-                        {
-                            <option value="@bank.Id">@bank.Name</option>
-                        }
-                    </select>
-                </div>
+        // Use the current (possibly new) payout account Id, or assign if missing
+        var accountId = (CurrentPayoutAccountJSON?.Id != Guid.Empty && CurrentPayoutAccountJSON?.Id != null)
+            ? CurrentPayoutAccountJSON.Id
+            : Guid.NewGuid();
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
-                    <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg"
-                           placeholder="Enter account number" @bind="CurrentPayoutAccount.AccountNumber" />
-                </div>
+        var req = new PayoutAccountRequest
+        {
+            Id = accountId,
+            PaymentMethodTypeId = methodGuid,
+            MetadataJson = metadataJson,
+            IsDefault = !ExistingPayoutAccounts.Any(),
+            PayoutAccountNickName = payoutAccountNickName
+        };
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Confirm Account Number</label>
-                    <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg"
-                           placeholder="Re-enter account number" @bind="CurrentPayoutAccount.ConfirmAccountNumber" />
-                </div>
+        if (FromRegisterDriver)
+        {
+            string storageKey = "driver_registration_form";
+            DriverRegistrationData savedData = await LocalStorage.GetItemAsync<DriverRegistrationData>(storageKey) ?? new DriverRegistrationData();
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Routing Number <span class="text-xs text-gray-400">(Optional)</span></label>
-                    <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg"
-                           placeholder="Enter routing number" @bind="CurrentPayoutAccount.RoutingNumber" />
-                </div>
-            </div>
+            // Find by Id, not by PaymentMethodTypeId!
+            int idx = savedData.PayoutAccounts?.FindIndex(p => p.Id == req.Id) ?? -1;
+            if (idx >= 0)
+                savedData.PayoutAccounts[idx] = req;
+            else
+                (savedData.PayoutAccounts ??= new()).Add(req);
 
-            <!-- Save Action -->
-            <div class="pt-4">
-                <button class="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600"
-                        @onclick="SavePayoutAccountAsync">
-                    @(IsEditMode ? $"Update Bank Account" : $"Save Bank Account")
-                </button>
-            </div>
-        </div>
-    </div>;
+            await LocalStorage.SetItemAsync(storageKey, savedData);
+            ShowAddSheet = false;              // Hide the add/edit bottomsheet
+            await LoadPayoutAccountsAsync();   // Refresh the list in UI
+            // No navigation away!
+        }
+        else
+        {
+            try
+            {
+                IsLoading = true;
+                if (IsEditMode)
+                {
+                    await PayoutAccountService.UpdatePayoutAccountAsync(UserId, req.Id, req);
+                }
+                else
+                {
+                    await PayoutAccountService.AddPayoutAccountAsync(UserId, req);
+                }
+                ShowAddSheet = false;              // Hide the add/edit bottomsheet
+                await LoadPayoutAccountsAsync();   // Refresh the list in UI
+                // No navigation away!
+            }
+            catch (PayoutAccountClientValidationException vex)
+            {
+                ShowValidationFailed(vex.ValidationMessages);
+            }
+            catch (ReferentialIntegrityClientException rex)
+            {
+                ShowReferentialIntegrityBottomSheet(rex.ErrorCode, rex.Message);
+            }
+            catch (PayoutAccountClientException cex)
+            {
+                ShowGenericError($"{cex.Message} (Code: {cex.Code})");
+            }
+            catch (HttpRequestException)
+            {
+                ShowGenericError("Server communication failed. Please try again.");
+            }
+            catch (Exception ex)
+            {
+                ShowGenericError("Unexpected error: " + ex.Message);
+            }
+            finally
+            {
+                IsLoading = false;
+            }
+        }
+    }
 
-    private RenderFragment RenderSinpeForm => @<div>
-        <!-- SINPE Account Form -->
-        <div id="sinpe-form" class="space-y-4">
-            <div class="space-y-2">
-                <label class="block text-sm font-medium text-gray-700">Full Name</label>
-                <input type="text" required class="w-full px-4 py-3 rounded-lg border border-gray-300" placeholder="Enter full name" @bind="CurrentPayoutAccount.FullName">
-            </div>
+    private string GetPaymentMethodName(Guid paymentMethodTypeId)
+    => AvailablePayoutOptions.FirstOrDefault(x => x.Id == paymentMethodTypeId)?.Name ?? "Unknown";
 
-            <div class="space-y-2">
-                <label class="block text-sm font-medium text-gray-700">Mobile Number</label>
-                <input type="tel" required pattern="[0-9]{8}" class="w-full px-4 py-3 rounded-lg border border-gray-300" placeholder="Enter 8-digit SINPE mobile number" @bind="CurrentPayoutAccount.MobileNumber">
-            </div>
-
-            <div class="space-y-2">
-                <label class="block text-sm font-medium text-gray-700">Bank Name (Optional)</label>
-                <select class="w-full px-4 py-3 rounded-lg border border-gray-300" @bind="CurrentPayoutAccount.BankId">
-                    <option value="">Select your bank</option>
-                    @foreach (var bank in AvailableBanks)
-                    {
-                        <option value="@bank.Id">@bank.Name</option>
-                    }
-                </select>
-            </div>
-
-            <!-- Save Button -->
-            <div class="pt-4">
-                <button class="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600"
-                        @onclick="SavePayoutAccountAsync">
-                    @(IsEditMode ? $"Update {SelectedPayoutTypeName}" : $"Save {SelectedPayoutTypeName}")
-                </button>
-            </div>
-
-        </div>
-    </div>;
-
-    private RenderFragment RenderPayPalForm => @<div>
-        <!-- PAYPAL Account Form -->
-        <div id="paypal-form" class="space-y-4">
-            <div class="space-y-2">
-                <label class="block text-sm font-medium text-gray-700">Full Name</label>
-                <input type="text" required class="w-full px-4 py-3 rounded-lg border border-gray-300" placeholder="Enter full name" @bind="CurrentPayoutAccount.FullName">
-            </div>
-
-            <div class="space-y-2">
-                <label class="block text-sm font-medium text-gray-700">PayPal Email</label>
-                <input type="email" id="paypalEmail" required class="w-full px-4 py-3 rounded-lg border border-gray-300" placeholder="Enter PayPal email" @bind="CurrentPayoutAccount.PayPalEmail">
-            </div>
-
-            <div class="space-y-2">
-                <label class="block text-sm font-medium text-gray-700">Confirm PayPal Email</label>
-                <input type="email" id="confirmPaypalEmail" required class="w-full px-4 py-3 rounded-lg border border-gray-300" placeholder="Confirm PayPal email" @bind="CurrentPayoutAccount.ConfirmPayPalEmail">
-            </div>
-
-            <!-- Save Button -->
-            <div class="pt-4">
-                <button class="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600"
-                        @onclick="SavePayoutAccountAsync">
-                    @(IsEditMode ? $"Update {SelectedPayoutTypeName}" : $"Save {SelectedPayoutTypeName}")
-                </button>
-            </div>
-
-        </div>
-    </div>;
-
-    private RenderFragment RenderGenericPayoutForm => @<div>
-        <p>Generic Form Placeholder</p>
-    </div>;
 }
-
-    

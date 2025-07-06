@@ -1,5 +1,5 @@
 ﻿using System.Text.Json;
-using Truckero.Core.DTOs.Onboarding;
+using Truckero.Core.DTOs.PayoutAccount;
 using Truckero.Core.Entities;
 using TruckeroApp.Models;
 

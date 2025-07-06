@@ -1,5 +1,4 @@
-﻿using Truckero.Core.DTOs.Auth;
-using Truckero.Core.DTOs.Onboarding;
+﻿using Truckero.Core.DTOs.Onboarding;
 using Truckero.Core.Entities;
 
 namespace Truckero.Core.Interfaces.Services;

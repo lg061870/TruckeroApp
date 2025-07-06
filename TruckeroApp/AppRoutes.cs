@@ -9,7 +9,7 @@ public static class AppRoutes
     public const string RegisterTruck = "/registertruck";
     public const string RegisterPayout = "/registerpayout";
     public const string RegisterPayoutAccounts = "/registerpayoutaccounts";
-    public const string RegisterPayment = "/registerpayment";
+    public const string RegisterPayment = "/registerpaymentaccount"; 
     public const string Login = "/login";
     public const string RoleSwitcher = "/roleswitcher";
     public const string StartupRouter = "/";

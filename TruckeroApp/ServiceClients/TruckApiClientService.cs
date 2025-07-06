@@ -192,7 +192,7 @@ public class TruckApiClientService : ITruckService {
     {
         try
         {
-            var result = await _http.GetFromJsonAsync<TruckReferenceData>("/api/TruckeroViewProvider/truck-page-data");
+            var result = await _http.GetFromJsonAsync<TruckReferenceData>("/api/ViewProvider/truck-page-data");
             if (result == null)
             {
                 // Optionally log or throw a more descriptive exception

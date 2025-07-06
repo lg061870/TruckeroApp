@@ -17,23 +17,23 @@ public static class ApiClientProxies
             ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
         };
 
-    public static IServiceCollection AddPaymentClient(this IServiceCollection services, string apiBase)
-    {
-#if ANDROID
-        services.AddHttpClient<IPaymentService, PaymentApiClientService>(c => // Assuming IPaymentService and PaymentApiClientService exist
-        {
-            c.BaseAddress = new Uri(apiBase);
-            c.Timeout = TimeSpan.FromSeconds(10); // Example timeout
-        }).ConfigurePrimaryHttpMessageHandler(CreateUnsafeHandler);
-#else
-        services.AddHttpClient<IPaymentService, PaymentApiClientService>(c => // Assuming IPaymentService and PaymentApiClientService exist
-        {
-            c.BaseAddress = new Uri(apiBase);
-            c.Timeout = TimeSpan.FromSeconds(10); // Example timeout
-        });
-#endif
-        return services;
-    }
+//    public static IServiceCollection AddPayoutAccountClient(this IServiceCollection services, string apiBase) {
+//#if ANDROID
+//        services.AddHttpClient<IPayoutAccountService, ServiceClients.PayoutAccountApiClientService>(c =>
+//        {
+//            c.BaseAddress = new Uri(apiBase);
+//            c.Timeout = TimeSpan.FromSeconds(10); // Example timeout
+//        }).ConfigurePrimaryHttpMessageHandler(CreateUnsafeHandler);
+//#else
+//    services.AddHttpClient<IPayoutAccountService, ServiceClients.PayoutAccountApiClientService>(c =>
+//    {
+//        c.BaseAddress = new Uri(apiBase);
+//        c.Timeout = TimeSpan.FromSeconds(10); // Example timeout
+//    });
+//#endif
+//        return services;
+//    }
+
 
     public static IServiceCollection AddCustomerClient(this IServiceCollection services, string apiBase)
     {
@@ -200,16 +200,14 @@ public static class ApiClientProxies
         return services;
     }
 
-    public static IServiceCollection AddPaymentMethodClient(this IServiceCollection services, string apiBase)
-    {
+    public static IServiceCollection AddPaymentAccountClient(this IServiceCollection services, string apiBase) {
 #if ANDROID
-        services.AddHttpClient<IPaymentMethodService, PaymentMethodApiClientService>(client =>
-        {
+        services.AddHttpClient<IPaymentAccountService, PaymentAccountApiClientService>(client => {
             client.BaseAddress = new Uri(apiBase);
             client.Timeout = TimeSpan.FromSeconds(10); // Standard timeout
         }).ConfigurePrimaryHttpMessageHandler(CreateUnsafeHandler);
 #else
-        services.AddHttpClient<IPaymentMethodService, PaymentMethodApiClientService>(client =>
+        services.AddHttpClient<IPaymentAccountService, PaymentAccountApiClientService>(client =>
         {
             client.BaseAddress = new Uri(apiBase);
             client.Timeout = TimeSpan.FromSeconds(10); // Standard timeout
@@ -218,4 +216,37 @@ public static class ApiClientProxies
         return services;
     }
 
+    public static IServiceCollection AddPaymentMethodTypeClient(this IServiceCollection services, string apiBase)
+    {
+#if ANDROID
+        services.AddHttpClient<IPaymentMethodTypeService, PaymentMethodTypeApiClientService>(client =>
+        {
+            client.BaseAddress = new Uri(apiBase);
+            client.Timeout = TimeSpan.FromSeconds(10); // Standard timeout
+        }).ConfigurePrimaryHttpMessageHandler(CreateUnsafeHandler);
+#else
+        services.AddHttpClient<IPaymentMethodTypeService, PaymentMethodTypeApiClientService>(client =>
+        {
+            client.BaseAddress = new Uri(apiBase);
+            client.Timeout = TimeSpan.FromSeconds(10); // Standard timeout
+        });
+#endif
+        return services;
+    }
+
+    public static IServiceCollection AddViewProviderClient(this IServiceCollection services, string apiBase) {
+#if ANDROID
+        services.AddHttpClient<IViewProviderApiClientService, ViewProviderApiClientService>(client => {
+            client.BaseAddress = new Uri(apiBase);
+            client.Timeout = TimeSpan.FromSeconds(10);
+        }).ConfigurePrimaryHttpMessageHandler(CreateUnsafeHandler);
+#else
+        services.AddHttpClient<IViewProviderApiClientService, ViewProviderApiClientService>(client =>
+        {
+            client.BaseAddress = new Uri(apiBase);
+            client.Timeout = TimeSpan.FromSeconds(10);
+        });
+#endif
+        return services;
+    }
 }

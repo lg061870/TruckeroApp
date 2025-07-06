@@ -1,0 +1,562 @@
+﻿@page "/registerpaymentaccount"
+@page "/registerpaymentaccount/{UserId:guid}" 
+
+@using System.Text.Json
+@using Microsoft.AspNetCore.Components
+@using Truckero.Core.DTOs.PaymentAccount
+@using Truckero.Core.DTOs.PaymentMethodType
+@using Truckero.Core.DTOs.Shared
+@using Truckero.Core.Interfaces.Services
+@using TruckeroApp.Components.BottomSheets
+
+@inject IPaymentAccountService PaymentAccountService
+@inject IPaymentMethodTypeService PaymentMethodTypeService
+@inject IViewProviderApiClientService viewProviderApiClientService
+@inject NavigationManager NavigationManager
+@inject IAuthSessionContext SessionContext
+@inject IJSRuntime JS
+
+<CenterWrapper>
+    <div class="h-full text-base-content">
+        <div id="app" class="min-h-screen bg-gray-50">
+            <div id="payment-screen" class="p-6">
+                <!-- Header -->
+                <div id="payment-header" class="flex items-center mb-8">
+                    <button class="text-gray-600" @onclick="NavigateBack">
+                        <i class="fa-solid fa-arrow-left text-xl"></i>
+                    </button>
+                    <div class="text-center flex-1 mr-8">
+                        <h2 class="text-xl font-semibold">Payment Accounts</h2>
+                        <p class="text-sm text-gray-600 mt-1">Manage how you pay for deliveries</p>
+                    </div>
+                </div>
+
+                <!-- Progress Spinner Overlay -->
+                @if (IsLoading)
+                {
+                    <div class="absolute inset-0 z-40 bg-white bg-opacity-70 flex flex-col items-center justify-center">
+                        <span class="text-orange-500 text-lg font-semibold mb-2">Loading payment data...</span>
+                        <span class="animate-spin text-3xl text-orange-500"><i class="fa fa-spinner"></i></span>
+                    </div>
+                }
+
+                <!-- Existing Payment Accounts -->
+                <PaymentAccountList
+                    Accounts="ExistingPaymentAccounts"
+                    GetPaymentMethodName="GetPaymentMethodName"
+                    GetPaymentIcon="GetPaymentIcon"
+                    OnEdit="EditPaymentAccount"
+                    OnDelete="ConfirmDelete"
+                    OnSetDefault="MakeDefault" />
+
+                <!-- Add Payment Method Selector -->
+                <div class="mb-6">
+                    <div class="text-center mb-4">
+                        <h2 class="text-lg font-medium text-gray-800">Add a Payment Account</h2>
+                        <h3 class="text-sm text-gray-600">Select a payment option to continue</h3>
+                    </div>
+                    @if (!AvailablePaymentMethodTypes.Any())
+                    {
+                        <p class="text-sm text-red-500 text-center">No payment options available. Please try again later.</p>
+                    }
+                    else
+                    {
+                        <div class="grid grid-cols-2 gap-3">
+                            @foreach (var method in AvailablePaymentMethodTypes)
+                            {
+                                // If only one allowed for this method, disable if already exists
+                                bool isUniqueType = method.Name == "Google Pay" || method.Name == "Apple Pay";
+                                bool alreadyAdded = ExistingPaymentAccounts.Any(a => a.PaymentMethodTypeId == method.Id);
+                                var isDisabled = isUniqueType && alreadyAdded;
+                                <div class="@GetPaymentOptionClass(method.Name) @(isDisabled ? "opacity-50 pointer-events-none" : "")"
+                                     @onclick="!isDisabled ? (() => StartAddPaymentAccount(method.Name)) : null"
+                                     aria-disabled="@isDisabled">
+                                    <i class="@GetPaymentIcon(method.Name) text-2xl mb-2"></i>
+                                    <p class="text-sm font-medium">@method.Name</p>
+                                    @if (isDisabled)
+                                    {
+                                        <span class="text-xs text-gray-400">(Already added)</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <!-- Add/Edit Bottom Sheet -->
+                <div class="fixed inset-x-0 bottom-0 transition-transform duration-300 ease-in-out z-50"
+                     style="@(ShowAddSheet ? "transform: translateY(0);" : "transform: translateY(100%);")">
+                    <div class="bg-white rounded-t-2xl p-6 max-h-[90vh] overflow-y-auto">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-semibold">
+                                @(IsEditMode ? $"Edit {SelectedPaymentTypeName}" : $"Add {SelectedPaymentTypeName}")
+                            </h3>
+                            <button class="text-gray-400" @onclick="ToggleAddSheet">
+                                <i class="fa-solid fa-xmark text-xl"></i>
+                            </button>
+                        </div>
+                        @if (ShowAddSheet && !string.IsNullOrEmpty(SelectedPaymentTypeName))
+                        {
+                            <PaymentAccountForm
+                                PaymentMethodType="@SelectedPaymentTypeName"
+                                EditFields="@(IsEditMode ? new Dictionary<string, string>(CurrentPaymentAccountJSON?.Fields ?? new()) : null)"
+                                IsEditMode="@IsEditMode"
+                                OnSubmit="HandlePaymentAccountSubmitted" />
+                        }
+                    </div>
+                </div>
+
+                <!-- Delete Confirmation Bottom Sheet -->
+                <div class="fixed inset-x-0 bottom-0 transition-transform duration-300 ease-in-out z-50"
+                     style="@($"transform: translateY({(ShowDeleteSheet ? "0" : "100%")});")">
+                    <div class="bg-white rounded-t-2xl p-6">
+                        <div class="text-center mb-6">
+                            <div class="w-12 h-12 mx-auto mb-4 text-red-500">
+                                <i class="fa-solid fa-triangle-exclamation text-4xl"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold mb-2">Delete this payment account?</h3>
+                            <p class="text-sm text-gray-600">@PaymentAccountToDeleteDescription</p>
+                        </div>
+                        <div class="space-y-3">
+                            <button class="w-full py-3 bg-red-600 text-white rounded-lg font-medium"
+                                    @onclick="DeletePaymentAccountAsync">
+                                Confirm Delete
+                            </button>
+                            <button class="w-full py-3 bg-gray-100 text-gray-600 rounded-lg font-medium"
+                                    @onclick="ToggleDeleteSheet">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active BottomSheet Feedback Section -->
+                @if (!string.IsNullOrEmpty(ActiveBottomSheet))
+                {
+                    @switch (ActiveBottomSheet)
+                    {
+                        case "validation_failed":
+                            <ValidationFailedBottomSheet ValidationErrors="@ValidationErrors"
+                                OnDismiss="@(() => ActiveBottomSheet = null)" />
+                            break;
+                        case "generic_error":
+                            <GenericErrorBottomSheet Message="@ErrorMessage"
+                                OnDismiss="@(() => ActiveBottomSheet = null)" />
+                            break;
+                        case "progress_save_failed":
+                            <ProgressSaveErrorBottomSheet OnDismiss="@(() => ActiveBottomSheet = null)" />
+                            break;
+                        case "registration_restored":
+                            <RegistrationRestoredBottomSheet 
+                                LastSaved="@(_lastSavedDateTime?.ToString("MMM d, yyyy h:mm tt") ?? "")"
+                                OnDismiss="@(() => ActiveBottomSheet = null)" />
+                            break;
+                        // Add any additional bottomsheets relevant to payment accounts here
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</CenterWrapper>
+
+@code {
+    // =======================
+    // PARAMETERS
+    // =======================
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public Guid? UserId { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public bool FromRegisterCustomer { get; set; }
+
+    // =======================
+    // DATA COLLECTIONS
+    // =======================
+    private List<PaymentMethodTypeRequest> AvailablePaymentMethodTypes = new();
+    private List<PaymentAccountRequest> ExistingPaymentAccounts = new();
+    private List<BankRequest> AvailableBanks = new();
+    private List<CountryRequest> AvailableCountries = new();
+
+    // =======================
+    // SELECTION & STATE
+    // =======================
+    private string? SelectedPaymentTypeName;
+    private Guid EditingPaymentAccountId;
+    private Guid PaymentAccountToDeleteId;
+    private string PaymentAccountToDeleteDescription = "";
+    private PaymentAccountJSONType CurrentPaymentAccountJSON { get; set; } = new();
+
+    // =======================
+    // UI STATE FLAGS
+    // =======================
+    private bool ShowAddSheet = false;
+    private bool ShowDeleteSheet = false;
+    private bool IsEditMode = false;
+    private bool IsLoading = false;
+
+    // =======================
+    // FEEDBACK, VALIDATION, STORAGE
+    // =======================
+    private string? ActiveBottomSheet { get; set; }
+    private string? ErrorMessage { get; set; }
+    private DateTime? _lastSavedDateTime { get; set; }
+    private List<string> ValidationErrors { get; set; } = new();
+    private const string PAYMENT_DRAFT_STORAGE_KEY = "customer_payment_accounts_draft";
+
+    protected override async Task OnInitializedAsync()
+    {
+        IsLoading = true;
+
+        // Try to restore a draft from local storage first
+        var draftAccounts = await GetFromLocalStorageAsync<List<PaymentAccountRequest>>(PAYMENT_DRAFT_STORAGE_KEY);
+
+        if (draftAccounts != null && draftAccounts.Any())
+        {
+            ExistingPaymentAccounts = draftAccounts;
+            ActiveBottomSheet = "registration_restored";
+        }
+        else
+        {
+            // If no draft, load from server as usual
+            await LoadReferenceDataAsync();
+            await LoadPaymentAccountsAsync();
+        }
+
+        IsLoading = false;
+    }
+
+    protected override Task OnParametersSetAsync()
+    {
+        // Prefer to check .HasValue && .Value == Guid.Empty
+        if (UserId.HasValue && UserId.Value == Guid.Empty)
+            UserId = SessionContext.UserId;
+
+        // Optionally: Could also check FromRegisterCustomer here or set up a flag
+        return base.OnParametersSetAsync();
+    }
+
+    // --- LocalStorage Helpers ---
+    private async Task SaveToLocalStorageAsync(string key, object value)
+    {
+        var json = JsonSerializer.Serialize(value);
+        await JS.InvokeVoidAsync("localStorage.setItem", key, json);
+    }
+
+    private async Task<T?> GetFromLocalStorageAsync<T>(string key)
+    {
+        var json = await JS.InvokeAsync<string>("localStorage.getItem", key);
+        return string.IsNullOrWhiteSpace(json) ? default : JsonSerializer.Deserialize<T>(json);
+    }
+
+    private async Task RemoveFromLocalStorageAsync(string key)
+    {
+        await JS.InvokeVoidAsync("localStorage.removeItem", key);
+    }
+
+    private async Task LoadReferenceDataAsync()
+    {
+        try
+        {
+            // TODO: Optionally infer countryCode from user profile or location
+            const string countryCode = "CR";
+            var refData = await viewProviderApiClientService.GetPaymentPageReferenceDataAsync(countryCode);
+
+            AvailablePaymentMethodTypes = refData?.PaymentMethodTypes ?? new();
+            AvailableBanks = refData?.Banks ?? new();
+            AvailableCountries = refData?.Countries ?? new();
+        }
+        catch (Exception ex)
+        {
+            // Show a generic error bottom sheet to user
+            ErrorMessage = "Failed to load payment reference data. Please try again later.";
+            ActiveBottomSheet = "generic_error";
+            // Optionally: log ex for diagnostics
+            AvailablePaymentMethodTypes = new();
+            AvailableBanks = new();
+            AvailableCountries = new();
+        }
+    }
+
+    private async Task LoadPaymentAccountsAsync()
+    {
+        try
+        {
+            if (UserId.HasValue && UserId.Value != Guid.Empty)
+            {
+                var response = await PaymentAccountService.GetPaymentAccountsByUserIdAsync(UserId.Value);
+                ExistingPaymentAccounts = response?.PaymentAccounts ?? new List<PaymentAccountRequest>();
+            }
+            else
+            {
+                ExistingPaymentAccounts = new List<PaymentAccountRequest>();
+                // Could optionally show a bottom sheet if this is a user error:
+                // ErrorMessage = "No user selected for payment account retrieval.";
+                // ActiveBottomSheet = "generic_error";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "Failed to load payment accounts. Please try again later.";
+            ActiveBottomSheet = "generic_error";
+            ExistingPaymentAccounts = new List<PaymentAccountRequest>();
+            // Optionally: log ex for diagnostics
+        }
+    }
+
+    private void StartAddPaymentAccount(string typeName)
+    {
+        SelectedPaymentTypeName = typeName;
+        IsEditMode = false;
+        ShowAddSheet = true;
+
+        CurrentPaymentAccountJSON = new PaymentAccountJSONType
+        {
+            Id = Guid.NewGuid(),
+            PaymentMethodType = typeName,
+            Fields = new Dictionary<string, string>()
+        };
+    }
+
+    private void EditPaymentAccount(Guid paymentAccountId)
+    {
+        var acc = ExistingPaymentAccounts.FirstOrDefault(p => p.Id == paymentAccountId);
+        if (acc == null)
+        {
+            // Optionally show a bottom sheet error here
+            ErrorMessage = "Unable to load this payment account for editing.";
+            ActiveBottomSheet = "generic_error";
+            return;
+        }
+
+        IsEditMode = true;
+        EditingPaymentAccountId = paymentAccountId;
+        SelectedPaymentTypeName = GetPaymentMethodName(acc.PaymentMethodTypeId);
+
+        Dictionary<string, string> fields;
+        try
+        {
+            fields = !string.IsNullOrWhiteSpace(acc.MetadataJson)
+                ? JsonSerializer.Deserialize<Dictionary<string, string>>(acc.MetadataJson) ?? new Dictionary<string, string>()
+                : new Dictionary<string, string>();
+        }
+        catch
+        {
+            fields = new Dictionary<string, string>();
+        }
+
+        CurrentPaymentAccountJSON = new PaymentAccountJSONType
+        {
+            Id = acc.Id,
+            IsSaved = true,
+            PaymentMethodType = SelectedPaymentTypeName,
+            Fields = fields
+        };
+        ShowAddSheet = true;
+    }
+
+    private void ConfirmDelete(Guid paymentAccountId)
+    {
+        var acc = ExistingPaymentAccounts.FirstOrDefault(a => a.Id == paymentAccountId);
+
+        var methodName = acc != null ? GetPaymentMethodName(acc.PaymentMethodTypeId) : "Unknown";
+        var last4 = !string.IsNullOrEmpty(acc?.AccountNumberLast4) ? $"account-number# {acc.AccountNumberLast4}" : "";
+
+        PaymentAccountToDeleteId = paymentAccountId;
+        PaymentAccountToDeleteDescription = $"Delete {methodName} {last4}".Trim();
+        ShowDeleteSheet = true;
+        StateHasChanged();
+    }
+
+
+    private void ToggleAddSheet()
+    {
+        ShowAddSheet = !ShowAddSheet;
+        if (!ShowAddSheet)
+        {
+            SelectedPaymentTypeName = null;
+        }
+    }
+
+    private void ToggleDeleteSheet() => ShowDeleteSheet = !ShowDeleteSheet;
+
+    private void NavigateBack()
+    {
+        if (FromRegisterCustomer)
+            NavigationManager.NavigateTo($"/registercustomer?UserId={UserId}");
+        else
+            NavigationManager.NavigateTo("/");
+    }
+
+    private string GetPaymentIcon(string typeName) => typeName switch
+    {
+        "Credit Card" => "fa-regular fa-credit-card text-gray-600",
+        "PayPal" => "fa-brands fa-paypal text-[#003087]",
+        "Google Pay" => "fa-brands fa-google text-gray-600",
+        "Apple Pay" => "fa-brands fa-apple text-gray-800",
+        _ => "fa-regular fa-credit-card text-gray-600"
+    };
+
+    private string GetPaymentOptionClass(string typeName)
+    {
+        var baseClass = "border rounded-lg p-4 cursor-pointer hover:border-orange-500";
+        return SelectedPaymentTypeName == typeName
+            ? $"{baseClass} border-2 border-orange-500 bg-orange-50"
+            : $"{baseClass} border-gray-300";
+    }
+
+    private async Task SavePaymentAccountAsync()
+    {
+        // Defensive: Ensure we have a payment type selected
+        if (string.IsNullOrEmpty(CurrentPaymentAccountJSON.PaymentMethodType))
+        {
+            ErrorMessage = "No payment method selected.";
+            ActiveBottomSheet = "generic_error";
+            return;
+        }
+
+        // Find PaymentMethodTypeId for the selected method
+        var methodGuid = AvailablePaymentMethodTypes
+            .FirstOrDefault(x => x.Name == CurrentPaymentAccountJSON.PaymentMethodType)?.Id ?? Guid.Empty;
+
+        if (methodGuid == Guid.Empty)
+        {
+            ErrorMessage = "Invalid or unknown payment method type.";
+            ActiveBottomSheet = "generic_error";
+            return;
+        }
+
+        var req = new PaymentAccountRequest
+        {
+            Id = CurrentPaymentAccountJSON.Id,
+            PaymentMethodTypeId = methodGuid,
+            MetadataJson = JsonSerializer.Serialize(CurrentPaymentAccountJSON.Fields),
+            IsDefault = !ExistingPaymentAccounts.Any()
+            // Add further properties as needed
+        };
+
+        try
+        {
+            IsLoading = true;
+
+            if (IsEditMode)
+                await PaymentAccountService.UpdatePaymentAccountAsync(req);
+            else
+                await PaymentAccountService.AddPaymentAccountAsync(req);
+
+            ShowAddSheet = false;
+            await LoadPaymentAccountsAsync();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Failed to save payment account: {ex.Message}";
+            ActiveBottomSheet = "generic_error";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task DeletePaymentAccountAsync()
+    {
+        try
+        {
+            IsLoading = true;
+
+            // Prefer using the actual UserId if available
+            var userId = UserId ?? Guid.Empty;
+            if (userId == Guid.Empty)
+            {
+                ErrorMessage = "User not found. Please try again.";
+                ActiveBottomSheet = "generic_error";
+                return;
+            }
+
+            await PaymentAccountService.DeletePaymentAccountAsync(userId, PaymentAccountToDeleteId);
+            ShowDeleteSheet = false;
+            await LoadPaymentAccountsAsync();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Failed to delete payment account: {ex.Message}";
+            ActiveBottomSheet = "generic_error";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task MakeDefault(Guid paymentAccountId)
+    {
+        try
+        {
+            IsLoading = true;
+
+            var userId = UserId ?? Guid.Empty;
+            if (userId == Guid.Empty)
+            {
+                ErrorMessage = "User not found. Please try again.";
+                ActiveBottomSheet = "generic_error";
+                return;
+            }
+
+            await PaymentAccountService.SetDefaultPaymentAccountAsync(userId, paymentAccountId);
+            await LoadPaymentAccountsAsync();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Failed to set default payment account: {ex.Message}";
+            ActiveBottomSheet = "generic_error";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task HandlePaymentAccountSubmitted((string PaymentMethodType, string MetadataJson) result)
+    {
+        var (methodType, metadataJson) = result;
+        var methodGuid = AvailablePaymentMethodTypes
+            .FirstOrDefault(x => x.Name == methodType)?.Id ?? Guid.Empty;
+
+        var accountId = (CurrentPaymentAccountJSON?.Id != Guid.Empty && CurrentPaymentAccountJSON?.Id != null)
+            ? CurrentPaymentAccountJSON.Id
+            : Guid.NewGuid();
+
+        var req = new PaymentAccountRequest
+        {
+            Id = accountId,
+            PaymentMethodTypeId = methodGuid,
+            MetadataJson = metadataJson,
+            IsDefault = !ExistingPaymentAccounts.Any(),
+        };
+
+        try
+        {
+            IsLoading = true;
+            if (IsEditMode)
+                await PaymentAccountService.UpdatePaymentAccountAsync(req);
+            else
+                await PaymentAccountService.AddPaymentAccountAsync(req);
+
+            ShowAddSheet = false;
+            await LoadPaymentAccountsAsync();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Failed to save payment account: {ex.Message}";
+            ActiveBottomSheet = "generic_error";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private string GetPaymentMethodName(Guid paymentMethodTypeId)
+        => AvailablePaymentMethodTypes.FirstOrDefault(x => x.Id == paymentMethodTypeId)?.Name ?? "Unknown";
+}

@@ -4,8 +4,7 @@ using Truckero.Core.Enums;
 
 namespace Truckero.Infrastructure.Data;
 
-public class AppDbContext : DbContext
-{
+public class AppDbContext : DbContext {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     // 🚚 Core Tables
@@ -20,7 +19,7 @@ public class AppDbContext : DbContext
     public DbSet<StoreClerkAssignment> StoreClerkAssignments => Set<StoreClerkAssignment>();
     public DbSet<ConfirmationToken> ConfirmationTokens => Set<ConfirmationToken>();
 
-    public DbSet<PaymentMethod> PaymentMethods => Set<PaymentMethod>();
+    public DbSet<PaymentAccount> PaymentAccounts => Set<PaymentAccount>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
     public DbSet<TruckType> TruckTypes => Set<TruckType>();
@@ -35,17 +34,19 @@ public class AppDbContext : DbContext
     public DbSet<BedType> BedTypes { get; set; }
     public DbSet<Country> Countries { get; set; }
     public DbSet<Bank> Banks { get; set; }
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
+    public DbSet<FreightBid> FreightBids { get; set; } = null!;
+    public DbSet<FreightBidUseTag> FreightBidUseTags { get; set; } = null!;
+    public DbSet<DriverBid> DriverBids { get; set; } = null!;
+    public DbSet<HelpOption> HelpOptions { get; set; }
+    
+    protected override void OnModelCreating(ModelBuilder modelBuilder) {
         base.OnModelCreating(modelBuilder);
 
-        // 🧩 Enum-to-string mappings (only for actual enums)
+        // 🧩 Enum-to-string mappings
         modelBuilder.Entity<Role>()
             .Property(r => r.Name)
             .HasConversion<string>();
 
-        // Map OwnershipType enum as string
         modelBuilder.Entity<Truck>()
             .Property(t => t.OwnershipType)
             .HasConversion<string>();
@@ -55,22 +56,19 @@ public class AppDbContext : DbContext
             .HasOne(u => u.Role)
             .WithMany(r => r.Users)
             .HasForeignKey(u => u.RoleId)
-            .IsRequired(true); // Explicitly mark this foreign key as required
+            .IsRequired(true);
 
         modelBuilder.Entity<User>()
             .Property(u => u.Id)
-            .ValueGeneratedNever(); // <-- Ensures EF won't expect DB to assign this
+            .ValueGeneratedNever();
 
-        // 📧 Ensure unique email for login and registration
         modelBuilder.Entity<User>()
             .HasIndex(u => u.Email)
             .IsUnique();
 
-
         modelBuilder.Entity<OnboardingProgress>()
             .HasKey(o => o.UserId);
 
-        // 🚛 DriverProfile Configuration
         modelBuilder.Entity<DriverProfile>()
             .HasKey(d => d.UserId);
 
@@ -87,8 +85,6 @@ public class AppDbContext : DbContext
             .Property(dp => dp.ServiceRadiusKm)
             .HasDefaultValue(25);
 
-
-        // 🛒 CustomerProfile Configuration
         modelBuilder.Entity<CustomerProfile>()
             .HasKey(c => c.Id);
 
@@ -97,8 +93,6 @@ public class AppDbContext : DbContext
             .WithOne(u => u.CustomerProfile)
             .HasForeignKey<CustomerProfile>(c => c.UserId);
 
-
-        // StoreClerkProfile Configuration
         modelBuilder.Entity<StoreClerkProfile>()
             .HasKey(scp => scp.Id);
 
@@ -107,8 +101,6 @@ public class AppDbContext : DbContext
             .WithOne(u => u.StoreClerkProfile)
             .HasForeignKey<StoreClerkProfile>(scp => scp.UserId);
 
-
-        // StoreClerkAssignment (many-to-many between ClerkProfile and Store)
         modelBuilder.Entity<StoreClerkAssignment>()
             .HasKey(sca => new { sca.ClerkUserId, sca.StoreId });
 
@@ -122,7 +114,6 @@ public class AppDbContext : DbContext
             .WithMany(s => s.Clerks)
             .HasForeignKey(sca => sca.StoreId);
 
-
         modelBuilder.Entity<AuthToken>()
             .HasOne(t => t.User)
             .WithMany(u => u.AuthTokens)
@@ -133,19 +124,21 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(a => a.UserId);
 
-        modelBuilder.Entity<PaymentMethod>()
+        // --- PaymentAccount relationships (was PaymentMethod) ---
+        modelBuilder.Entity<PaymentAccount>()
             .HasKey(p => p.Id);
 
-        modelBuilder.Entity<PaymentMethod>()
-            .HasOne(p => p.User)
-            .WithMany(u => u.PaymentMethods)
-            .HasForeignKey(p => p.UserId);
-
-        modelBuilder.Entity<PaymentMethod>()
+        modelBuilder.Entity<PaymentAccount>()
             .HasOne(p => p.PaymentMethodType)
-            .WithMany(pmt => pmt.PaymentMethods)
+            .WithMany(pmt => pmt.PaymentAccounts)
             .HasForeignKey(p => p.PaymentMethodTypeId);
 
+        modelBuilder.Entity<PayoutAccount>()
+            .HasOne(p => p.PaymentMethodType)
+            .WithMany(pmt => pmt.PayoutAccounts)
+            .HasForeignKey(p => p.PaymentMethodTypeId);
+
+        // --- PayoutAccount relationships ---
         modelBuilder.Entity<PayoutAccount>()
             .HasKey(p => p.Id);
 
@@ -162,18 +155,15 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<SystemSetting>()
             .HasKey(s => s.Key);
 
+        // 🚚 Truck Entity Core Mapping
         modelBuilder.Entity<Truck>()
             .HasKey(t => t.Id);
 
         modelBuilder.Entity<Truck>()
-            .HasOne(v => v.TruckType)
-            .WithMany(vt => vt.Vehicles)
-            .HasForeignKey(v => v.TruckTypeId);
-
-        modelBuilder.Entity<Truck>()
-            .HasOne(v => v.DriverProfile)
-            .WithMany(dp => dp.Trucks)
-            .HasForeignKey(v => v.DriverProfileId);
+            .HasOne(t => t.TruckType)
+            .WithMany(tt => tt.Vehicles)
+            .HasForeignKey(t => t.TruckTypeId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Truck>()
             .HasOne(t => t.TruckMake)
@@ -188,12 +178,6 @@ public class AppDbContext : DbContext
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Truck>()
-            .HasOne(t => t.TruckType)
-            .WithMany()
-            .HasForeignKey(t => t.TruckTypeId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<Truck>()
             .HasOne(t => t.TruckCategory)
             .WithMany()
             .HasForeignKey(t => t.TruckCategoryId)
@@ -205,7 +189,12 @@ public class AppDbContext : DbContext
             .HasForeignKey(t => t.BedTypeId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Configure many-to-many relationship between Truck and UseTag
+        modelBuilder.Entity<Truck>()
+            .HasOne(t => t.DriverProfile)
+            .WithMany(dp => dp.Trucks)
+            .HasForeignKey(t => t.DriverProfileId);
+
+        // Many-to-many: Truck <-> UseTag
         modelBuilder.Entity<TruckUseTag>()
             .HasKey(tut => new { tut.TruckId, tut.UseTagId });
 
@@ -258,6 +247,37 @@ public class AppDbContext : DbContext
             .Property(b => b.IbanPrefix)
             .HasMaxLength(34);
 
+        // --- FreightBid ---
+        modelBuilder.Entity<FreightBid>(entity =>
+        {
+            entity.HasKey(fb => fb.Id);
+            entity.Property(fb => fb.Status).HasConversion<int>();
+            entity.HasMany(fb => fb.UseTags)
+                  .WithOne(ut => ut.FreightBid)
+                  .HasForeignKey(ut => ut.FreightBidId);
+            entity.HasMany(fb => fb.DriverBids)
+                  .WithOne(db => db.FreightBid)
+                  .HasForeignKey(db => db.FreightBidId);
+            entity.HasIndex(fb => fb.Status);
+            entity.HasIndex(fb => fb.CustomerId);
+        });
+
+        // --- FreightBidUseTag ---
+        modelBuilder.Entity<FreightBidUseTag>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => new { x.FreightBidId, x.UseTagId });
+        });
+
+        // --- DriverBid ---
+        modelBuilder.Entity<DriverBid>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => x.FreightBidId);
+            entity.HasIndex(x => x.DriverId);
+            entity.HasIndex(x => x.TruckId);
+        });
+
         // 🌱 Seed initial roles
         modelBuilder.Entity<Role>().HasData(
             new Role { Id = Guid.Parse("00000000-0000-0000-0000-000000000001"), Name = RoleType.Guest.ToString() },
@@ -279,48 +299,42 @@ public class AppDbContext : DbContext
         );
 
         modelBuilder.Entity<PaymentMethodType>().HasData(
-            new PaymentMethodType
-            {
+            new PaymentMethodType {
                 Id = Guid.Parse("00000000-0000-0000-0000-000000000301"),
                 Name = "Card",
                 Description = "Credit or debit card",
                 IsForPayment = true,
                 IsForPayout = false
             },
-            new PaymentMethodType
-            {
+            new PaymentMethodType {
                 Id = Guid.Parse("00000000-0000-0000-0000-000000000302"),
                 Name = "Wallet",
                 Description = "Mobile wallet",
                 IsForPayment = true,
                 IsForPayout = false
             },
-            new PaymentMethodType
-            {
+            new PaymentMethodType {
                 Id = Guid.Parse("00000000-0000-0000-0000-000000000303"),
                 Name = "PayPal",
                 Description = "PayPal account",
                 IsForPayment = true,
                 IsForPayout = true
             },
-            new PaymentMethodType
-            {
+            new PaymentMethodType {
                 Id = Guid.Parse("00000000-0000-0000-0000-000000000304"),
                 Name = "Bank",
                 Description = "Bank transfer",
                 IsForPayment = false,
                 IsForPayout = true
             },
-            new PaymentMethodType
-            {
+            new PaymentMethodType {
                 Id = Guid.Parse("00000000-0000-0000-0000-000000000305"),
                 Name = "Cash",
                 Description = "Cash on delivery",
                 IsForPayment = true,
                 IsForPayout = false
             },
-            new PaymentMethodType
-            {
+            new PaymentMethodType {
                 Id = Guid.Parse("00000000-0000-0000-0000-000000000306"),
                 Name = "Crypto",
                 Description = "Cryptocurrency payment",
@@ -335,7 +349,23 @@ public class AppDbContext : DbContext
             new UseTag { Id = Guid.Parse("00000000-0000-0000-0000-000000000203"), Name = "Store Delivery" },
             new UseTag { Id = Guid.Parse("00000000-0000-0000-0000-000000000204"), Name = "Junk Removal" },
             new UseTag { Id = Guid.Parse("00000000-0000-0000-0000-000000000205"), Name = "Fragile Goods" },
-            new UseTag { Id = Guid.Parse("00000000-0000-0000-0000-000000000206"), Name = "Helper Included" }
+            new UseTag { Id = Guid.Parse("00000000-0000-0000-0000-000000000206"), Name = "Helper Included" },
+
+            // New extended tags below
+            new UseTag { Id = Guid.Parse("00000000-0000-0000-0000-000000000207"), Name = "Moving Boxes" },
+            new UseTag { Id = Guid.Parse("00000000-0000-0000-0000-000000000208"), Name = "Garden/Yard Waste" },
+            new UseTag { Id = Guid.Parse("00000000-0000-0000-0000-000000000209"), Name = "Oversized Items" },
+            new UseTag { Id = Guid.Parse("00000000-0000-0000-0000-000000000210"), Name = "Pallet Delivery" },
+            new UseTag { Id = Guid.Parse("00000000-0000-0000-0000-000000000211"), Name = "Event Equipment" },
+            new UseTag { Id = Guid.Parse("00000000-0000-0000-0000-000000000212"), Name = "Building Supplies" },
+            new UseTag { Id = Guid.Parse("00000000-0000-0000-0000-000000000213"), Name = "Electronics" },
+            new UseTag { Id = Guid.Parse("00000000-0000-0000-0000-000000000214"), Name = "Motorcycle Transport" },
+            new UseTag { Id = Guid.Parse("00000000-0000-0000-0000-000000000215"), Name = "Artwork/Antiques" },
+            new UseTag { Id = Guid.Parse("00000000-0000-0000-0000-000000000216"), Name = "Pet Transport" },
+            new UseTag { Id = Guid.Parse("00000000-0000-0000-0000-000000000217"), Name = "Donation Pickup" },
+            new UseTag { Id = Guid.Parse("00000000-0000-0000-0000-000000000218"), Name = "Business Relocation" },
+            new UseTag { Id = Guid.Parse("00000000-0000-0000-0000-000000000219"), Name = "Rental Return" },
+            new UseTag { Id = Guid.Parse("00000000-0000-0000-0000-000000000220"), Name = "Long Distance" }
         );
 
         // Seed TruckMakes
@@ -386,5 +416,14 @@ public class AppDbContext : DbContext
             new Bank { Id = Guid.Parse("10000000-0000-0000-0000-000000000002"), Name = "Banco de Costa Rica", SwiftCode = "BCRICRSJ", CountryCode = "CR", BankCode = "152", IbanPrefix = "CR" },
             new Bank { Id = Guid.Parse("10000000-0000-0000-0000-000000000003"), Name = "BAC Credomatic", SwiftCode = "BCCRCRSJ", CountryCode = "CR", BankCode = "254", IbanPrefix = "CR" }
         );
+
+        // Seed Help Options
+        modelBuilder.Entity<HelpOption>().HasData(
+            new HelpOption { Id = Guid.Parse("00000000-0000-0000-0000-000000000701"), Name = "Loading Help", Description = "Driver helps load your items", Icon = "fa-solid fa-hand-holding-box" },
+            new HelpOption { Id = Guid.Parse("00000000-0000-0000-0000-000000000702"), Name = "Unloading Help", Description = "Driver helps unload your items", Icon = "fa-solid fa-dolly" },
+            new HelpOption { Id = Guid.Parse("00000000-0000-0000-0000-000000000703"), Name = "Assembly", Description = "Driver helps assemble items", Icon = "fa-solid fa-wrench" },
+            new HelpOption { Id = Guid.Parse("00000000-0000-0000-0000-000000000704"), Name = "Packing", Description = "Driver helps pack items", Icon = "fa-solid fa-box-open" }
+        );
+
     }
 }

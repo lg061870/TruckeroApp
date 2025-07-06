@@ -1,14 +1,8 @@
-﻿using Microsoft.Data.Sqlite;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Moq;
-using System;
-using System.Threading.Tasks;
-using Truckero.Core.Entities;
 using Truckero.Diagnostics.Data;
 using Truckero.Infrastructure.Repositories;
 using Truckero.Infrastructure.Tests.Fixtures;
-using Truckero.Infrastructure.Tests.Helpers;
 using Xunit;
 
 namespace Truckero.Infrastructure.Tests.Repositories
@@ -86,7 +80,6 @@ namespace Truckero.Infrastructure.Tests.Repositories
             await _fixture.DbContext.SaveChangesAsync();
             var mockTruck = MockTruckTestData.CreateUniqueValidTruck();
             mockTruck.DriverProfileId = driverProfile.Id;
-            await _fixture.DbContext.EnsureTruckExistsAsync(mockTruck);
 
             // Act
             var truck = await _repository.GetByIdAsync(mockTruck.Id);

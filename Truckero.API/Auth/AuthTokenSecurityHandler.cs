@@ -1,5 +1,6 @@
 ﻿using Azure;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
@@ -28,6 +29,13 @@ public class AuthTokenSecurityHandler : AuthenticationHandler<AuthenticationSche
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         string? token = null;
+
+        // 🚨 Short-circuit for AllowAnonymous!
+        var endpoint = Context.GetEndpoint();
+        if (endpoint?.Metadata?.GetMetadata<IAllowAnonymous>() != null) {
+            return AuthenticateResult.NoResult();
+        }
+
         try
         {
             if (Request.Headers.ContainsKey("Authorization"))

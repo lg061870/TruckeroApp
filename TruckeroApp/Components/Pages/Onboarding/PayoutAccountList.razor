@@ -1,0 +1,105 @@
+﻿@using Truckero.Core.DTOs.Onboarding
+@using Truckero.Core.DTOs.PayoutAccount
+
+@if (Accounts == null || !Accounts.Any())
+{
+    <div id="empty-state" class="text-center py-6">
+        <div class="w-16 h-16 mx-auto mb-4 text-gray-300">
+            <i class="fa-solid fa-wallet text-4xl"></i>
+        </div>
+        <h3 class="text-base font-medium mb-1">No Payout Accounts Yet</h3>
+        <p class="text-sm text-gray-600 mb-4">Add your first payout method to start receiving earnings</p>
+    </div>
+}
+else
+{
+    <h3 class="text-lg font-medium text-gray-800 mb-1">Registered Payout Accounts</h3>
+    <div class="w-full flex justify-center mb-2">
+        <div id="payout-accounts-list"
+             class="overflow-y-auto bg-gray-50 shadow-inner rounded-2 flex flex-col items-center py-3"
+             style="width: 100%; min-height: 150px; max-height: 210px;">
+            <div class="w-full flex flex-col items-center gap-2">
+                @foreach (var account in Accounts)
+                {
+                    var paymentMethodName = GetPaymentMethodName?.Invoke(account.PaymentMethodTypeId) ?? "Payout Method";
+                    string payoutAccountNickName = "";
+                    if (!string.IsNullOrWhiteSpace(account.MetadataJson))
+                    {
+                        try
+                        {
+                            var dict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(account.MetadataJson);
+                            if (dict != null && dict.TryGetValue("PayoutAccountNickName", out var val))
+                                payoutAccountNickName = val;
+                        }
+                        catch {}
+                    }
+
+                    <div class="bg-white w-[95%] rounded-xl shadow flex flex-col px-3 py-2" style="min-height:46px;">
+                        <!-- 1st row: icon, main label, nickname, status, actions -->
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-1 min-w-0">
+                                <i class="@GetPayoutIcon?.Invoke(paymentMethodName) text-gray-600 text-base"></i>
+
+                                <span class="font-semibold text-[13px] truncate max-w-[90px]">@paymentMethodName</span>
+                            
+                                @if (!string.IsNullOrWhiteSpace(payoutAccountNickName))
+                            {
+                                <span class="text-xs text-gray-400 italic truncate ml-1 max-w-[70px]">@payoutAccountNickName</span>
+                            }
+
+                            
+                                @if (account.IsDefault)
+                                {
+                                    <span class="ml-2 px-2 py-[2px] bg-green-100 text-green-700 text-[10px] font-semibold rounded-full">Active</span>
+                                }
+
+                            
+                            </div>
+
+                            <div class="flex items-center gap-1 shrink-0">
+                                    @if (!account.IsValidated)
+                                    {
+                                        <span class="ml-1 flex items-center px-[6px] py-[2px] bg-red-100 text-red-600 text-[10px] font-semibold rounded-full">
+                                            <i class="fa-solid fa-circle-xmark text-red-500 text-xs"></i>
+                                        </span>
+                                    }
+                                    <button class="text-gray-400 hover:text-gray-600" style="padding:2px;"
+                                        @onclick="@(() => OnEdit?.Invoke(account.Id))"
+                                        aria-label="Edit payout account" title="Edit payout account">
+                                        <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                    </button>
+                                    <button class="text-gray-400 hover:text-red-600" style="padding:2px;"
+                                        @onclick="@(() => OnDelete?.Invoke(account.Id))"
+                                        aria-label="Delete payout account" title="Delete payout account">
+                                        <i class="fa-solid fa-trash text-xs"></i>
+                                    </button>
+                                    @if (!account.IsDefault)
+                                    {
+                                        <button class="text-gray-400 hover:text-green-600" style="padding:2px;"
+                                            @onclick="() => OnSetDefault.InvokeAsync(account.Id)"
+                                            aria-label="Set as Default" title="Set as Default">
+                                            <i class="fa-solid fa-star text-xs"></i>
+                                        </button>
+                                    }
+                            </div>
+                        </div>
+                        <!-- 2nd row: last4, subtle, aligned left -->
+                        <div class="flex items-center mt-[2px]">
+                            <span class="text-[11px] text-gray-400 tracking-wide">•••• @account.AccountNumberLast4</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+
+@code {
+    [Parameter] public List<PayoutAccountRequest> Accounts { get; set; }
+    [Parameter] public Func<Guid, string> GetPaymentMethodName { get; set; }
+    [Parameter] public Func<string, string> GetPayoutIcon { get; set; }
+    [Parameter] public Action<Guid> OnEdit { get; set; }
+    [Parameter] public Action<Guid> OnDelete { get; set; }
+    [Parameter] public EventCallback<Guid> OnSetDefault { get; set; }
+}

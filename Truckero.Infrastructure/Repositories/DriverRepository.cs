@@ -5,7 +5,7 @@ using Truckero.Infrastructure.Data;
 
 namespace Truckero.Infrastructure.Repositories;
 
-public class DriverRepository : IDriverRepository
+public class DriverRepository : IDriverProfileRepository
 {
     private readonly AppDbContext _context;
 

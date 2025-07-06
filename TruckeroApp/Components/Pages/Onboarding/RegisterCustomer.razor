@@ -8,6 +8,7 @@
 @using Microsoft.AspNetCore.Components.Routing
 @using Truckero.Core.DTOs.Auth
 @using Truckero.Core.DTOs.Common
+@using Truckero.Core.DTOs.Onboarding
 @using Truckero.Core.DataAnnotations
 @using Truckero.Core.Exceptions
 @using Truckero.Core.Interfaces.Services
@@ -22,6 +23,7 @@
 @inject ITokenStorageService TokenStorage
 @inject IMediaPicker MediaPicker
 @inject IMediaService MediaService
+@inject ILocalStorageService LocalStorage
 
 
 <CenterWrapper>
@@ -95,15 +97,17 @@
                 </div>
             </div>
 
-            <div id="payment-section" class="mt-6 border-2 border-dashed border-[#DDDDDD] rounded-lg p-4" @onclick="AddPaymentMethod">
-                <div class="flex items-center justify-between mb-2">
-                    <div class="flex items-center space-x-2">
-                        <i class="fa-solid fa-credit-card text-[#444444]"></i>
-                        <span class="font-medium text-[#444444]">Add Payment Method</span>
+            <div id="payment-section" class="mt-6 border-2 border-dashed border-[#DDDDDD] rounded-lg p-4">
+                <button type="button" class="w-full text-left bg-transparent border-0 p-0 m-0" style="all:unset;cursor:pointer;width:100%;" @onclick="AddPaymentMethod">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-credit-card text-[#444444]"></i>
+                            <span class="font-medium text-[#444444]">Add Payment Method</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-[#444444]"></i>
                     </div>
-                    <i class="fa-solid fa-chevron-right text-[#444444]"></i>
-                </div>
-                <p class="text-sm text-[#444444]">You'll only be charged when booking a trip</p>
+                    <p class="text-sm text-[#444444]">You'll only be charged when booking a trip</p>
+                </button>
             </div>
 
             <div class="flex items-start space-x-3 mt-6 mb-4">
@@ -213,6 +217,11 @@
                     <EmailConfirmationBottomSheet Email="@CustomerProfile.Email"
                                                   RegisteredUserId="@RegisteredUserId" />
                     break;
+                case "registration_restored":
+                    <RegistrationRestoredBottomSheet
+                        LastSaved="@LastSavedFormatted"
+                        OnDismiss="@(() => ActiveBottomSheet = null)" />
+                    break;
             }
         }
     </div>
@@ -220,10 +229,22 @@
 
 
 @code {
+    // ---------------------------
+    // Profile & User Identifiers
+    // ---------------------------
+    private Guid UserId = Guid.NewGuid();
     private CustomerProfileRequest CustomerProfile { get; set; } = new CustomerProfileRequest();
+    private Guid RegisteredUserId; // Set this after registration
 
-    private string? ActiveBottomSheet { get; set; } = null;
+    // ---------------------------
+    // Persistent Storage & Auto-Save
+    // ---------------------------
+    private const string STORAGE_KEY = "customer_registration_form";
+    private DateTime? _lastSavedDateTime;
 
+    // ---------------------------
+    // Form Fields & Validation
+    // ---------------------------
     [Required]
     [MinLength(8, ErrorMessage = "Password must be at least 8 characters long")]
     private string Password { get; set; } = string.Empty;
@@ -234,23 +255,54 @@
     private string ConfirmPassword { get; set; } = string.Empty;
 
     private bool AcceptTerms { get; set; } = false;
+    private EditContext? _editContext;
+    private List<string> ValidationErrors { get; set; } = new();
+
+    // ---------------------------
+    // Form/UI State
+    // ---------------------------
     private bool FormSubmitted { get; set; } = false;
     private bool IsLoading { get; set; } = false;
     private bool ShowPassword { get; set; } = false;
     private bool ShowConfirmPassword { get; set; } = false;
     private bool HasPaymentMethod { get; set; } = false;
+    private string? ActiveBottomSheet { get; set; } = null;
     private string ErrorMessage { get; set; } = string.Empty;
-    private EditContext? _editContext;
-    private List<string> ValidationErrors { get; set; } = new();
+
+    // ---------------------------
+    // Email Confirmation State
+    // ---------------------------
     private string ResendEmailMessage = string.Empty;
     private bool IsResendingEmail = false;
     private string NewEmailForResend = string.Empty;
-    private Guid RegisteredUserId; // Set this after registration
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         _editContext = new EditContext(CustomerProfile);
-        _editContext.OnFieldChanged += (sender, args) => StateHasChanged();
+
+        _editContext.OnFieldChanged += async (sender, args) =>
+        {
+            CustomerProfile.UserId = UserId; // Ensure UserId stays in sync
+            await LocalStorage.SetItemAsync(STORAGE_KEY, CustomerProfile);
+            StateHasChanged();
+        };
+
+        var saved = await LocalStorage.GetItemAsync<CustomerProfileRequest>(STORAGE_KEY);
+
+        if (saved != null)
+        {
+            CustomerProfile = saved;
+            UserId = saved.UserId != Guid.Empty ? saved.UserId : Guid.NewGuid();
+            CustomerProfile.UserId = UserId;
+            _lastSavedDateTime = saved.LastUpdated;
+            ActiveBottomSheet = "registration_restored";
+        }
+        else
+        {
+            UserId = Guid.NewGuid();
+            CustomerProfile.UserId = UserId;
+            _lastSavedDateTime = null;
+        }
     }
 
     private async Task SubmitAsync()
@@ -286,17 +338,13 @@
 
             if (authTokenResponse == null)
             {
-                Console.WriteLine("❌ AuthTokenResponse is null.");
                 ErrorMessage = "Unexpected error: no token received.";
                 ActiveBottomSheet = "generic_error";
                 return;
             }
 
-            Console.WriteLine($"✅ Token received. Access: {authTokenResponse.AccessToken}, Refresh: {authTokenResponse.RefreshToken}");
-
             if (string.IsNullOrWhiteSpace(authTokenResponse.AccessToken))
             {
-                Console.WriteLine("❌ Access token is missing.");
                 ErrorMessage = "Access token was not issued.";
                 ActiveBottomSheet = "generic_error";
                 return;
@@ -304,17 +352,16 @@
 
             if (string.IsNullOrWhiteSpace(authTokenResponse.RefreshToken))
             {
-                Console.WriteLine("⚠️ Refresh token is missing.");
                 ErrorMessage = "Refresh token was not issued.";
                 ActiveBottomSheet = "generic_error";
                 return;
             }
 
+            // Store tokens in session
             try
             {
                 await TokenStorage.SaveAccessTokenAsync(authTokenResponse.AccessToken);
                 await TokenStorage.SaveRefreshTokenAsync(authTokenResponse.RefreshToken);
-                Console.WriteLine("💾 Tokens saved successfully.");
             }
             catch (Exception ex)
             {
@@ -324,38 +371,34 @@
                 return;
             }
 
-            // 🎉 Show confirmation
+            // Registration success: clean up persisted draft
+            await LocalStorage.RemoveItemAsync(STORAGE_KEY);
+
             RegisteredUserId = authTokenResponse.UserId;
             ActiveBottomSheet = "email_confirmation";
         }
         catch (OnboardingClientValidationException ex)
         {
             ValidationErrors = ex.Errors;
-            Console.WriteLine($"❌ Validation failed with {ValidationErrors.Count} error(s).");
             ActiveBottomSheet = "validation_failed";
         }
         catch (OnboardingClientException ex)
         {
             ActiveBottomSheet = ex.StepCode;
-
-            // Optionally assign structured error content
             if (ActiveBottomSheet == "generic_error")
                 ErrorMessage = ex.Message;
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Conflict)
         {
-            Console.WriteLine($"⚠️ Conflict: {ex.Message}");
             ActiveBottomSheet = "user_exists";
         }
         catch (HttpRequestException ex)
         {
-            Console.WriteLine($"❌ HTTP Error: {ex.StatusCode}, {ex.Message}");
             ErrorMessage = $"Server error: {ex.Message}";
             ActiveBottomSheet = "generic_error";
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Unexpected error: {ex.Message}");
             ErrorMessage = "An unknown error occurred during registration.";
             ActiveBottomSheet = "generic_error";
         }
@@ -369,85 +412,26 @@
     {
         ValidationErrors = context
             .GetValidationMessages()
-            .Take(5) // Limit displayed errors
+            .Take(5)
             .ToList();
 
         ActiveBottomSheet = "validation_failed";
     }
 
-    private void NavigateBack()
-    {
-        NavigationManager.NavigateTo(AppRoutes.StartupRouter, forceLoad: true);
-    }
+    private void NavigateBack() { NavigationManager.NavigateTo(AppRoutes.StartupRouter, forceLoad: true); }
+    private void NavigateToLogin() { NavigationManager.NavigateTo(AppRoutes.Login); }
+    private void TogglePasswordVisibility() { ShowPassword = !ShowPassword; }
+    private void ToggleConfirmPasswordVisibility() { ShowConfirmPassword = !ShowConfirmPassword; }
+    private void AddPaymentMethod() { NavigationManager.NavigateTo($"/registerpaymentaccount?UserId={UserId}&FromRegisterCustomer=true"); }
+    private void ShowTermsOfService() { /* Show modal or navigate to terms page */ }
+    private void ShowPrivacyPolicy() { /* Show modal or navigate to privacy page */ }
+    private void SignInWithGoogle() { /* Implement Google authentication */ }
+    private void SignInWithFacebook() { /* Implement Facebook authentication */ }
 
-    private void NavigateToLogin()
-    {
-        NavigationManager.NavigateTo(AppRoutes.Login);
-    }
-
-    private void TogglePasswordVisibility()
-    {
-        ShowPassword = !ShowPassword;
-    }
-
-    private void ToggleConfirmPasswordVisibility()
-    {
-        ShowConfirmPassword = !ShowConfirmPassword;
-    }
-
-    private void AddPaymentMethod()
-    {
-        // In a real application, this would navigate to a payment information page
-        // or open a modal to collect payment details
-        NavigationManager.NavigateTo("/customer/payment/add");
-    }
-
-    private void ShowTermsOfService()
-    {
-        // Open terms of service modal or navigate to terms page
-    }
-
-    private void ShowPrivacyPolicy()
-    {
-        // Open privacy policy modal or navigate to privacy page
-    }
-
-    private void SignInWithGoogle()
-    {
-        // Implement Google authentication
-    }
-
-    private void SignInWithFacebook()
-    {
-        // Implement Facebook authentication
-    }
-
-    private void LoadDebugProfile(Dictionary<string, string> values)
-    {
-        // Fill in form fields from the debug profile
-        if (values.TryGetValue(nameof(CustomerProfile.FullName), out var fullName))
-            CustomerProfile.FullName = fullName;
-
-        if (values.TryGetValue(nameof(CustomerProfile.Email), out var email))
-            CustomerProfile.Email = email;
-
-        if (values.TryGetValue(nameof(CustomerProfile.PhoneNumber), out var phoneNumber))
-            CustomerProfile.PhoneNumber = phoneNumber;
-
-        if (values.TryGetValue(nameof(CustomerProfile.Address), out var address))
-            CustomerProfile.Address = address;
-
-        if (values.TryGetValue(nameof(Password), out var password))
-            Password = password;
-
-        if (values.TryGetValue(nameof(ConfirmPassword), out var confirmPassword))
-            ConfirmPassword = confirmPassword;
-
-        if (values.TryGetValue(nameof(AcceptTerms), out var acceptTerms))
-            AcceptTerms = bool.TryParse(acceptTerms, out var result) && result;
-
-        StateHasChanged();
-    }
+    private string? LastSavedFormatted =>
+        _lastSavedDateTime.HasValue
+            ? _lastSavedDateTime.Value.ToString("MMM d, yyyy h:mm tt")
+            : null;
 
     private bool IsFormValid =>
     IsTextValid(CustomerProfile.FullName) &&

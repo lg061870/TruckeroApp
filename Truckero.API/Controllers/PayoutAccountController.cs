@@ -1,11 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Truckero.Core.Constants;
-using Truckero.Core.DTOs.Common;
-using Truckero.Core.DTOs.Onboarding;
-using Truckero.Core.Entities;
+using Truckero.Core.DTOs.PayoutAccount;
 using Truckero.Core.Exceptions;
 using Truckero.Core.Interfaces.Services;
 
@@ -26,11 +21,32 @@ public class PayoutAccountController : ControllerBase {
     [HttpGet("user/{userId}")]
     public async Task<ActionResult<List<PayoutAccountResponse>>> GetPayoutAccountsByUserId(Guid userId) {
         try {
-            var accounts = await _payoutAccountService.GetPayoutAccountsByUserIdAsync(userId);
-            return Ok(accounts);
+            var responses = await _payoutAccountService.GetPayoutAccountsByUserIdAsync(userId);
+            if (responses == null || responses.PayoutAccounts.Count == 0) {
+                return NotFound(new List<PayoutAccountResponse>
+                {
+                    new PayoutAccountResponse
+                    {
+                        Success = false,
+                        Message = "No payout accounts found for this user.",
+                        ErrorCode = ExceptionCodes.PayoutAccountErrorCodes.NotFound,
+                        PayoutAccounts = new List<PayoutAccountRequest>()
+                    }
+                });
+            }
+            return Ok(responses);
         } catch (Exception ex) {
             _logger.LogError(ex, "Error retrieving payout accounts for user {UserId}", userId);
-            return StatusCode(500, "An unexpected error occurred while retrieving payout accounts.");
+            return StatusCode(500, new List<PayoutAccountResponse>
+            {
+                new PayoutAccountResponse
+                {
+                    Success = false,
+                    Message = "An unexpected error occurred while retrieving payout accounts.",
+                    ErrorCode = ExceptionCodes.UnhandledException,
+                    PayoutAccounts = new List<PayoutAccountRequest>()
+                }
+            });
         }
     }
 
@@ -39,17 +55,30 @@ public class PayoutAccountController : ControllerBase {
     public async Task<ActionResult<PayoutAccountResponse>> GetPayoutAccountById(Guid payoutAccountId) {
         try {
             var response = await _payoutAccountService.GetPayoutAccountByIdAsync(payoutAccountId);
-            if (response == null || response.PayoutAccount == null) {
+            var account = response?.PayoutAccounts?.FirstOrDefault();
+            if (response == null || account == null) {
                 return NotFound(new PayoutAccountResponse {
                     Success = false,
                     Message = "Payout account not found.",
-                    ErrorCode = ExceptionCodes.PayoutAccountNotFound
+                    ErrorCode = ExceptionCodes.PayoutAccountErrorCodes.NotFound,
+                    PayoutAccounts = new List<PayoutAccountRequest>()
                 });
             }
-            return Ok(response);
+            // Only return the found account in the collection
+            return Ok(new PayoutAccountResponse {
+                Success = response.Success,
+                Message = response.Message,
+                ErrorCode = response.ErrorCode,
+                PayoutAccounts = new List<PayoutAccountRequest> { account }
+            });
         } catch (Exception ex) {
             _logger.LogError(ex, "Error retrieving payout account by ID {PayoutAccountId}", payoutAccountId);
-            return StatusCode(500, "An unexpected error occurred while retrieving the payout account.");
+            return StatusCode(500, new PayoutAccountResponse {
+                Success = false,
+                Message = "An unexpected error occurred while retrieving the payout account.",
+                ErrorCode = ExceptionCodes.UnhandledException,
+                PayoutAccounts = new List<PayoutAccountRequest>()
+            });
         }
     }
 
@@ -58,13 +87,29 @@ public class PayoutAccountController : ControllerBase {
     public async Task<ActionResult<PayoutAccountResponse>> GetDefaultPayoutAccountByUserId(Guid userId) {
         try {
             var response = await _payoutAccountService.GetDefaultPayoutAccountByUserIdAsync(userId);
-            if (response == null || response.PayoutAccount == null) {
-                return Ok(new PayoutAccountResponse { Success = false, Message = "No default payout account.", ErrorCode = null, PayoutAccount = null });
+            var account = response?.PayoutAccounts?.FirstOrDefault();
+            if (response == null || account == null) {
+                return Ok(new PayoutAccountResponse {
+                    Success = false,
+                    Message = "No default payout account.",
+                    ErrorCode = null,
+                    PayoutAccounts = new List<PayoutAccountRequest>()
+                });
             }
-            return Ok(response);
+            return Ok(new PayoutAccountResponse {
+                Success = response.Success,
+                Message = response.Message,
+                ErrorCode = response.ErrorCode,
+                PayoutAccounts = new List<PayoutAccountRequest> { account }
+            });
         } catch (Exception ex) {
             _logger.LogError(ex, "Error retrieving default payout account for user {UserId}", userId);
-            return StatusCode(500, "An unexpected error occurred while retrieving the default payout account.");
+            return StatusCode(500, new PayoutAccountResponse {
+                Success = false,
+                Message = "An unexpected error occurred while retrieving the default payout account.",
+                ErrorCode = ExceptionCodes.UnhandledException,
+                PayoutAccounts = new List<PayoutAccountRequest>()
+            });
         }
     }
 
@@ -75,33 +120,38 @@ public class PayoutAccountController : ControllerBase {
             return BadRequest(new PayoutAccountResponse {
                 Success = false,
                 Message = "Invalid request data.",
-                ErrorCode = ExceptionCodes.ValidationError
+                ErrorCode = ExceptionCodes.ValidationFailed,
+                PayoutAccounts = new List<PayoutAccountRequest>()
             });
         }
 
         try {
             var response = await _payoutAccountService.AddPayoutAccountAsync(userId, request);
-            if (response == null || response.PayoutAccount == null) {
+            var account = response?.PayoutAccounts?.FirstOrDefault();
+            if (response == null || account == null) {
                 return BadRequest(new PayoutAccountResponse {
                     Success = false,
                     Message = "Failed to create payout account.",
-                    ErrorCode = ExceptionCodes.UnhandledException
+                    ErrorCode = ExceptionCodes.UnhandledException,
+                    PayoutAccounts = new List<PayoutAccountRequest>()
                 });
             }
-            return CreatedAtAction(nameof(GetPayoutAccountById), new { payoutAccountId = response.PayoutAccount.Id }, response);
+            return CreatedAtAction(nameof(GetPayoutAccountById), new { payoutAccountId = account.Id }, response);
         } catch (PayoutAccountStepException paEx) {
             _logger.LogWarning(paEx, "PayoutAccountStepException while adding account for user {UserId}: {ErrorCode} - {ErrorMessage}", userId, paEx.StepCode, paEx.Message);
             return StatusCode(500, new PayoutAccountResponse {
                 Success = false,
                 Message = paEx.Message,
-                ErrorCode = paEx.StepCode
+                ErrorCode = paEx.StepCode,
+                PayoutAccounts = new List<PayoutAccountRequest>()
             });
         } catch (Exception ex) {
             _logger.LogError(ex, "Unexpected error adding payout account for user {UserId}", userId);
             return StatusCode(500, new PayoutAccountResponse {
                 Success = false,
                 Message = "An unexpected server error occurred.",
-                ErrorCode = ExceptionCodes.UnhandledException
+                ErrorCode = ExceptionCodes.UnhandledException,
+                PayoutAccounts = new List<PayoutAccountRequest>()
             });
         }
     }
@@ -113,17 +163,20 @@ public class PayoutAccountController : ControllerBase {
             return BadRequest(new PayoutAccountResponse {
                 Success = false,
                 Message = "Invalid request data.",
-                ErrorCode = ExceptionCodes.ValidationError
+                ErrorCode = ExceptionCodes.ValidationFailed,
+                PayoutAccounts = new List<PayoutAccountRequest>()
             });
         }
 
         try {
             var response = await _payoutAccountService.UpdatePayoutAccountAsync(userId, payoutAccountId, request);
-            if (response == null || response.PayoutAccount == null) {
+            var account = response?.PayoutAccounts?.FirstOrDefault();
+            if (response == null || account == null) {
                 return NotFound(new PayoutAccountResponse {
                     Success = false,
                     Message = "Payout account not found.",
-                    ErrorCode = ExceptionCodes.PayoutAccountNotFound
+                    ErrorCode = ExceptionCodes.PayoutAccountErrorCodes.NotFound,
+                    PayoutAccounts = new List<PayoutAccountRequest>()
                 });
             }
             return Ok(response);
@@ -132,14 +185,16 @@ public class PayoutAccountController : ControllerBase {
             return StatusCode(500, new PayoutAccountResponse {
                 Success = false,
                 Message = paEx.Message,
-                ErrorCode = paEx.StepCode
+                ErrorCode = paEx.StepCode,
+                PayoutAccounts = new List<PayoutAccountRequest>()
             });
         } catch (Exception ex) {
             _logger.LogError(ex, "Unexpected error updating payout account {PayoutAccountId} for user {UserId}", payoutAccountId, userId);
             return StatusCode(500, new PayoutAccountResponse {
                 Success = false,
                 Message = "An unexpected server error occurred.",
-                ErrorCode = ExceptionCodes.UnhandledException
+                ErrorCode = ExceptionCodes.UnhandledException,
+                PayoutAccounts = new List<PayoutAccountRequest>()
             });
         }
     }
@@ -151,8 +206,8 @@ public class PayoutAccountController : ControllerBase {
             await _payoutAccountService.DeletePayoutAccountAsync(userId, payoutAccountId);
             return Ok(new { Success = true, Message = "Payout account deleted." });
         } catch (PayoutAccountNotFoundException) {
-            return NotFound(new { Success = false, Message = "Payout account not found.", ErrorCode = ExceptionCodes.PayoutAccountNotFound });
-        } catch (PayoutAccountOperationException ex) when (ex.StepCode == ExceptionCodes.CannotDeleteDefault) {
+            return NotFound(new { Success = false, Message = "Payout account not found.", ErrorCode = ExceptionCodes.PayoutAccountErrorCodes.NotFound });
+        } catch (PayoutAccountOperationException ex) when (ex.StepCode == ExceptionCodes.PayoutAccountErrorCodes.CannotDeleteDefault) {
             return Conflict(new { Success = false, Message = ex.Message, ErrorCode = ex.StepCode });
         } catch (Exception ex) {
             _logger.LogError(ex, "Unexpected error deleting payout account {PayoutAccountId} for user {UserId}", payoutAccountId, userId);
@@ -167,46 +222,10 @@ public class PayoutAccountController : ControllerBase {
             await _payoutAccountService.SetDefaultPayoutAccountAsync(userId, payoutAccountId);
             return Ok(new { Success = true, Message = "Default payout account set." });
         } catch (PayoutAccountNotFoundException) {
-            return NotFound(new { Success = false, Message = "Payout account not found.", ErrorCode = ExceptionCodes.PayoutAccountNotFound });
+            return NotFound(new { Success = false, Message = "Payout account not found.", ErrorCode = ExceptionCodes.PayoutAccountErrorCodes.NotFound });
         } catch (Exception ex) {
             _logger.LogError(ex, "Unexpected error setting default payout account {PayoutAccountId} for user {UserId}", payoutAccountId, userId);
             return StatusCode(500, new { Success = false, Message = "An unexpected server error occurred.", ErrorCode = ExceptionCodes.UnhandledException });
-        }
-    }
-
-    // GET: api/payoutaccount/types
-    [HttpGet("types")]
-    public async Task<ActionResult<List<PaymentMethodType>>> GetAllPayoutPaymentMethods() {
-        try {
-            var types = await _payoutAccountService.GetAllPayoutPaymentMethodsAsync();
-            return Ok(types);
-        } catch (Exception ex) {
-            _logger.LogError(ex, "Error retrieving available payout method types.");
-            return StatusCode(500, "An unexpected error occurred while retrieving payout method types.");
-        }
-    }
-
-    // GET: api/payoutaccount/types/{countryCode}
-    [HttpGet("types/{countryCode}")]
-    public async Task<ActionResult<List<PaymentMethodType>>> GetAllPayoutPaymentMethodsByCountryCode(string countryCode) {
-        try {
-            var types = await _payoutAccountService.GetAllPayoutPaymentMethodsByCountryCodeAsync(countryCode);
-            return Ok(types);
-        } catch (Exception ex) {
-            _logger.LogError(ex, "Error retrieving payout method types for country {CountryCode}", countryCode);
-            return StatusCode(500, "An unexpected error occurred while retrieving payout method types by country.");
-        }
-    }
-
-    // GET: api/payoutaccount/reference/{countryCode}
-    [HttpGet("reference/{countryCode}")]
-    public async Task<ActionResult<PayoutPageReferenceDataDto>> GetPayoutPageReferenceData(string countryCode) {
-        try {
-            var data = await _payoutAccountService.GetPayoutPageReferenceDataAsync(countryCode);
-            return Ok(data);
-        } catch (Exception ex) {
-            _logger.LogError(ex, "Error retrieving payout page reference data for country {CountryCode}", countryCode);
-            return StatusCode(500, "An unexpected error occurred while retrieving payout reference data.");
         }
     }
 }

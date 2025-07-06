@@ -98,22 +98,31 @@ builder.Services.AddAuthTokenRepository();
 builder.Services.AddRoleRepository();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
-builder.Services.AddScoped<IDriverRepository, DriverRepository>();
+builder.Services.AddScoped<IDriverProfileRepository, DriverRepository>();
 builder.Services.AddScoped<ITruckRepository, TruckRepository>();
 builder.Services.AddScoped<IOnboardingProgressRepository, OnboardingProgressRepository>();
 builder.Services.AddScoped<IConfirmationTokenRepository, ConfirmationTokenRepository>();
 builder.Services.AddScoped<IPayoutAccountRepository, PayoutAccountRepository>();
-builder.Services.AddScoped<IPaymentMethodRepository, PaymentMethodRepository>();
+builder.Services.AddScoped<IPaymentMethodTypeRepository, PaymentMethodTypeRepository>();
+builder.Services.AddScoped<IPaymentAccountRepository, PaymentAccountRepository>();
+builder.Services.AddScoped<IBankRepository, BankRepository>();
+builder.Services.AddScoped<ICountryRepository, CountryRepository>();
+builder.Services.AddScoped<IHelpOptionRepository, HelpOptionRepository>();
 
 // Register Services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IOnboardingService, OnboardingService>();
 builder.Services.AddScoped<ITruckService, TruckService>(); // Register TruckService for ITruckService
 builder.Services.AddScoped<IPayoutAccountService, PayoutAccountService>();
-builder.Services.AddScoped<IPaymentMethodService, PaymentMethodService>();
+builder.Services.AddScoped<IPaymentAccountService, PaymentAccountService>();
+builder.Services.AddScoped<IPaymentMethodTypeService, PaymentMethodTypeService>();
 builder.Services.AddScoped<IBlobStorageService, AzureBlobStorageService>();
 builder.Services.AddScoped<IMediaService, MediaService>();
 builder.Services.AddSingleton<IHashService, HashService>();
+builder.Services.AddScoped<IBankService, BankService>();
+builder.Services.AddScoped<ICountryService, CountryService>();
+builder.Services.AddScoped<IHelpOptionService, HelpOptionService>();
+
 
 // Register Email Service per environment
 #if DEBUG || UNITTESTING

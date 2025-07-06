@@ -1,6 +1,6 @@
 ﻿namespace TruckeroApp.DebugTools;
 
-using Truckero.Core.DTOs.Auth;
+using Truckero.Core.DTOs.Onboarding;
 
 public static class CustomerProfileFormFiller
 {

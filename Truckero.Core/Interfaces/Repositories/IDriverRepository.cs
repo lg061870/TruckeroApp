@@ -2,7 +2,7 @@
 
 namespace Truckero.Core.Interfaces.Repositories;
 
-public interface IDriverRepository
+public interface IDriverProfileRepository
 {
     Task<DriverProfile?> GetByUserIdAsync(Guid userId);
     Task<DriverProfile?> GetWithVehiclesAsync(Guid userId);

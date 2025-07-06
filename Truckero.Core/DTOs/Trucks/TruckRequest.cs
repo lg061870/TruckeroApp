@@ -24,7 +24,7 @@ public class TruckRequest
     public string? PhotoRightUrl { get; set; }
     public Guid? TruckCategoryId { get; set; }
     public Guid? BedTypeId { get; set; }
-    public List<Guid>? UseTagIds { get; set; }
+    public List<Guid>? UseTagIds { get; set; } = new();
     public OwnershipType? OwnershipType { get; set; }
     public string? InsuranceProvider { get; set; }
     public string? PolicyNumber { get; set; }

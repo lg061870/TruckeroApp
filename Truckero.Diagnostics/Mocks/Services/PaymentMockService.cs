@@ -1,9 +1,27 @@
-﻿using Truckero.Core.Interfaces.Services;
+﻿using Truckero.Core.DTOs.PaymentAccount;
+using Truckero.Core.Entities;
+using Truckero.Core.Interfaces.Services;
 
 namespace Truckero.Diagnostics.Mocks.Services;
 
-public class PaymentMockService : IPaymentService
+public class PaymentAccountMockService : IPaymentAccountService
 {
+    public Task<PaymentAccountResponse> AddPaymentAccountAsync(PaymentAccountRequest request) {
+        throw new NotImplementedException();
+    }
+
+    public Task AddPaymentMethodAsync(Guid userId, PaymentAccount paymentMethod) {
+        throw new NotImplementedException();
+    }
+
+    public Task<PaymentAccountResponse> DeletePaymentAccountAsync(Guid userId, Guid paymentAccountId) {
+        throw new NotImplementedException();
+    }
+
+    public Task DeletePaymentMethodAsync(Guid userId, Guid paymentMethodId) {
+        throw new NotImplementedException();
+    }
+
     public Task<List<PaymentMethodType>> GetAllPaymentMethods(string countryCode)
     {
         var dynamicMethods = new List<PaymentMethodType>();
@@ -32,5 +50,44 @@ public class PaymentMockService : IPaymentService
         return Task.FromResult(payoutMethods);
     }
 
+    public Task<PaymentAccountResponse> GetPaymentAccountByIdAsync(Guid paymentAccountId) {
+        throw new NotImplementedException();
+    }
+
+    public Task<PaymentAccountResponse> GetPaymentAccountsByUserIdAsync(Guid userId) {
+        throw new NotImplementedException();
+    }
+
+    public Task<PaymentAccount?> GetPaymentMethodByIdAsync(Guid paymentMethodId) {
+        throw new NotImplementedException();
+    }
+
+    public Task<List<PaymentAccount>> GetPaymentMethodsByUserId(Guid userId) {
+        throw new NotImplementedException();
+    }
+
+    public Task<PaymentAccountResponse> MarkPaymentAccountValidatedAsync(Guid userId, Guid paymentAccountId) {
+        throw new NotImplementedException();
+    }
+
+    public Task MarkPaymentMethodValidatedAsync(Guid userId, Guid paymentMethodId) {
+        throw new NotImplementedException();
+    }
+
+    public Task<PaymentAccountResponse> SetDefaultPaymentAccountAsync(Guid userId, Guid paymentAccountId) {
+        throw new NotImplementedException();
+    }
+
+    public Task SetDefaultPaymentMethodAsync(Guid userId, Guid paymentMethodId) {
+        throw new NotImplementedException();
+    }
+
+    public Task<PaymentAccountResponse> UpdatePaymentAccountAsync(PaymentAccountRequest request) {
+        throw new NotImplementedException();
+    }
+
+    public Task UpdatePaymentMethodAsync(Guid userId, Guid paymentMethodId, PaymentAccount updatedMethod) {
+        throw new NotImplementedException();
+    }
 }
 

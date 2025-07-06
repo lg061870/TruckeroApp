@@ -1,11 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Threading.Tasks;
-using Truckero.Core.Entities;
 using Truckero.Diagnostics.Data;
 using Truckero.Infrastructure.Data;
-using Truckero.Infrastructure.Tests.Helpers;
 
 namespace Truckero.Infrastructure.Tests.Integration
 {

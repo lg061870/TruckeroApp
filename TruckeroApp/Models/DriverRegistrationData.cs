@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Truckero.Core.DTOs.Onboarding;
+using Truckero.Core.DTOs.PayoutAccount;
 using Truckero.Core.DTOs.Trucks;
 using Truckero.Core.Entities;
 
@@ -23,7 +24,7 @@ public class DriverRegistrationData
     /// <summary>
     /// The driver's profile information
     /// </summary>
-    public DriverProfileRequest Profile { get; set; } = new();
+    public DriverProfileRequest Profile { get; set; }
     
     /// <summary>
     /// Password entered by the user

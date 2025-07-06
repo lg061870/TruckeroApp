@@ -1,58 +1,60 @@
 ﻿@using Truckero.Core.DTOs.Trucks
-@using Truckero.Core.Entities
+
+<div class="bg-white w-[95%] rounded-xl shadow flex flex-col px-3 py-2 my-1 mx-auto" style="min-height:46px;">
+    <!-- 1st row: icon, label, badges, actions -->
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-1 min-w-0">
+            <i class="fa-solid fa-truck-moving text-gray-600 text-base"></i>
+            <span class="font-semibold text-[13px] truncate max-w-[90px]">
+                @Truck.LicensePlate
+            </span>
+            @if (!string.IsNullOrWhiteSpace(Truck.TruckMake) || !string.IsNullOrWhiteSpace(Truck.TruckModel))
+            {
+                <span class="text-xs text-gray-400 italic truncate ml-1 max-w-[70px]">
+                    @($"{Truck.TruckMake} {Truck.TruckModel}")
+                </span>
+            }
+            @if (Pending)
+            {
+                <span class="ml-2 px-2 py-[2px] bg-yellow-100 text-yellow-800 text-[10px] font-semibold rounded-full">Pending</span>
+            }
+        </div>
+        <div class="flex items-center gap-1 shrink-0">
+            @if (!Truck.IsVerified)
+            {
+                <span class="ml-1 flex items-center px-[6px] py-[2px] bg-red-100 text-red-600 text-[10px] font-semibold rounded-full">
+                    <i class="fa-solid fa-circle-xmark text-red-500 text-xs"></i>
+                </span>
+            }
+            <button class="text-gray-400 hover:text-gray-600" style="padding:2px;"
+                @onclick="Edit"
+                aria-label="Edit truck" title="Edit truck">
+                <i class="fa-solid fa-pen-to-square text-xs"></i>
+            </button>
+            <button class="text-gray-400 hover:text-red-600" style="padding:2px;"
+                @onclick="Remove"
+                aria-label="Remove truck" title="Remove truck">
+                <i class="fa-solid fa-trash text-xs"></i>
+            </button>
+        </div>
+    </div>
+    <!-- 2nd row: subtle meta info, left aligned -->
+    <div class="flex items-center mt-[2px]">
+        <span class="text-[11px] text-gray-400 tracking-wide">
+            @if (!string.IsNullOrEmpty(Truck.Year.ToString()))
+            {
+                @($"• {Truck.Year}")
+            }
+        </span>
+    </div>
+</div>
 
 @code {
-    [Parameter]
-    public TruckRequest Truck { get; set; } = new();
-
-    [Parameter]
-    public EventCallback<TruckRequest> OnEdit { get; set; }
-
-    [Parameter]
-    public EventCallback<TruckRequest> OnRemove { get; set; }
-
-    // 👇 Add this parameter so parent can set Pending status
-    [Parameter]
-    public bool Pending { get; set; }
+    [Parameter] public TruckRequest Truck { get; set; } = new();
+    [Parameter] public bool Pending { get; set; }
+    [Parameter] public EventCallback<TruckRequest> OnEdit { get; set; }
+    [Parameter] public EventCallback<TruckRequest> OnRemove { get; set; }
 
     private Task Edit() => OnEdit.InvokeAsync(Truck);
     private Task Remove() => OnRemove.InvokeAsync(Truck);
 }
-
-<div class="bg-white rounded-lg border border-gray-200 p-4">
-    <div class="flex items-center justify-between">
-        <div class="flex items-center space-x-3">
-            <i class="fa-solid fa-truck-moving text-gray-600"></i>
-            <div>
-                <h4 class="font-medium">
-                    @Truck.LicensePlate
-                    @* Show Pending badge if necessary *@
-                    @if (Pending)
-                    {
-                        <span class="ml-2 px-2 py-0.5 text-xs bg-yellow-100 text-yellow-800 rounded-full align-middle">Pending</span>
-                    }
-                </h4>
-                <p class="text-sm text-gray-500">
-                    @Truck.TruckMake @Truck.TruckModel • @Truck.Year
-                </p>
-            </div>
-        </div>
-        <div class="flex items-center space-x-3">
-            @if (Truck.IsVerified)
-            {
-                <i class="fa-solid fa-circle-check text-green-500" title="Verified"></i>
-            }
-            else
-            {
-                <i class="fa-solid fa-circle-xmark text-red-500" title="Not Verified"></i>
-            }
-
-            <button type="button" @onclick="Edit" class="text-gray-400 hover:text-gray-600">
-                <i class="fa-solid fa-pen-to-square"></i>
-            </button>
-            <button type="button" @onclick="Remove" class="text-gray-400 hover:text-red-500">
-                <i class="fa-solid fa-trash"></i>
-            </button>
-        </div>
-    </div>
-</div>

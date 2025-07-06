@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Truckero.Core.DTOs.Auth;
 using Truckero.Core.DTOs.Common;
 using Truckero.Core.DTOs.Onboarding;
 using Truckero.Core.Exceptions;

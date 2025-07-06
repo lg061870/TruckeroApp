@@ -1,14 +1,9 @@
-﻿using Microsoft.Data.Sqlite;
-using Microsoft.EntityFrameworkCore;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Microsoft.EntityFrameworkCore;
 using Truckero.Core.Entities;
 using Truckero.Core.Enums;
 using Truckero.Diagnostics.Data;
 using Truckero.Infrastructure.Repositories;
 using Truckero.Infrastructure.Tests.Fixtures;
-using Truckero.Infrastructure.Tests.Helpers;
 using Xunit;
 
 namespace Truckero.Infrastructure.Tests.Repositories {

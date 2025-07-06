@@ -39,6 +39,6 @@ namespace Truckero.Core.Entities
         public ICollection<AuthToken> AuthTokens { get; set; } = new List<AuthToken>();
         public OnboardingProgress Onboarding { get; set; } = null!;
         public ICollection<PayoutAccount> PayoutAccounts { get; set; } = new List<PayoutAccount>();
-        public ICollection<PaymentMethod> PaymentMethods { get; set; } = new List<PaymentMethod>();
+        public ICollection<PaymentAccount> PaymentMethods { get; set; } = new List<PaymentAccount>();
     }
 }

@@ -5,6 +5,7 @@ using Truckero.Core.Interfaces.Services;
 using Truckero.Infrastructure.Services;
 using TruckeroApp.Extensions;
 using TruckeroApp.Interfaces;
+using TruckeroApp.ServiceClients;
 using TruckeroApp.Services;
 using TruckeroApp.Services.Media;
 
@@ -42,7 +43,7 @@ public static class MauiProgram
 
         // Modular API client registration
         builder.Services
-            .AddPaymentClient(apiBase)
+            .AddPaymentMethodTypeClient(apiBase)
             .AddCustomerClient(apiBase)
             .AddDriverClient(apiBase)
             .AddUserClient(apiBase)
@@ -51,7 +52,9 @@ public static class MauiProgram
             .AddAuthClient(apiBase)
             .AddAuthTokenClient(apiBase)
             .AddMediaClient(apiBase)
-            .AddPayoutAccountClient(apiBase);
+            .AddPayoutAccountClient(apiBase)
+            .AddPaymentAccountClient(apiBase)
+            .AddViewProviderClient(apiBase);
 
         builder.Services.AddToastService();
         builder.Services.AddSingleton<ITokenStorageService, SecureTokenStorageService>();
@@ -59,6 +62,8 @@ public static class MauiProgram
         builder.Services.AddSingleton<IMediaService, TruckeroApp.Services.Media.MediaService>();
         builder.Services.AddSingleton<IMediaPicker>(MediaPicker.Default);
         builder.Services.AddScoped<ILocalStorageService, LocalStorageService>();
+
+
 
 #if DEBUG || UNITTESTING
         builder.Services.AddSingleton<IBlobStorageService, MockBlobStorageService>();

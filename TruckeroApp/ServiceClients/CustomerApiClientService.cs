@@ -3,7 +3,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Truckero.Core.DTOs.Auth;
+using Truckero.Core.DTOs.Onboarding;
 using Truckero.Core.Entities;
 using Truckero.Core.Interfaces.Services;
 using TruckeroApp.Interfaces;

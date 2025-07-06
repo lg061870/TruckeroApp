@@ -28,7 +28,7 @@
             <div class="flex items-center mb-8">
                 @if (FromRegisterDriver)
                 {
-                    <button class="text-gray-600" @onclick="OnBackToRegisterDriver">
+                    <button class="text-gray-600" @onclick="OnBackToRegisterDriverAsync">
                         <i class="fa-solid fa-arrow-left text-xl"></i>
                     </button>
                 }
@@ -51,21 +51,13 @@
                 </div>
             </div>
 
-            <!-- Step Navigation -->
-            <div class="flex justify-between mb-6">
-                <button class="text-orange-500 font-medium flex items-center" @onclick="PreviousStep" disabled="@(currentStep == 1)">
-                    <i class="fa-solid fa-chevron-left mr-2"></i>Previous
-                </button>
-                <div class="flex space-x-2">
-                    @for (int i = 1; i <= totalSteps; i++)
-                    {
-                        <span class="h-2 w-2 rounded-full @GetDotClass(i)"></span>
-                    }
-                </div>
-                <button class="text-orange-500 font-medium flex items-center" @onclick="NextStep" disabled="@(currentStep == totalSteps)">
-                    Next<i class="fa-solid fa-chevron-right ml-2"></i>
-                </button>
-            </div>
+            <!--  top navigation -->
+            <StepNavigator
+                CurrentStep="@currentStep"
+                TotalSteps="@totalSteps"
+                IsBusy="@isBusy"
+                NextStep="NextStepAsync"
+                PreviousStep="PreviousStepAsync" />
 
             <!-- Step Panels -->
             <div class="space-y-6">
@@ -306,21 +298,13 @@
 
             </div>
 
-            <!-- Step Navigation -->
-            <div class="flex justify-between mb-6 mt-4">
-                <button class="text-orange-500 font-medium flex items-center" @onclick="PreviousStep" disabled="@(currentStep == 1)">
-                    <i class="fa-solid fa-chevron-left mr-2"></i>Previous
-                </button>
-                <div class="flex space-x-2">
-                    @for (int i = 1; i <= totalSteps; i++)
-                    {
-                        <span class="h-2 w-2 rounded-full @GetDotClass(i)"></span>
-                    }
-                </div>
-                <button class="text-orange-500 font-medium flex items-center" @onclick="NextStep" disabled="@(currentStep == totalSteps)">
-                    Next<i class="fa-solid fa-chevron-right ml-2"></i>
-                </button>
-            </div>
+            <!--  bottom navigation -->
+            <StepNavigator
+                CurrentStep="@currentStep"
+                TotalSteps="@totalSteps"
+                IsBusy="@isBusy"
+                NextStep="NextStepAsync"
+                PreviousStep="PreviousStepAsync" />
 
             <!-- Submit -->
             <div class="mt-8 flex justify-center">
@@ -399,7 +383,7 @@
     [Parameter]
     [SupplyParameterFromQuery]
     public bool FromRegisterDriver { get; set; }
-    
+
     [Parameter]
     [SupplyParameterFromQuery]
     public Guid? TruckId { get; set; }   // <--- supports /registertruck?TruckId=...
@@ -416,6 +400,7 @@
     private string? ReferentialIntegrityBottomSheetErrorCode { get; set; }  
     private string? ReferentialIntegrityBottomSheetMessage { get; set; }  
     private bool IsReferentialIntegrityBottomSheetVisible { get; set; } = false; 
+    private bool isBusy = false;      // Prevent double-clicks
 
     private int currentStep = 1;
     private readonly int totalSteps = 5;
@@ -473,10 +458,12 @@
             }
             else
             {
-                CurrentTruck = new TruckRequest();
+                CurrentTruck = new TruckRequest { 
+                    Id = Guid.NewGuid() 
+                };
+                
                 IsEditMode = false;
             }
-
         }
         catch (Exception ex)
         {
@@ -499,52 +486,51 @@
     private IEnumerable<TruckType> TruckTypes => TruckPageData?.TruckTypes ?? Enumerable.Empty<TruckType>();
 
     // Truck --> Driver navigation
-    private async void OnBackToRegisterDriver()
+    private async Task OnBackToRegisterDriverAsync()
     {
-        // If coming from RegisterDriver and form is minimally complete, save as pending
-        if (FromRegisterDriver && IsTruckMinimallyComplete())
-        {
-            var storageKey = "driver_registration_form";
-            var savedData = await LocalStorage.GetItemAsync<DriverRegistrationData>(storageKey);
-            if (savedData != null)
-            {
-                CurrentTruck.IsActive = false;
-                CurrentTruck.IsVerified = false;
+        if (IsTruckMinimallyComplete())
+            await SaveTruckProgressAsync();
 
-                // Convert the entity to TruckRequest using your reference data cache
-                TruckRequest truckDto =  CurrentTruck;
+        NavigationManager.NavigateTo(AppRoutes.RegisterDriver); // Always navigate after save
+    }
+    private async Task SaveTruckProgressAsync()
+    {
+        var storageKey = "driver_registration_form";
+        var savedData = await LocalStorage.GetItemAsync<DriverRegistrationData>(storageKey) ?? new DriverRegistrationData();
 
-                // Add or update truck by Id
-                var idx = savedData.Trucks.FindIndex(t => t.Id == truckDto.Id);
-                if (idx >= 0)
-                    savedData.Trucks[idx] = truckDto;
-                else
-                    savedData.Trucks.Add(truckDto);
+        // Map CurrentTruck to TruckRequest as needed
+        TruckRequest truckDto = CurrentTruck;
 
-                await LocalStorage.SetItemAsync(storageKey, savedData);
-            }
-        }
+        var idx = savedData.Trucks.FindIndex(t => t.Id == truckDto.Id);
+        if (idx >= 0)
+            savedData.Trucks[idx] = truckDto;
+        else
+            savedData.Trucks.Add(truckDto);
+
+        await LocalStorage.SetItemAsync(storageKey, savedData);
     }
 
-
-
-    // Wizard Navigation
-    private void NextStep()
+    // Called when user clicks "Next"
+    private async Task NextStepAsync()
     {
+        await SaveTruckProgressAsync();
         if (currentStep < totalSteps)
         {
             currentStep++;
         }
     }
-    private void PreviousStep()
+
+    // Called when user clicks "Previous"
+    private async Task PreviousStepAsync()
     {
+        await SaveTruckProgressAsync();
         if (currentStep > 1)
         {
             currentStep--;
         }
         else
         {
-            NavigationManager.NavigateTo(AppRoutes.RegisterDriver);
+            await OnBackToRegisterDriverAsync(); // Use the unified method
         }
     }
 

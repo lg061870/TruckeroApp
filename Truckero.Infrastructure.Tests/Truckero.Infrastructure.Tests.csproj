@@ -30,4 +30,8 @@
     <ProjectReference Include="..\Truckero.Infrastructure\Truckero.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Helpers\" />
+  </ItemGroup>
+
 </Project>

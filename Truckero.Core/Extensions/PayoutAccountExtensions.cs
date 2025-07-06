@@ -1,4 +1,4 @@
-﻿using Truckero.Core.DTOs.Onboarding;
+﻿using Truckero.Core.DTOs.PayoutAccount;
 using Truckero.Core.Entities;
 
 namespace Truckero.Core.Extensions; 

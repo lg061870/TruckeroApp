@@ -146,7 +146,7 @@ public class CustomerRepositoryTests : IClassFixture<TestDbContextFixture> {
 
         // Add customer profile and payment methods
         _fixture.DbContext.CustomerProfiles.Add(customerWithPaymentMethods);
-        _fixture.DbContext.PaymentMethods.AddRange(customerWithPaymentMethods.PaymentMethods);
+        _fixture.DbContext.PaymentAccounts.AddRange(customerWithPaymentMethods.PaymentAccounts);
         await _fixture.DbContext.SaveChangesAsync();
 
         // Act - Retrieve customer with payment methods
@@ -157,9 +157,9 @@ public class CustomerRepositoryTests : IClassFixture<TestDbContextFixture> {
         Assert.Equal(customerWithPaymentMethods.Id, result!.Id);
 
         // Verify payment methods if the repository method includes them
-        if (result.PaymentMethods != null) {
-            Assert.NotEmpty(result.PaymentMethods);
-            Assert.Equal(customerWithPaymentMethods.PaymentMethods.Count, result.PaymentMethods.Count);
+        if (result.PaymentAccounts != null) {
+            Assert.NotEmpty(result.PaymentAccounts);
+            Assert.Equal(customerWithPaymentMethods.PaymentAccounts.Count, result.PaymentAccounts.Count);
         }
     }
 

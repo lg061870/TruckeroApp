@@ -63,18 +63,18 @@ public static class MockCustomerTestData
             Id = Guid.NewGuid(),
             UserId = Guid.NewGuid(),
             CreatedAt = DateTime.UtcNow.AddDays(-14),
-            PaymentMethods = new List<PaymentMethod>()
+            PaymentAccounts = new List<PaymentAccount>()
         };
 
         // Add payment methods to this customer
-        var creditCard = new PaymentMethod
+        var creditCard = new PaymentAccount
         {
             Id = Ids.DefaultPaymentMethodId,
             UserId = customer.UserId,
             PaymentMethodTypeId = Ids.CardPaymentMethodTypeId,
             IsDefault = true,
             TokenizedId = "tok_visa_1234",
-            Last4 = "1234",
+            AccountNumberLast4 = "1234",
             CreatedAt = customer.CreatedAt,
             MetadataJson = JsonSerializer.Serialize(new CardMetadata
             {
@@ -85,14 +85,14 @@ public static class MockCustomerTestData
             })
         };
 
-        var bankAccount = new PaymentMethod
+        var bankAccount = new PaymentAccount
         {
             Id = Guid.NewGuid(),
             UserId = customer.UserId,
             PaymentMethodTypeId = Ids.BankPaymentMethodTypeId,
             IsDefault = false,
             TokenizedId = "ba_checking_5678",
-            Last4 = "5678",
+            AccountNumberLast4 = "5678",
             CreatedAt = customer.CreatedAt.AddDays(1),
             MetadataJson = JsonSerializer.Serialize(new BankMetadata
             {
@@ -101,8 +101,8 @@ public static class MockCustomerTestData
             })
         };
 
-        customer.PaymentMethods.Add(creditCard);
-        customer.PaymentMethods.Add(bankAccount);
+        customer.PaymentAccounts.Add(creditCard);
+        customer.PaymentAccounts.Add(bankAccount);
 
         return customer;
     }

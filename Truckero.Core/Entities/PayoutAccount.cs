@@ -17,4 +17,5 @@ public class PayoutAccount
 
     // 🧾 Custom fields (e.g. RoutingNumber, CryptoNetwork)
     public string? MetadataJson { get; set; }
+    public bool IsValidated { get; set; }
 }

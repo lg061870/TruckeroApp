@@ -15,13 +15,13 @@ namespace Truckero.Infrastructure.Services {
     public class TruckService : ITruckService {
         private readonly AppDbContext _dbContext; // Inject this!
         private readonly ITruckRepository _truckRepository;
-        private readonly IDriverRepository _driverProfileRepository;
+        private readonly IDriverProfileRepository _driverProfileRepository;
         private readonly ILogger<TruckService> _logger;
 
         public TruckService(
             AppDbContext dbContext,
             ITruckRepository truckRepository,
-            IDriverRepository driverProfileRepository,
+            IDriverProfileRepository driverProfileRepository,
             ILogger<TruckService> logger
         ) {
             _dbContext = dbContext;

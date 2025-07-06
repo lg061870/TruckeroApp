@@ -1,4 +1,4 @@
-using Microsoft.JSInterop;
+﻿using Microsoft.JSInterop;
 using System.Text.Json;
 using TruckeroApp.Interfaces;
 
@@ -27,18 +27,17 @@ public class LocalStorageService : ILocalStorageService
         try {
             // Try direct deserialize
             return JsonSerializer.Deserialize<T>(json, _jsonOptions);
-        } catch (JsonException) {
+        } catch (JsonException js) {
             Console.WriteLine($"Failed to deserialize '{key}' from localStorage. Attempting migration...");
 
             try {
-                // Parse as generic JSON document to fix the UseTags->UseTagIds migration
+                // Parse as generic JSON document for migration
                 using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
-
-                // Copy all properties, but fix Trucks[].UseTags -> Trucks[].UseTagIds
                 var obj = new Dictionary<string, object?>();
 
                 foreach (var prop in root.EnumerateObject()) {
+                    // Trucks[].UseTags → Trucks[].UseTagIds migration
                     if (prop.Name == "Trucks" && prop.Value.ValueKind == JsonValueKind.Array) {
                         var trucks = new List<Dictionary<string, object?>>();
 
@@ -46,18 +45,16 @@ public class LocalStorageService : ILocalStorageService
                             var truckDict = new Dictionary<string, object?>();
                             foreach (var tProp in truckElem.EnumerateObject()) {
                                 if (tProp.Name == "UseTags" && tProp.Value.ValueKind == JsonValueKind.Array) {
-                                    // Map to UseTagIds
                                     var useTagIds = tProp.Value.EnumerateArray()
                                         .Select(tagObj =>
                                             tagObj.TryGetProperty("UseTagId", out var idProp)
                                                 ? idProp.GetGuid()
-                                                : Guid.Empty
-                                        ).Where(guid => guid != Guid.Empty)
-                                         .ToList();
+                                                : Guid.Empty)
+                                        .Where(guid => guid != Guid.Empty)
+                                        .ToList();
                                     truckDict["UseTagIds"] = useTagIds;
                                 }
                                 else if (tProp.Name != "UseTags") {
-                                    // Copy property as-is
                                     truckDict[tProp.Name] = tProp.Value.Deserialize<object?>(_jsonOptions);
                                 }
                             }
@@ -66,17 +63,42 @@ public class LocalStorageService : ILocalStorageService
 
                         obj["Trucks"] = trucks;
                     }
+                    // 🟠 PATCH: DriverProfileRequest.CountryCode migration for missing property
+                    else if (prop.Name == "Profile" && prop.Value.ValueKind == JsonValueKind.Object) {
+                        var profileDict = new Dictionary<string, object?>();
+
+                        foreach (var pProp in prop.Value.EnumerateObject())
+                            profileDict[pProp.Name] = pProp.Value.Deserialize<object?>(_jsonOptions);
+
+                        // Add CountryCode if missing (default to empty string for now, fix in UI)
+                        if (!profileDict.ContainsKey("CountryCode"))
+                            profileDict["CountryCode"] = "CR";
+
+                        obj["Profile"] = profileDict;
+                    }
+                    // Default: Copy as-is
                     else {
                         obj[prop.Name] = prop.Value.Deserialize<object?>(_jsonOptions);
                     }
                 }
 
-                // Serialize back to fixed JSON and retry deserialization
+                // Serialize back to patched JSON and retry deserialization
                 var fixedJson = JsonSerializer.Serialize(obj, _jsonOptions);
-                // Optionally store the fixed version
-                await _jsRuntime.InvokeVoidAsync("localStorage.setItem", key, fixedJson);
 
-                // Try to deserialize again
+                if (fixedJson.Length > 4_000_000)
+                    Console.WriteLine("Warning: fixedJson is very large (>4MB) and may exceed localStorage quota.");
+
+                try {
+                    await _jsRuntime.InvokeVoidAsync("localStorage.setItem", key, fixedJson);
+                } catch (Exception jsEx) {
+                    Console.WriteLine($"localStorage.setItem threw: {jsEx.Message}");
+                    Console.WriteLine($"fixedJson length: {fixedJson?.Length}");
+                    // Optionally: log fixedJson or part of it
+                    // You can also check for JSException and look at its details if using Blazor
+                }
+
+
+                // Try to deserialize again with fixed json
                 return JsonSerializer.Deserialize<T>(fixedJson, _jsonOptions);
             } catch (Exception ex2) {
                 Console.WriteLine($"Migration failed: {ex2.Message}");
@@ -84,25 +106,6 @@ public class LocalStorageService : ILocalStorageService
             }
         }
     }
-
-    //public async Task<T?> GetItemAsync<T>(string key)
-    //{
-    //    var json = await _jsRuntime.InvokeAsync<string?>("localStorage.getItem", key);
-
-    //    if (string.IsNullOrEmpty(json))
-    //        return default;
-
-    //    try
-    //    {
-    //        return JsonSerializer.Deserialize<T>(json, _jsonOptions);
-    //    }
-    //    catch (JsonException)
-    //    {
-    //        // If we can't deserialize (format changed, etc.), return default
-    //        Console.WriteLine($"Failed to deserialize '{key}' from localStorage");
-    //        return default;
-    //    }
-    //}
 
     public async Task SetItemAsync<T>(string key, T value)
     {

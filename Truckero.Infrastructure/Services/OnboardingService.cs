@@ -1,12 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Threading.Tasks;
 using Truckero.Core.DTOs.Auth;
 using Truckero.Core.DTOs.Common;
 using Truckero.Core.DTOs.Onboarding;
-using Truckero.Core.DTOs.Trucks;
 using Truckero.Core.Entities;
 using Truckero.Core.Exceptions;
 using Truckero.Core.Interfaces;
@@ -25,7 +21,7 @@ public class OnboardingService : IOnboardingService {
     private readonly AppDbContext _dbContext;
     private readonly IConfirmationTokenRepository _confirmationTokenRepo;
     private readonly IEmailService _emailService;
-    private readonly IDriverRepository _driverRepo;
+    private readonly IDriverProfileRepository _driverRepo;
     private readonly IPayoutAccountRepository _payoutAccountRepo;
 
     public OnboardingService(
@@ -37,7 +33,7 @@ public class OnboardingService : IOnboardingService {
         AppDbContext dbContext,
         IConfirmationTokenRepository confirmationTokenRepo,
         IEmailService emailService,
-        IDriverRepository driverRepo,
+        IDriverProfileRepository driverRepo,
         IPayoutAccountRepository payoutAccountRepo) {
         _customerRepo = customerRepo;
         _progressRepo = progressRepo;

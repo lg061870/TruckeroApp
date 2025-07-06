@@ -27,16 +27,11 @@ public static class ExceptionCodes {
     public const string DriverProfileNotFound = "DRIVER_PROFILE_NOT_FOUND"; // Use this if you want to distinguish from UserNotFound
 
     // --- Validation & General Errors ---
-    public const string ValidationError = "VALIDATION_ERROR";
+    public const string ValidationFailed = "VALIDATION_FAILED";
     public const string IdMismatch = "ID_MISMATCH";
     public const string UnhandledException = "UNHANDLED_EXCEPTION";
     public const string Conflict = "CONFLICT";
     public const string NotImplemented = "NOT_IMPLEMENTED";
-
-    // --- Payout Account / Payment ---
-    public const string PayoutAccountNotFound = "PAYOUT_ACCOUNT_NOT_FOUND";
-    public const string CannotDeleteDefault = "CANNOT_DELETE_DEFAULT";
-    public const string InvalidPaymentMethodType = "INVALID_PAYMENT_METHOD_TYPE";
 
     // --- Truck & Vehicle Domain ---
     public const string TruckTypeNotFound = "TRUCK_TYPE_NOT_FOUND";
@@ -58,4 +53,37 @@ public static class ExceptionCodes {
 
     // --- Miscellaneous / Legacy ---
     public const string Unknown = "UNKNOWN";
+
+    public static class FreightBidErrorCodes {
+        public const string NotFound = "FREIGHTBID_NOT_FOUND";
+        public const string ForeignKeyNotFound = "FREIGHTBID_FK_NOT_FOUND";
+        public const string SaveFailed = "FREIGHTBID_SAVE_FAILED";
+        public const string ValidationError = "FREIGHTBID_VALIDATION_ERROR";
+        public const string Conflict = "FREIGHTBID_CONFLICT";
+        public const string Unknown = "FREIGHTBID_UNKNOWN";
+    }
+    public static class DriverBidErrorCodes {
+        public const string NotFound = "DRIVER_BID_NOT_FOUND";
+        public const string ForeignKeyNotFound = "DRIVER_BID_FOREIGN_KEY_NOT_FOUND";
+        public const string DriverNotFound = "DRIVER_NOT_FOUND";
+        public const string TruckNotFound = "TRUCK_NOT_FOUND";
+        public const string FreightBidNotFound = "FREIGHT_BID_NOT_FOUND";
+        public const string SaveFailed = "DRIVER_BID_SAVE_FAILED";
+        public const string Unknown = "DRIVER_BID_UNKNOWN";
+    }
+    public static class PayoutAccountErrorCodes {
+        public const string NotFound = "PAYOUT_ACCOUNT_NOT_FOUND";
+        public const string CannotDeleteDefault = "PAYOUT_ACCOUNT_CANNOT_DELETE_DEFAULT";
+        public const string InvalidPaymentMethodType = "PAYOUT_ACCOUNT_INVALID_PAYMENT_METHOD_TYPE";
+        public const string UserNotFound = "PAYOUT_ACCOUNT_USER_NOT_FOUND";
+        public const string DriverProfileNotFound = "PAYOUT_ACCOUNT_DRIVER_PROFILE_NOT_FOUND";
+        public const string Unknown = "PAYOUT_ACCOUNT_UNKNOWN";
+    }
+    public static class PaymentAccountErrorCodes {
+        public const string NotFound = "PAYMENT_ACCOUNT_NOT_FOUND";
+        public const string InvalidType = "PAYMENT_ACCOUNT_INVALID_TYPE";
+        public const string UserNotFound = "PAYMENT_ACCOUNT_USER_NOT_FOUND";
+        public const string Unknown = "PAYMENT_ACCOUNT_UNKNOWN";
+        // Add any others as needed!
+    }
 }

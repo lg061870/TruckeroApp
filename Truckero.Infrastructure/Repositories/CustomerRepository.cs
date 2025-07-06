@@ -17,7 +17,7 @@ public class CustomerRepository : ICustomerRepository
     public async Task<CustomerProfile?> GetCustomerProfileByUserIdAsync(Guid userId)
     {
         return await _context.CustomerProfiles
-            .Include(cp => cp.PaymentMethods)
+            .Include(cp => cp.PaymentAccounts)
             .FirstOrDefaultAsync(cp => cp.UserId == userId);
     }
 

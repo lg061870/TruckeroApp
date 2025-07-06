@@ -1,0 +1,41 @@
+﻿@* StepNavigator.razor *@
+<div class="flex justify-between mb-6">
+    <button class="text-orange-500 font-medium flex items-center"
+            @onclick="PreviousClicked"
+            disabled="@(CurrentStep == 1 || IsBusy)">
+        <i class="fa-solid fa-chevron-left mr-2"></i>Previous
+    </button>
+    <div class="flex space-x-2">
+        @for (int i = 1; i <= TotalSteps; i++)
+        {
+            <span class="h-2 w-2 rounded-full @(GetDotClass(i))"></span>
+        }
+    </div>
+    <button class="text-orange-500 font-medium flex items-center"
+            @onclick="NextClicked"
+            disabled="@(CurrentStep == TotalSteps || IsBusy)">
+        Next<i class="fa-solid fa-chevron-right ml-2"></i>
+    </button>
+</div>
+
+@code {
+    [Parameter] public int CurrentStep { get; set; }
+    [Parameter] public int TotalSteps { get; set; }
+    [Parameter] public bool IsBusy { get; set; } = false;
+    [Parameter] public EventCallback NextStep { get; set; }
+    [Parameter] public EventCallback PreviousStep { get; set; }
+
+    private string GetDotClass(int step)
+        => step == CurrentStep ? "bg-orange-500" : "bg-gray-300";
+
+    private async Task NextClicked()
+    {
+        if (!IsBusy)
+            await NextStep.InvokeAsync();
+    }
+    private async Task PreviousClicked()
+    {
+        if (!IsBusy)
+            await PreviousStep.InvokeAsync();
+    }
+}

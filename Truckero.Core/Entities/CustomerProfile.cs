@@ -17,8 +17,8 @@ public class CustomerProfile
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    public ICollection<PaymentMethod> PaymentMethods { get; set; } = new List<PaymentMethod>();
+    public ICollection<PaymentAccount> PaymentAccounts { get; set; } = new List<PaymentAccount>();
 
     [NotMapped]
-    public bool HasPaymentMethods => PaymentMethods.Count > 0;
+    public bool HasPaymentMethods => PaymentAccounts.Count > 0;
 }

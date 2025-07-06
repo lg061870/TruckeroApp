@@ -71,4 +71,8 @@
 		<ProjectReference Include="..\Truckero.Diagnostics\Truckero.Diagnostics.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="ServiceClients\Interfaces\" />
+	</ItemGroup>
+
 </Project>

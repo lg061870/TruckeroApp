@@ -1,0 +1,534 @@
+﻿@using System.Text.Json
+@using Truckero.Core.DTOs.PayoutAccount
+@using Truckero.Core.DTOs.Shared
+
+<div>
+    @RenderSelectedPayoutForm()
+</div>
+
+@code {
+    [Parameter] public string PaymentMethodType { get; set; } = "";
+    [Parameter] public List<BankRequest> AvailableBanks { get; set; } = new();
+    [Parameter] public EventCallback<(string PayoutMethodType, string MetadataJson)> OnSubmit { get; set; }
+    [Parameter] public Dictionary<string, string>? EditFields { get; set; }
+    [Parameter] public bool IsEditMode { get; set; }
+
+    private PayoutAccountJSONType Model { get; set; } = new PayoutAccountJSONType
+    {
+        PayoutMethodType = string.Empty // Initialize the required property
+    };
+
+    protected override void OnParametersSet()
+    {
+        Model = new PayoutAccountJSONType
+        {
+            PayoutMethodType = PaymentMethodType,
+            Fields = EditFields != null
+                ? new Dictionary<string, string>(EditFields)
+                : new Dictionary<string, string>()
+        };
+    }
+
+    private async Task SubmitAsync()
+    {
+        var metadataJson = JsonSerializer.Serialize(Model.Fields);
+        await OnSubmit.InvokeAsync((PaymentMethodType, metadataJson));
+    }
+
+    private RenderFragment RenderSelectedPayoutForm() => PaymentMethodType switch
+    {
+        "Bank" or "BankAccount" => RenderBankAccountForm,
+        "PayPal" => RenderPayPalForm,
+        "Wallet" => RenderWalletForm,
+        "SinpeMovil" => RenderSinpeMovilForm,
+        "SinpeIBAN" => RenderSinpeIbanForm,
+        "WesternUnion" => RenderWesternUnionForm,
+        "GiftCard" => RenderGiftCardForm,
+        "Card" => RenderCardForm,
+        "Cash" => RenderCashForm,
+        "Crypto" => RenderCryptoForm,
+        _ => RenderGenericPayoutForm
+    };
+
+    // --- Shared ---
+    private string PayoutAccountNickName
+    {
+        get => Model.Fields.TryGetValue("PayoutAccountNickName", out var v) ? v : "";
+        set => Model.Fields["PayoutAccountNickName"] = value;
+    }
+
+    // --- BANK ---
+    private string BankAccountHolderName
+    {
+        get => Model.Fields.TryGetValue("bankAccountHolderName", out var v) ? v : "";
+        set => Model.Fields["bankAccountHolderName"] = value;
+    }
+    private string BankId
+    {
+        get => Model.Fields.TryGetValue("bankId", out var v) ? v : "";
+        set => Model.Fields["bankId"] = value;
+    }
+    private string BankAccountNumber
+    {
+        get => Model.Fields.TryGetValue("bankAccountNumber", out var v) ? v : "";
+        set => Model.Fields["bankAccountNumber"] = value;
+    }
+    private string BankAccountNumberConfirm
+    {
+        get => Model.Fields.TryGetValue("bankAccountNumberConfirm", out var v) ? v : "";
+        set => Model.Fields["bankAccountNumberConfirm"] = value;
+    }
+    private string RoutingNumber
+    {
+        get => Model.Fields.TryGetValue("routingNumber", out var v) ? v : "";
+        set => Model.Fields["routingNumber"] = value;
+    }
+
+    // --- PAYPAL ---
+    private string PayPalFullName
+    {
+        get => Model.Fields.TryGetValue("payPalFullName", out var v) ? v : "";
+        set => Model.Fields["payPalFullName"] = value;
+    }
+    private string PayPalEmail
+    {
+        get => Model.Fields.TryGetValue("payPalEmail", out var v) ? v : "";
+        set => Model.Fields["payPalEmail"] = value;
+    }
+    private string PayPalEmailConfirm
+    {
+        get => Model.Fields.TryGetValue("payPalEmailConfirm", out var v) ? v : "";
+        set => Model.Fields["payPalEmailConfirm"] = value;
+    }
+
+    // --- SINPE MOVIL ---
+    private string SinpeMovilFullName
+    {
+        get => Model.Fields.TryGetValue("sinpeMovilFullName", out var v) ? v : "";
+        set => Model.Fields["sinpeMovilFullName"] = value;
+    }
+    private string SinpeMovilNumber
+    {
+        get => Model.Fields.TryGetValue("sinpeMovilNumber", out var v) ? v : "";
+        set => Model.Fields["sinpeMovilNumber"] = value;
+    }
+
+    // --- SINPE IBAN ---
+    private string SinpeIbanAccountHolderName
+    {
+        get => Model.Fields.TryGetValue("sinpeIbanAccountHolderName", out var v) ? v : "";
+        set => Model.Fields["sinpeIbanAccountHolderName"] = value;
+    }
+    private string SinpeIban
+    {
+        get => Model.Fields.TryGetValue("sinpeIban", out var v) ? v : "";
+        set => Model.Fields["sinpeIban"] = value;
+    }
+
+    // --- WESTERN UNION ---
+    private string WesternUnionFullName
+    {
+        get => Model.Fields.TryGetValue("westernUnionFullName", out var v) ? v : "";
+        set => Model.Fields["westernUnionFullName"] = value;
+    }
+    private string WesternUnionPickupCountry
+    {
+        get => Model.Fields.TryGetValue("westernUnionPickupCountry", out var v) ? v : "Costa Rica";
+        set => Model.Fields["westernUnionPickupCountry"] = value;
+    }
+
+    // --- CASH ---
+    private string CashRecipientName
+    {
+        get => Model.Fields.TryGetValue("cashRecipientName", out var v) ? v : "";
+        set => Model.Fields["cashRecipientName"] = value;
+    }
+
+    // --- GIFT CARD ---
+    private string GiftCardEmail
+    {
+        get => Model.Fields.TryGetValue("giftCardEmail", out var v) ? v : "";
+        set => Model.Fields["giftCardEmail"] = value;
+    }
+
+    // --- WALLET ---
+    private string WalletProvider
+    {
+        get => Model.Fields.TryGetValue("walletProvider", out var v) ? v : "";
+        set => Model.Fields["walletProvider"] = value;
+    }
+    private string WalletAccount
+    {
+        get => Model.Fields.TryGetValue("walletAccount", out var v) ? v : "";
+        set => Model.Fields["walletAccount"] = value;
+    }
+
+    // --- CARD ---
+    private string CardHolderName
+    {
+        get => Model.Fields.TryGetValue("cardHolderName", out var v) ? v : "";
+        set => Model.Fields["cardHolderName"] = value;
+    }
+    private string CardNumber
+    {
+        get => Model.Fields.TryGetValue("cardNumber", out var v) ? v : "";
+        set => Model.Fields["cardNumber"] = value;
+    }
+    private string IssuingBank
+    {
+        get => Model.Fields.TryGetValue("issuingBank", out var v) ? v : "";
+        set => Model.Fields["issuingBank"] = value;
+    }
+
+    // --- CRYPTO ---
+    private string CryptoCoinType
+    {
+        get => Model.Fields.TryGetValue("cryptoCoinType", out var v) ? v : "";
+        set => Model.Fields["cryptoCoinType"] = value;
+    }
+    private string CryptoNetwork
+    {
+        get => Model.Fields.TryGetValue("cryptoNetwork", out var v) ? v : "";
+        set => Model.Fields["cryptoNetwork"] = value;
+    }
+    private string CryptoWalletAddress
+    {
+        get => Model.Fields.TryGetValue("cryptoWalletAddress", out var v) ? v : "";
+        set => Model.Fields["cryptoWalletAddress"] = value;
+    }
+
+    // --- BANK ---
+    private RenderFragment RenderBankAccountForm => @<div>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Account Name (optional)</label>
+                <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                       placeholder="e.g. Main Checking, Payroll Bank"
+                       maxlength="32"
+                       @bind="PayoutAccountNickName" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Account Holder Name</label>
+                <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                       placeholder="Enter full name" @bind="BankAccountHolderName" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
+                <select class="w-full px-4 py-3 border border-gray-300 rounded-lg" @bind="BankId">
+                    <option value="">Select your bank</option>
+                    @foreach (var bank in AvailableBanks)
+                    {
+                        <option value="@bank.Id">@bank.Name</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
+                <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                       placeholder="Enter account number" @bind="BankAccountNumber" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Confirm Account Number</label>
+                <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                       placeholder="Re-enter account number" @bind="BankAccountNumberConfirm" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Routing Number <span class="text-xs text-gray-400">(Optional)</span></label>
+                <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                       placeholder="Enter routing number" @bind="RoutingNumber" />
+            </div>
+            <div class="pt-4">
+                <button class="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600"
+                        @onclick="SubmitAsync">
+                    @(IsEditMode ? $"Update Bank Account" : $"Save Bank Account")
+                </button>
+            </div>
+        </div>
+    </div>;
+
+    // --- PAYPAL ---
+    private RenderFragment RenderPayPalForm => @<div>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Account Name (optional)</label>
+                <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                       placeholder="e.g. Business PayPal, Freelance Account"
+                       maxlength="32"
+                       @bind="PayoutAccountNickName" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Full Name</label>
+                <input type="text" required class="w-full px-4 py-3 rounded-lg border border-gray-300"
+                       placeholder="Enter full name" @bind="PayPalFullName" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">PayPal Email</label>
+                <input type="email" required class="w-full px-4 py-3 rounded-lg border border-gray-300"
+                       placeholder="Enter PayPal email" @bind="PayPalEmail" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Confirm PayPal Email</label>
+                <input type="email" required class="w-full px-4 py-3 rounded-lg border border-gray-300"
+                       placeholder="Confirm PayPal email" @bind="PayPalEmailConfirm" />
+            </div>
+            <div class="pt-4">
+                <button class="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600"
+                        @onclick="SubmitAsync">
+                    @(IsEditMode ? $"Update PayPal" : $"Save PayPal")
+                </button>
+            </div>
+        </div>
+    </div>;
+
+    // --- WALLET ---
+    private RenderFragment RenderWalletForm => @<div>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Account Name (optional)</label>
+                <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300"
+                       placeholder="e.g. My Google Pay, Apple Wallet"
+                       maxlength="32"
+                       @bind="PayoutAccountNickName" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Wallet Provider</label>
+                <select class="w-full px-4 py-3 rounded-lg border border-gray-300"
+                        @bind="WalletProvider">
+                    <option value="">Select Provider</option>
+                    <option value="GooglePay">Google Pay</option>
+                    <option value="ApplePay">Apple Pay</option>
+                    <option value="SamsungPay">Samsung Pay</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Wallet Account Email / ID</label>
+                <input type="email" class="w-full px-4 py-3 rounded-lg border border-gray-300"
+                       placeholder="Email or phone associated with wallet"
+                       @bind="WalletAccount" />
+            </div>
+            <div class="pt-4">
+                <button class="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600"
+                        @onclick="SubmitAsync">
+                    @(IsEditMode ? $"Update Wallet" : $"Save Wallet")
+                </button>
+            </div>
+        </div>
+    </div>;
+
+    // --- SINPE MOVIL ---
+    private RenderFragment RenderSinpeMovilForm => @<div>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Account Name (optional)</label>
+                <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300"
+                       placeholder="e.g. Sinpe Personal, Work Phone"
+                       maxlength="32"
+                       @bind="PayoutAccountNickName" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300"
+                       placeholder="Enter full name" @bind="SinpeMovilFullName" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Sinpe Móvil Phone Number</label>
+                <input type="tel" class="w-full px-4 py-3 rounded-lg border border-gray-300"
+                       placeholder="8-digit mobile number" maxlength="8"
+                       @bind="SinpeMovilNumber" />
+            </div>
+            <div class="pt-4">
+                <button class="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600"
+                        @onclick="SubmitAsync">
+                    @(IsEditMode ? $"Update Sinpe Móvil" : $"Save Sinpe Móvil")
+                </button>
+            </div>
+        </div>
+    </div>;
+
+    // --- SINPE IBAN ---
+    private RenderFragment RenderSinpeIbanForm => @<div>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Account Name (optional)</label>
+                <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300"
+                       placeholder="e.g. CR Savings, Personal IBAN"
+                       maxlength="32"
+                       @bind="PayoutAccountNickName" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Account Holder Name</label>
+                <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300"
+                       placeholder="Enter full name" @bind="SinpeIbanAccountHolderName" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">IBAN (Cuenta Cliente)</label>
+                <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300 uppercase"
+                       maxlength="22" placeholder="CR***************" @bind="SinpeIban" />
+            </div>
+            <div class="pt-4">
+                <button class="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600"
+                        @onclick="SubmitAsync">
+                    @(IsEditMode ? $"Update Sinpe IBAN" : $"Save Sinpe IBAN")
+                </button>
+            </div>
+        </div>
+    </div>;
+
+    // --- WESTERN UNION ---
+    private RenderFragment RenderWesternUnionForm => @<div>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Account Name (optional)</label>
+                <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300"
+                       placeholder="e.g. Family Western, Main Pickup"
+                       maxlength="32"
+                       @bind="PayoutAccountNickName" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Full Name (as per ID)</label>
+                <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300"
+                       placeholder="Enter full name" @bind="WesternUnionFullName" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Country of Pickup</label>
+                <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300"
+                       @bind="WesternUnionPickupCountry" readonly />
+            </div>
+            <div class="pt-4">
+                <button class="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600"
+                        @onclick="SubmitAsync">
+                    @(IsEditMode ? $"Update Western Union" : $"Save Western Union")
+                </button>
+            </div>
+        </div>
+    </div>;
+
+    // --- GIFT CARD ---x
+    private RenderFragment RenderGiftCardForm => @<div>
+    <div class="space-y-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Account Name (optional)</label>
+            <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300"
+                   placeholder="e.g. Mom’s Birthday Gift Card"
+                   @bind="PayoutAccountNickName" maxlength="32" />
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Recipient Email</label>
+            <input type="email" class="w-full px-4 py-3 rounded-lg border border-gray-300"
+                   placeholder="Enter email for delivery" @bind="GiftCardEmail" />
+        </div>
+        <div class="pt-4">
+            <button class="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600"
+                    @onclick="SubmitAsync">
+                @(IsEditMode ? $"Update Gift Card" : $"Save Gift Card")
+            </button>
+        </div>
+    </div>
+</div>;
+
+    // --- CARD ---
+    private RenderFragment RenderCardForm => @<div>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Account Name (optional)</label>
+                <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300"
+                       placeholder="e.g. Personal VISA, Business Checking, Crypto Wallet..."
+                       maxlength="32"
+                       @bind="PayoutAccountNickName" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Card Holder Name</label>
+                <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300"
+                       placeholder="Enter card holder name" @bind="CardHolderName" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Card Number</label>
+                <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300"
+                       placeholder="Enter card number" @bind="CardNumber" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Issuing Bank</label>
+                <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300"
+                       placeholder="Enter issuing bank" @bind="IssuingBank" />
+            </div>
+            <div class="pt-4">
+                <button class="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600"
+                        @onclick="SubmitAsync">
+                    @(IsEditMode ? $"Update Card" : $"Save Card")
+                </button>
+            </div>
+        </div>
+    </div>;
+
+    // --- CASH ---
+    private RenderFragment RenderCashForm => @<div>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Account Name (optional)</label>
+                <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300"
+                       placeholder="e.g. Office Cash, Main Register"
+                       maxlength="32"
+                       @bind="PayoutAccountNickName" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Recipient Name</label>
+                <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300"
+                       placeholder="Enter name for cash receipt" @bind="CashRecipientName" />
+            </div>
+            <div class="pt-4">
+                <button class="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600"
+                        @onclick="SubmitAsync">
+                    @(IsEditMode ? $"Update Cash Payout" : $"Save Cash Payout")
+                </button>
+            </div>
+        </div>
+    </div>;
+
+    // --- CRYPTO ---
+    private RenderFragment RenderCryptoForm => @<div>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Account Name (optional)</label>
+                <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300"
+                       placeholder="e.g. My ETH Wallet, Trading Crypto"
+                       maxlength="32"
+                       @bind="PayoutAccountNickName" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Cryptocurrency</label>
+                <select class="w-full px-4 py-3 rounded-lg border border-gray-300"
+                        @bind="CryptoCoinType">
+                    <option value="">Select coin</option>
+                    <option value="BTC">Bitcoin (BTC)</option>
+                    <option value="ETH">Ethereum (ETH)</option>
+                    <option value="USDT">Tether (USDT)</option>
+                    <option value="USDC">USD Coin (USDC)</option>
+                    <option value="SOL">Solana (SOL)</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Network</label>
+                <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300"
+                       placeholder="e.g. ERC20, TRC20, Solana, etc." @bind="CryptoNetwork" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Wallet Address</label>
+                <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300"
+                       placeholder="Paste your wallet address" @bind="CryptoWalletAddress" />
+            </div>
+            <div class="pt-4">
+                <button class="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600"
+                        @onclick="SubmitAsync">
+                    @(IsEditMode ? $"Update Crypto Payout" : $"Save Crypto Payout")
+                </button>
+            </div>
+        </div>
+    </div>;
+
+    // --- GENERIC (fallback) ---
+    private RenderFragment RenderGenericPayoutForm => @<div>
+        <p>Generic Form Placeholder</p>
+    </div>;
+}
