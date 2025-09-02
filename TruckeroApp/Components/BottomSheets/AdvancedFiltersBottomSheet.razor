@@ -1,0 +1,214 @@
+﻿@using Truckero.Core.Entities
+@* AdvancedFilterBottomSheet.razor *@
+   
+<div class="fixed inset-0 z-50 flex flex-col justify-end">
+    <div class="bg-white rounded-t-2xl shadow-lg p-6 max-h-[80vh] overflow-y-auto">
+        <h3 class="text-lg font-semibold mb-4">Advanced Filters</h3>
+
+        <!-- Truck Type -->
+        <div class="mb-4">
+            <label class="block mb-2">Truck Type</label>
+            <select class="w-full p-2 border rounded" @onchange="OnTruckTypeChanged">
+                <option value="">-- Any --</option>
+                @foreach (var type in TruckTypes)
+                {
+                    <option value="@type.Id">@type.Name</option>
+                }
+            </select>
+        </div>
+
+        <!-- Truck Category -->
+        <div class="mb-4">
+            <label class="block mb-2">Truck Category</label>
+            <select class="w-full p-2 border rounded" @bind="SelectedTruckCategoryId">
+                <option value="">-- Any --</option>
+                @foreach (var cat in TruckCategories)
+                {
+                    <option value="@cat.Id">@cat.Name</option>
+                }
+            </select>
+        </div>
+
+        <!-- Bed Type -->
+        <div class="mb-4">
+            <label class="block mb-2">Bed Type</label>
+            <select class="w-full p-2 border rounded" @bind="SelectedBedTypeId">
+                <option value="">-- Any --</option>
+                @foreach (var bed in BedTypes)
+                {
+                    <option value="@bed.Id">@bed.Name</option>
+                }
+            </select>
+        </div>
+
+        <!-- Truck Make -->
+        <div class="mb-4">
+            <label class="block mb-2">Truck Make</label>
+            <select class="w-full p-2 border rounded" @onchange="OnTruckMakeChanged">
+                <option value="">-- Any --</option>
+                @foreach (var make in TruckMakes)
+                {
+                    <option value="@make.Id">@make.Name</option>
+                }
+            </select>
+        </div>
+
+        <!-- Truck Model -->
+        <div class="mb-4">
+            <label class="block mb-2">Truck Model</label>
+            <select class="w-full p-2 border rounded" @bind="SelectedTruckModelId">
+                <option value="">-- Any --</option>
+                @foreach (var model in FilteredTruckModels)
+                {
+                    <option value="@model.Id">@model.Name</option>
+                }
+            </select>
+        </div>
+
+        <!-- Use Tags -->
+        <div class="mb-4">
+            <label class="block mb-2 font-medium">Use Tags</label>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                @foreach (var tag in UseTags)
+                {
+                    <label class="flex items-center gap-2 px-2 py-1 bg-gray-50 border border-gray-200 rounded shadow-sm cursor-pointer text-sm">
+                        <input type="checkbox"
+                               class="accent-orange-500 rounded"
+                               value="@tag.Id"
+                               @onchange="e => ToggleUseTag(tag.Id, e.Value)"
+                               checked="@SelectedUseTagIds.Contains(tag.Id)" />
+                        <span>@tag.Name</span>
+                    </label>
+                }
+            </div>
+        </div>
+
+        <!-- Help Options -->
+        <div class="mb-4">
+            <label class="block mb-2 font-medium">Help Options</label>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                @foreach (var help in HelpOptions)
+                {
+                    <label class="flex items-center gap-2 px-2 py-1 bg-gray-50 border border-gray-200 rounded shadow-sm cursor-pointer text-sm">
+                        <input type="checkbox"
+                               class="accent-orange-500 rounded"
+                               value="@help.Id"
+                               @onchange="e => ToggleHelpOption(help.Id, e.Value)"
+                               checked="@SelectedHelpOptionIds.Contains(help.Id)" />
+                        <span>@help.Name</span>
+                    </label>
+                }
+            </div>
+        </div>
+
+
+        <div class="flex justify-between space-x-2 mt-4">
+            <button class="w-full py-2 rounded bg-gray-100" @onclick="OnDismiss">Cancel</button>
+            <button class="w-full py-2 rounded bg-orange-500 text-white font-semibold" @onclick="Apply">Apply</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    // Parameters for data input
+    [Parameter] public List<TruckType> TruckTypes { get; set; } = new();
+    [Parameter] public List<TruckCategory> TruckCategories { get; set; } = new();
+    [Parameter] public List<BedType> BedTypes { get; set; } = new();
+    [Parameter] public List<TruckMake> TruckMakes { get; set; } = new();
+    [Parameter] public List<TruckModel> TruckModels { get; set; } = new();
+    [Parameter] public List<UseTag> UseTags { get; set; } = new();
+    [Parameter] public List<HelpOption> HelpOptions { get; set; } = new();
+
+    [Parameter] public EventCallback OnDismiss { get; set; }
+    [Parameter] public EventCallback<AdvancedFilterResult> OnApply { get; set; }
+
+    // Selection state
+    private Guid? SelectedTruckTypeId { get; set; }
+    private Guid? SelectedTruckCategoryId { get; set; }
+    private Guid? SelectedBedTypeId { get; set; }
+    private Guid? SelectedTruckMakeId { get; set; }
+    private Guid? SelectedTruckModelId { get; set; }
+    private HashSet<Guid> SelectedUseTagIds { get; set; } = new();
+    private HashSet<Guid> SelectedHelpOptionIds { get; set; } = new();
+
+    // Returns all TruckModels if no make selected, otherwise filters by make
+    private IEnumerable<TruckModel> FilteredTruckModels =>
+        SelectedTruckMakeId is null || SelectedTruckMakeId == Guid.Empty
+            ? TruckModels
+            : TruckModels.Where(m => m.MakeId == SelectedTruckMakeId);
+
+
+    private void OnTruckMakeChanged(ChangeEventArgs e)
+    {
+        // Parse and set the new selected make ID
+        SelectedTruckMakeId = TryParseGuid(e.Value?.ToString());
+
+        // If a model is already selected, verify if it belongs to the new make
+        if (SelectedTruckModelId.HasValue)
+        {
+            var model = TruckModels.FirstOrDefault(m => m.Id == SelectedTruckModelId);
+            if (model == null || model.MakeId != SelectedTruckMakeId)
+            {
+                SelectedTruckModelId = null; // Clear model selection if incompatible
+            }
+        }
+
+        // Optional: If you want to do something else when make changes (like reload models), do it here
+    }
+
+    // Helper function (if you don't have one)
+    private Guid? TryParseGuid(string? s)
+    {
+        return Guid.TryParse(s, out var val) ? val : (Guid?)null;
+    }
+
+
+    private async Task OnTruckTypeChanged(ChangeEventArgs e)
+    {
+        SelectedTruckTypeId = Guid.TryParse(e.Value?.ToString(), out var val) ? val : (Guid?)null;
+        // Your logic here
+    }
+
+    private void ToggleUseTag(Guid tagId, object? checkedVal)
+    {
+        if ((bool?)checkedVal == true)
+            SelectedUseTagIds.Add(tagId);
+        else
+            SelectedUseTagIds.Remove(tagId);
+    }
+
+    private void ToggleHelpOption(Guid helpId, object? checkedVal)
+    {
+        if ((bool?)checkedVal == true)
+            SelectedHelpOptionIds.Add(helpId);
+        else
+            SelectedHelpOptionIds.Remove(helpId);
+    }
+
+    private async Task Apply()
+    {
+        var result = new AdvancedFilterResult
+        {
+            TruckTypeId = SelectedTruckTypeId,
+            TruckCategoryId = SelectedTruckCategoryId,
+            BedTypeId = SelectedBedTypeId,
+            TruckMakeId = SelectedTruckMakeId,
+            TruckModelId = SelectedTruckModelId,
+            UseTagIds = SelectedUseTagIds.ToList(),
+            HelpOptionIds = SelectedHelpOptionIds.ToList()
+        };
+        await OnApply.InvokeAsync(result);
+    }
+
+    // Result model for output
+    public class AdvancedFilterResult
+    {
+        public Guid? TruckTypeId { get; set; }
+        public Guid? TruckCategoryId { get; set; }
+        public Guid? BedTypeId { get; set; }
+        public Guid? TruckMakeId { get; set; }
+        public Guid? TruckModelId { get; set; }
+        public List<Guid> UseTagIds { get; set; } = new();
+        public List<Guid> HelpOptionIds { get; set; } = new();
+    }
+}

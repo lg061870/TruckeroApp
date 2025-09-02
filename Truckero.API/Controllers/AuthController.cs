@@ -7,6 +7,7 @@ using System.Net.Http.Headers;
 using System.Net.Mime;
 using System.Security.Claims;
 using System.Text.Json;
+using Truckero.Core.Constants;
 using Truckero.Core.DTOs.Auth;
 using Truckero.Core.Entities;
 using Truckero.Core.Exceptions;
@@ -205,7 +206,7 @@ public class AuthController : ControllerBase
 
         return Ok(new SessionInfo
         {
-            UserId = userId,
+            LoggedUser = token?.User ?? throw new OnboardingStepException("Critical Error: User was not found in token", ExceptionCodes.UserNotFound),
             Email = email,
             FullName = fullName,
             ActiveRole = role,

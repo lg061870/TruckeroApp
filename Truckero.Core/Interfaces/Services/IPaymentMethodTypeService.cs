@@ -1,11 +1,11 @@
 using Truckero.Core.DTOs.PaymentMethodType;
 
 public interface IPaymentMethodTypeService {
-    Task<List<PaymentMethodTypeRequest>> GetAllPaymentMethodTypesAsync();
-    Task<List<PaymentMethodTypeRequest>> GetPaymentMethodTypesByCountryAsync(string countryCode);
-    Task<PaymentMethodTypeRequest?> GetPaymentMethodTypeByIdAsync(Guid id);
+    Task<PaymentMethodTypeResponse> GetAllPaymentMethodTypesAsync();
+    Task<PaymentMethodTypeResponse> GetPaymentMethodTypesByCountryAsync(string countryCode);
+    Task<PaymentMethodTypeResponse?> GetPaymentMethodTypeByIdAsync(Guid id);
 
-    Task<PaymentMethodTypeRequest> AddPaymentMethodTypeAsync(PaymentMethodTypeRequest dto);
-    Task UpdatePaymentMethodTypeAsync(PaymentMethodTypeRequest dto);
-    Task DeletePaymentMethodTypeAsync(Guid id);
+    Task<PaymentMethodTypeResponse> AddPaymentMethodTypeAsync(PaymentMethodTypeRequest dto);
+    Task<PaymentMethodTypeResponse> UpdatePaymentMethodTypeAsync(PaymentMethodTypeRequest dto);
+    Task<PaymentMethodTypeResponse> DeletePaymentMethodTypeAsync(Guid id);
 }

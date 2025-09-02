@@ -1,5 +1,6 @@
 ﻿namespace Truckero.Core.DTOs.CustomerFlow; 
 public class DriverBidRequest {
+    public Guid DriverBidId { get; set; }
     public Guid FreightBidId { get; set; }
     public Guid DriverId { get; set; }
     public Guid TruckId { get; set; }

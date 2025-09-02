@@ -2,8 +2,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using Truckero.Core.Entities;
 
-public class DriverProfile
-{
+public class DriverProfile {
     [Key]
     public Guid Id { get; set; }
 
@@ -37,4 +36,8 @@ public class DriverProfile
 
     public ICollection<Truck> Trucks { get; set; } = new List<Truck>();
     public ICollection<PayoutAccount> PayoutAccounts { get; set; } = new List<PayoutAccount>();
+
+    // --- Add this: navigation to DriverBids ---
+    public ICollection<DriverBid> DriverBids { get; set; } = new List<DriverBid>();
 }
+

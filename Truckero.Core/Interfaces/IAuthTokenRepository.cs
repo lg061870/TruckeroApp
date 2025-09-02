@@ -1,6 +1,7 @@
 ﻿
 using System.ComponentModel.DataAnnotations;
 using Truckero.Core.DTOs.Auth;
+using Truckero.Core.Entities;
 
 namespace Truckero.Core.Interfaces;
 

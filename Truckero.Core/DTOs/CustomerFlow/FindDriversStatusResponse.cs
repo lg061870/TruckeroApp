@@ -1,9 +1,8 @@
 ﻿namespace Truckero.Core.DTOs.CustomerFlow;
 
 public class FindDriversStatusResponse {
-    public Guid FreightBidId { get; set; }
-    public bool DriversFound { get; set; }
-    public int TotalDriversFound { get; set; }
-    public DateTime RequestTime { get; set; }
-    public string? StatusMessage { get; set; }
+    public bool Success { get; set; }
+    public string? Message { get; set; }
+    public List<FindDriversStatusRequest> BidsStatuses { get; set; } = new();
+    public string? ErrorCode { get; set; }
 }

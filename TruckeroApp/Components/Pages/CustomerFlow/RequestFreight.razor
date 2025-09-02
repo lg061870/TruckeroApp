@@ -1,18 +1,30 @@
-﻿@* @page "/requestfreight" *@
-@page "/"
+﻿@page "/requestfreight"
+@* @page "/" *@
 @using System.ComponentModel.DataAnnotations
+@using Truckero.Core.DTOs.CustomerFlow
+@using Truckero.Core.DTOs.PaymentAccount
+@using Truckero.Core.DTOs.PaymentMethodType
+@using Truckero.Core.DTOs.Onboarding
+@using Truckero.Core.Exceptions
+@using TruckeroApp.Components.BottomSheets
+@using TruckeroApp.ServiceClients
 
 @inject IViewProviderApiClientService ViewProviderApiClientService
+@inject ICustomerFlowApiClientService CustomerFlowApiClientService
+@inject IPaymentAccountService PaymentAccountApiClientService
+@inject IAuthSessionContext AuthSession
+@inject NavigationManager NavigationManager
+
 
 <CenterWrapper>
     <div id="request-freight-screen" class="bg-white min-h-screen">
         <!-- Header -->
-        <div id="header" class="bg-white px-4 py-3 shadow-sm sticky top-0 z-10">
-            <div class="flex items-center">
-                <button class="mr-3" @onclick="NavigateBack">
+        <div id="header" class="bg-white shadow-sm sticky top-0 z-10 p-0 m-0">
+            <div class="flex items-center p-0 m-0">
+                <button class="mr-0 p-0" @onclick="NavigateBack">
                     <i class="fa-solid fa-arrow-left text-gray-600 text-lg"></i>
                 </button>
-                <h1 class="text-xl font-semibold text-center flex-1">Request Freight</h1>
+                <h1 class="text-xl font-semibold text-center flex-1 m-0 p-0">Request Freight</h1>
             </div>
         </div>
 
@@ -21,98 +33,107 @@
             <div id="location-section" class="py-6">
                 <h2 class="text-lg font-semibold mb-4">Where to?</h2>
                 <div class="space-y-3">
+                    <!-- Pickup Location -->
                     <div class="relative">
-                        <div class="absolute left-3 top-1/2 transform -translate-y-1/2">
-                            <i class="fa-solid fa-circle text-orange-500 text-xs"></i>
-                        </div>
-                        <input type="text"
-                               placeholder="Pickup location"
-                               class="w-full pl-10 pr-4 py-4 bg-gray-50 rounded-xl border-0 focus:ring-2 focus:ring-orange-500 focus:outline-none"
-                               @bind="PickupLocation" />
-                        <button class="absolute right-3 top-1/2 transform -translate-y-1/2" @onclick="SetPickupToCurrentLocation">
-                            <i class="fa-solid fa-location-crosshairs text-gray-400"></i>
+                        <input
+                            type="text"
+                            @bind="PickupLocation"
+                            readonly
+                            placeholder="Pickup location"
+                            class="block w-full pl-12 pr-12 py-4 rounded-xl bg-gray-50 border-0 focus:ring-2 focus:ring-orange-500 focus:outline-none text-gray-900 placeholder:text-gray-400 font-medium"
+                            style="min-height: 52px;" />
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-arrow-up text-orange-500 text-sm"></i>
+                        </span>
+                        <button
+                            class="absolute right-4 top-1/2 -translate-y-1/2 text-orange-500 hover:bg-orange-100 rounded-full p-2 transition"
+                            style="height: 36px; width: 36px; display: flex; align-items: center; justify-content: center;"
+                            type="button"
+                            title="Pick pickup location on map"
+                            @onclick="ShowPickupMapPicker">
+                            <i class="fa-solid fa-location-dot text-lg"></i>
                         </button>
                     </div>
+
+                    <!-- Delivery Location -->
                     <div class="relative">
-                        <div class="absolute left-3 top-1/2 transform -translate-y-1/2">
-                            <i class="fa-solid fa-square text-orange-500 text-xs"></i>
-                        </div>
-                        <input type="text"
-                               placeholder="Delivery location"
-                               class="w-full pl-10 pr-4 py-4 bg-gray-50 rounded-xl border-0 focus:ring-2 focus:ring-orange-500 focus:outline-none"
-                               @bind="DeliveryLocation" />
+                        <input
+                            type="text"
+                            @bind="DeliveryLocation"
+                            readonly
+                            placeholder="Delivery location"
+                            class="block w-full pl-12 pr-12 py-4 rounded-xl bg-gray-50 border-0 focus:ring-2 focus:ring-orange-500 focus:outline-none text-gray-900 placeholder:text-gray-400 font-medium"
+                            style="min-height: 52px;" />
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-arrow-down text-orange-500 text-sm"></i>
+                        </span>
+                        <button
+                            class="absolute right-4 top-1/2 -translate-y-1/2 text-orange-500 hover:bg-orange-100 rounded-full p-2 transition"
+                            style="height: 36px; width: 36px; display: flex; align-items: center; justify-content: center;"
+                            type="button"
+                            title="Pick delivery location on map"
+                            @onclick="ShowDeliveryMapPicker">
+                            <i class="fa-solid fa-location-dot text-lg"></i>
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Contained Tabs Card -->
-            <div class="bg-gray-50 shadow-md p-3">
-                <!-- Tab Buttons Row -->
-                <div id="tab-menu" class="flex bg-gray-100 p-1 mb-0">
+        <!-- Contained Tabs Card -->
+        <div class="bg-gray-50 shadow-md p-0 m-0"> <!-- Remove p-3 here -->
+            <!-- Tab Buttons Row (Full Width, Stuck to Top) -->
+            <div id="tab-menu" class="flex items-center w-full bg-gray-100 p-0 m-0 rounded-t-md sticky top-0 left-0 z-10">
+                <div class="flex flex-1 w-full overflow-x-auto">
                     @foreach (var tab in Tabs)
                     {
-                        <button class="tab-btn flex-1 flex items-center justify-center space-x-2 py-3 px-4 transition-colors
+                        <button class="tab-btn flex-1 flex items-center justify-center gap-1 px-2 py-3 whitespace-nowrap
+                                        transition-colors text-xs md:text-sm
                                         @GetTabClass(tab)"
+                                style="min-width: 0;" 
                                 @onclick="() => ActiveTab = tab">
-                            <i class="@tab.Icon text-sm"></i>
-                            <span class="text-sm">@tab.Title</span>
+                            <i class="@tab.Icon text-base"></i>
+                            <span>@tab.Title</span>
                         </button>
                     }
-            
-                </div>
 
-                <!-- Tab Content Area -->
-                <div class="pt-5 pb-2 px-1">
-                    @if (ActiveTab.Name == "vehicle")
-                    {
-                        <div class="grid grid-cols-2 gap-4">
-                            @foreach (var t in TruckTypes)
-                            {
-                                <div class="@GetTruckTypeClass(t)"
-                                     @onclick="() => SelectTruckType(t)">
-                                    <i class="fa-solid fa-truck text-2xl mb-2 @(SelectedTruckType == t ? "text-orange-500" : "text-gray-600")"></i>
-                                    <p class="font-bold text-base">@t.Name</p>
-                                    <!-- Optionally, add description if you add a Description property to TruckType -->
-                                </div>
-                            }
-                        </div>
-                    }
-                    else if (ActiveTab.Name == "payload")
-                    {
-                        <div class="grid grid-cols-2 gap-4">
-                            @foreach (var tag in UseTags)
-                            {
-                                <div class="@GetUseTagClass(tag)"
-                                     @onclick="() => SelectUseTag(tag)">
-                                    <i class="fa-solid fa-boxes-stacked text-xl mb-2 @(SelectedUseTag == tag ? "text-orange-500" : "text-gray-600")"></i>
-                                    <p class="font-bold text-base">@tag.Name</p>
-                                </div>
-                            }
-                        </div>
-                        @if (SelectedUseTag?.Name == "Other")
+                    <!-- Advanced Filters IconButton, Tooltip on Hover, Top-Right -->
+                    <div class="relative">
+                        <button class="relative flex items-center justify-center p-2 rounded-lg bg-orange-50 text-orange-600 border border-orange-200 hover:bg-orange-100 transition"
+                                @onmouseover="() => ShowTooltip = true"
+                                @onmouseout="() => ShowTooltip = false"
+                                @onclick="ShowAdvancedFilters"
+                                aria-label="Advanced Filters">
+                            <i class="fa fa-sliders-h text-lg"></i>
+                        </button>
+                        @if (ShowTooltip)
                         {
-                            <div class="mt-4">
-                                <label class="block text-sm font-medium mb-2">Please specify</label>
-                                <input type="text" placeholder="Enter payload type..."
-                                       class="w-full px-4 py-3 bg-white rounded-xl border-0 focus:ring-2 focus:ring-orange-500 focus:outline-none"
-                                       @bind="OtherPayload" />
+                            <div class="absolute right-0 top-full mt-2 w-max bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg z-50">
+                                Advanced Filters (sort, exclude, special requirements)
                             </div>
                         }
-                    }
-                    else if (ActiveTab.Name == "help")
-                    {
-                        <div class="grid grid-cols-2 gap-4">
-                            @foreach (var h in HelpOptions)
-                            {
-                                <div class="@GetHelpClass(h)"
-                                     @onclick="() => ToggleHelpOption(h)">
-                                    <i class="fa-solid fa-people-carry-box text-2xl mb-2 text-gray-600"></i>
-                                    <p class="font-bold text-base">@h.Name</p>
-                                </div>
-                            }
-                        </div>
-                    }
+                    </div>
+
+
                 </div>
+                
+            </div>
+
+            <!-- Tab Content Area (no extra padding) -->
+            <div class="pt-3 pb-2 px-0">
+                @switch (ActiveTab.Name)
+                {
+                    case "vehicle":
+                        @RenderVehicleTab()
+                        break;
+                    case "payload":
+                        @RenderPayloadTab()
+                        break;
+                    case "help":
+                        @RenderHelpTab()
+                        break;
+                }
+            </div>
+        </div>
 
 
             <!-- Travel With Payload -->
@@ -123,11 +144,15 @@
                         <p class="text-sm text-gray-500">Accompany your items during transport</p>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" class="sr-only" @bind="TravelWithPayload" />
-                        <div class="w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-orange-500"></div>
+                        <input type="checkbox" class="sr-only peer" @bind="TravelWithPayload" />
+                        <div class="w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-orange-500 transition-colors">
+
+                        </div>
+                        <div class="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow-md
+                            transition-transform peer-checked:translate-x-5">
+                        </div>
                     </label>
                 </div>
-
                 @if (TravelWithPayload)
                 {
                     <div class="space-y-3">
@@ -145,7 +170,6 @@
                         </div>
                     </div>
                 }
-
             </div>
 
             <!-- Insurance -->
@@ -156,8 +180,10 @@
                         <p class="text-sm text-gray-500">Protect your items during transport</p>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" class="sr-only" @bind="Insurance" />
-                        <div class="w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-orange-500"></div>
+                        <input type="checkbox" class="sr-only peer" @bind="Insurance" />
+                        <div class="w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-orange-500 transition-colors"></div>
+                        <div class="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow-md
+                            transition-transform peer-checked:translate-x-5"></div>
                     </label>
                 </div>
             </div>
@@ -178,7 +204,7 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </div> <!-- close content div -->
 
         <!-- Bottom Actions (sticky footer) -->
         <div id="bottom-actions" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-4">
@@ -187,69 +213,254 @@
                     <span>Estimated cost</span>
                     <span class="font-semibold text-lg text-gray-800">@EstimatedCostText</span>
                 </div>
+
                 <!-- Payment Method carousel/slider here (future step, you can add a component) -->
+
                 <button id="request-freight-btn"
-                        class="w-full py-4 px-6 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition-colors"
-                        @onclick="RequestFreightAsync">
-                    Request Freight
+                    class="w-full py-4 px-6 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition-colors disabled:opacity-50"
+                    @onclick="RequestFreightAsync"
+                    disabled="@(IsRequestFreightEnabled ? null : "disabled")">
+                    Send Request
                 </button>
             </div>
         </div>
     </div>
-    </div>
+
+    <!-- BottomSheets for error/validation feedback & overlays -->
+    @if (!string.IsNullOrEmpty(ActiveBottomSheet))
+    {
+        <div class="fixed inset-0 z-40">
+            <!-- Overlay (dismisses when clicking background, but not the bottomsheet) -->
+            <div class="absolute inset-0 bg-black bg-opacity-30"
+                 @onclick="() => ActiveBottomSheet = null">
+            </div>
+
+            <!-- BottomSheet container always above overlay -->
+            <div class="absolute bottom-0 left-0 right-0 z-40">
+                @switch (ActiveBottomSheet)
+                {
+                    case "generic_error":
+                        <GenericErrorBottomSheet 
+                            Message="@ErrorMessage" 
+                            OnDismiss="HandleGenericErrorDismiss" />
+                        break;
+
+                    case "validation_failed":
+                        <ValidationFailedBottomSheet 
+                            ValidationErrors="@ValidationErrors" 
+                            OnDismiss="@(() => ActiveBottomSheet = null)" />
+                        break;
+
+                    case "referential_integrity":
+                        <ReferentialIntegrityBottomSheet
+                            Message="@ReferentialIntegrityBottomSheetMessage"
+                            OnDismiss="@(() => ActiveBottomSheet = null)" />
+                        break;
+
+                    case "map_picker":
+                        <MapPickerBottomSheet
+                            OnDismiss="@(() => ActiveBottomSheet = null)"
+                            OnConfirm="HandleMapPick" />
+                        break;
+
+                    case "auth_required":
+                        <AuthRequiredBottomSheet
+                            OnLogin="HandleBottomSheetLogin"
+                            OnRegister="HandleBottomSheetRegister" />
+                        break;
+
+                    case "advanced_filters":
+                        <AdvancedFiltersBottomSheet
+                            TruckTypes="TruckTypes"
+                            TruckCategories="TruckCategories"
+                            BedTypes="BedTypes"
+                            TruckMakes="TruckMakes"
+                            TruckModels="TruckModels"
+                            UseTags="UseTags"
+                            HelpOptions="HelpOptions"
+                            OnDismiss="CloseAdvancedFilter"
+                            OnApply="ApplyAdvancedFilter" />
+                        break;
+
+                    case "finding_drivers":
+                        <RequestSubmittedBottomSheet
+                            FreightBidRequest="@FreightBidRequest"
+                            ReferenceData="@ReferenceData"
+                            EstimatedCost="@EstimatedCostText"
+                            SearchTimerText="@SearchTimerText"
+                            OnCancel="@HandleCancelRequest" />
+                        break;
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Overlay and spinner -->
+    @if (IsReferenceDataLoading && string.IsNullOrEmpty(ActiveBottomSheet))
+    {
+        <div class="fixed inset-0 z-60 bg-white bg-opacity-70 flex flex-col items-center justify-center">
+            <span class="text-orange-500 text-lg font-semibold mb-2">Loading freightbid data...</span>
+            <span class="animate-spin text-3xl text-orange-500"><i class="fa fa-spinner"></i></span>
+        </div>
+    }
+
 </CenterWrapper>
 
 @code {
-    // --- State for all form fields ---
+    // =========================
+    // SYSTEM & UI STATE
+    // =========================
+
+    private FreightBidRequest FreightBidRequest { get; set; } = new();
+    private FreightBidReferenceData ReferenceData { get; set; } = new();
+
+    private string ErrorMessage { get; set; } = string.Empty;
+    public string? ActiveBottomSheet { get; set; } = null;
+    private List<string> ValidationErrors { get; set; } = new();
+    private string? ReferentialIntegrityBottomSheetErrorCode { get; set; }
+    private string? ReferentialIntegrityBottomSheetMessage { get; set; }
+    private bool IsReferentialIntegrityBottomSheetVisible { get; set; } = false;
+    private bool IsReferenceDataLoading { get; set; } = false;
+    private string? MapPickerTarget { get; set; } = null;
+    private List<PaymentAccountRequest> AvailablePaymentAccounts { get; set; } = new();
+    private Guid? userId = Guid.Empty;
+    private Guid? customerId = Guid.Empty;
+
+    // =========================
+    // MAIN FORM FIELD STATE
+    // =========================
+
     private string PickupLocation { get; set; } = "";
     private string DeliveryLocation { get; set; } = "";
-
-    // NEW: Reference-entity-driven option selections
-    private TruckType? SelectedTruckType { get; set; }
-    private UseTag? SelectedUseTag { get; set; }
-    private string? OtherPayload { get; set; }
-    private HashSet<Guid> SelectedHelpOptionIds { get; set; } = new();
-
-    private bool TravelWithPayload { get; set; }
-    private string TravelRequirement { get; set; } = "optional";
-    private bool Insurance { get; set; }
     private string? Weight { get; set; }
     private string? SpecialInstructions { get; set; }
     private string EstimatedCostText { get; set; } = "$45 - $65"; // Placeholder
 
-    // --- Reference Data ---
+    // =========================
+    // OPTION SELECTIONS (BASIC UI)
+    // =========================
+
+    private TruckType? SelectedTruckType { get; set; }
+    private UseTag? SelectedUseTag { get; set; }
+    private string? OtherPayload { get; set; }
+    private HashSet<Guid> SelectedHelpOptionIds { get; set; } = new();
+    private bool TravelWithPayload { get; set; }
+    private string TravelRequirement { get; set; } = "optional";
+    private bool Insurance { get; set; }
+
+    // =========================
+    // ADVANCED FILTER SELECTIONS
+    // (Populated from AdvancedFilterBottomSheet)
+    // =========================
+
+    private TruckCategory? SelectedTruckCategory { get; set; }
+    private BedType? SelectedBedType { get; set; }
+    private TruckMake? SelectedTruckMake { get; set; }
+    private TruckModel? SelectedTruckModel { get; set; }
+    private HashSet<Guid> SelectedUseTagIds { get; set; } = new();   // AdvancedFilter multi-select
+    // Note: SelectedHelpOptionIds already declared above and is used for both basic and advanced
+
+    // =========================
+    // REFERENCE DATA LISTS (POPULATED ON INIT)
+    // =========================
+
     private List<TruckType> TruckTypes { get; set; } = new();
+    private List<TruckCategory> TruckCategories { get; set; } = new();
+    private List<BedType> BedTypes { get; set; } = new();
+    private List<TruckMake> TruckMakes { get; set; } = new();
+    private List<TruckModel> TruckModels { get; set; } = new();
     private List<UseTag> UseTags { get; set; } = new();
     private List<HelpOption> HelpOptions { get; set; } = new();
+    private List<PaymentMethodTypeRequest> PaymentMethodTypes { get; set; } = new();
+    private bool ShowTooltip { get; set; } = false;
 
-    // --- Tab Definitions ---
-    private class TabDef { public string Name { get; set; } = ""; public string Title { get; set; } = ""; public string Icon { get; set; } = ""; }
-    private TabDef[] Tabs = new[] {
+    // --- Search timer for the "Finding Drivers" bottom sheet ---
+    private string SearchTimerText { get; set; } = "00:00";
+    private System.Timers.Timer? searchTimer;
+    private int searchSeconds = 0;
+
+
+    // --- LOCATION COORDINATES (optional, nullable) ---
+    private double? PickupLat { get; set; }
+    private double? PickupLng { get; set; }
+    private string? PickupPlusCode { get; set; }
+    private double? DeliveryLat { get; set; }
+    private double? DeliveryLng { get; set; }
+    private string? DeliveryPlusCode { get; set; }
+
+    // --- PAYMENT (if you want users to pick an account) ---
+    private PaymentAccount? SelectedPaymentAccount { get; set; }
+
+    // MULTI-SELECT state for UseTags and HelpOptions
+    private List<UseTag> SelectedUseTags { get; set; } = new();
+    private List<HelpOption> SelectedHelpOptions { get; set; } = new();
+
+
+    // --- EXPRESS SERVICE (if you want to support this flag) ---
+    private bool ExpressService { get; set; } = false;
+
+
+
+    // =========================
+    // TAB NAVIGATION
+    // =========================
+
+    private class TabDef
+    {
+        public string Name { get; set; } = "";
+        public string Title { get; set; } = "";
+        public string Icon { get; set; } = "";
+    }
+
+    private TabDef[] Tabs = new[]
+    {
         new TabDef { Name = "vehicle", Title = "Vehicle", Icon = "fa-solid fa-truck" },
         new TabDef { Name = "payload", Title = "Payload", Icon = "fa-solid fa-boxes-stacked" },
         new TabDef { Name = "help", Title = "Help", Icon = "fa-solid fa-people-carry-box" }
     };
+
     private TabDef ActiveTab { get; set; }
 
     // --- Lifecycle ---
     protected override async Task OnInitializedAsync()
     {
         ActiveTab = Tabs[0];
+        IsReferenceDataLoading = true;
 
-        // LOAD YOUR REFERENCE DATA FROM API!
+        if (AuthSession.LoggedUser == null)
+        {
+            ActiveBottomSheet = "auth_required";
+            IsReferenceDataLoading = false;
+            return;
+        }
+
         try
         {
-            // You'll need to inject IViewProviderApiClientService and call your endpoint here:
-            // Example (update to match your actual API/service client):
-            var referenceData = await ViewProviderApiClientService.GetFreightBidReferenceDataAsync();
+            userId = AuthSession.LoggedUser.Id;
+            customerId = AuthSession?.LoggedUser?.CustomerProfile?.Id;
 
-            TruckTypes = referenceData?.TruckTypes ?? new();
-            UseTags = referenceData?.UseTags ?? new();
-            HelpOptions = referenceData?.HelpOptions ?? new();
+            // Get ALL freight bid reference data
+            ReferenceData = await ViewProviderApiClientService.GetFreightBidReferenceDataAsync();
+
+            TruckTypes = ReferenceData?.TruckTypes ?? new();
+            UseTags = ReferenceData?.UseTags ?? new();
+            HelpOptions = ReferenceData?.HelpOptions ?? new();
+            TruckCategories = ReferenceData?.TruckCategories ?? new();
+            BedTypes = ReferenceData?.BedTypes ?? new();
+            TruckMakes = ReferenceData?.TruckMakes ?? new();         
+            TruckModels = ReferenceData?.TruckModels ?? new();        
+            PaymentMethodTypes = ReferenceData?.PaymentMethodTypes ?? new(); 
+
+            var response = await PaymentAccountApiClientService.GetPaymentAccountsByUserIdAsync(userId.Value);
+            AvailablePaymentAccounts = response.PaymentAccounts;
         }
         catch (Exception ex)
         {
-            // TODO: Show error to user if loading fails
+            ShowGenericError("Failed to load reference data: " + ex.Message);
+        }
+        finally
+        {
+            IsReferenceDataLoading = false;
         }
     }
 
@@ -260,31 +471,39 @@
             : "text-gray-600";
 
     // --- TruckType (Vehicle) ---
-    private void SelectTruckType(TruckType t) => SelectedTruckType = t;
+    private void SelectTruckType(TruckType t)
+    {
+        SelectedTruckType = t;
+        FreightBidRequest.TruckType = t;  // Assign the object, not the Id
+    }
+
     private string GetTruckTypeClass(TruckType t) =>
         $"p-4 text-center border-2 shadow-sm transition-colors cursor-pointer " +
         (SelectedTruckType == t ? "border-orange-500 bg-orange-50" : "border-transparent bg-gray-50 hover:border-orange-500");
 
-    // --- UseTag (Payload) ---
-    private void SelectUseTag(UseTag tag)
-    {
-        SelectedUseTag = tag;
-        if (tag.Name != "Other")
-            OtherPayload = null;
-    }
     private string GetUseTagClass(UseTag tag) =>
         $"p-4 text-center border-2 shadow-sm transition-colors cursor-pointer " +
-        (SelectedUseTag == tag ? "border-orange-500 bg-orange-50" : "border-transparent bg-gray-50 hover:border-orange-500");
+        (SelectedUseTags.Any(t => t.Id == tag.Id)
+            ? "border-orange-500 bg-orange-50"
+            : "border-transparent bg-gray-50 hover:border-orange-500");
+
+    private string GetHelpClass(HelpOption h) =>
+        $"p-4 text-center border-2 shadow-sm transition-colors cursor-pointer " +
+        (SelectedHelpOptions.Any(opt => opt.Id == h.Id)
+            ? "border-orange-500 bg-orange-50"
+            : "border-transparent bg-gray-50 hover:border-orange-500");
 
     // --- HelpOptions ---
     private void ToggleHelpOption(HelpOption h)
     {
-        if (!SelectedHelpOptionIds.Add(h.Id))
-            SelectedHelpOptionIds.Remove(h.Id);
+        var existing = SelectedHelpOptions.FirstOrDefault(opt => opt.Id == h.Id);
+        if (existing != null)
+            SelectedHelpOptions.Remove(existing);
+        else
+            SelectedHelpOptions.Add(h);
+
+        FreightBidRequest.HelpOptions = SelectedHelpOptions.ToList();
     }
-    private string GetHelpClass(HelpOption h) =>
-        $"p-4 text-center border-2 shadow-sm transition-colors cursor-pointer " +
-        (SelectedHelpOptionIds.Contains(h.Id) ? "border-orange-500 bg-orange-50" : "border-transparent bg-gray-50 hover:border-orange-500");
 
     // --- Actions ---
     private void NavigateBack()
@@ -298,8 +517,301 @@
         PickupLocation = "Current Location (stub)";
     }
 
+    private void ShowValidationFailed(List<string> errors)
+    {
+        ValidationErrors = errors;
+        ActiveBottomSheet = "validation_failed";
+    }
+
+    private void ShowGenericError(string message)
+    {
+        ErrorMessage = message;
+        ActiveBottomSheet = "generic_error";
+    }
+
+    private void ShowReferentialIntegrityBottomSheet(string code, string message)
+    {
+        ActiveBottomSheet = "referential_integrity";
+        ReferentialIntegrityBottomSheetErrorCode = code;
+        ReferentialIntegrityBottomSheetMessage = message;
+        IsReferentialIntegrityBottomSheetVisible = true;
+    }
+
+    private List<string> ValidateLocalForm()
+    {
+        var errors = new List<string>();
+        if (string.IsNullOrWhiteSpace(PickupLocation))
+            errors.Add("Pickup location is required.");
+        if (string.IsNullOrWhiteSpace(DeliveryLocation))
+            errors.Add("Delivery location is required.");
+        if (SelectedTruckType == null)
+            errors.Add("Please select a vehicle type.");
+        if (SelectedUseTags == null || !SelectedUseTags.Any())
+            errors.Add("Please select at least one payload type.");
+        if (SelectedHelpOptions == null || !SelectedHelpOptions.Any())
+            errors.Add("Please select at least one help option.");
+        if (TravelWithPayload && string.IsNullOrWhiteSpace(TravelRequirement))
+            errors.Add("Please select whether traveling with payload is optional or required.");
+
+        return errors;
+    }
+
     private async Task RequestFreightAsync()
     {
-        // TODO: Call backend API with all selected/form data, show bottomsheet on success/failure
+        // 1. Validate form locally before sending
+        var errors = ValidateLocalForm();
+        if (errors.Any())
+        {
+            ShowValidationFailed(errors);
+            return;
+        }
+
+        try
+        {
+            // 2. Build request object from form state
+            FreightBidRequest = BuildFreightBidRequest(AuthSession.LoggedUser);
+
+            // 3. Call backend API to create the FreightBid
+            var response = await CustomerFlowApiClientService.CreateFreightBidAsync(FreightBidRequest);
+
+            if (response.Success)
+            {
+                // Show confirmation bottomsheet for "Finding Drivers"
+                ActiveBottomSheet = "finding_drivers";
+                StartSearchTimer();
+                // (Optional: clear form or reset state)
+            }
+            else
+            {
+                // Handle known business logic errors from API
+                ShowGenericError(response.Message ?? "Could not create freight request.");
+            }
+        }
+        catch (CustomerFlowValidationException ex)
+        {
+            ShowValidationFailed(ex.Errors?.ToList() ?? new List<string>());
+        }
+        catch (ReferentialIntegrityClientException ex)
+        {
+            ShowReferentialIntegrityBottomSheet(ex.ErrorCode, ex.Message);
+        }
+        catch (CustomerFlowClientException ex)
+        {
+            ShowGenericError(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            ShowGenericError("Failed to submit freight request: " + ex.Message);
+        }
     }
+
+    private void HandleGenericErrorDismiss()
+    {
+        ActiveBottomSheet = null;
+    }
+
+    private void ShowPickupMapPicker() {
+        MapPickerTarget = "pickup";
+        ActiveBottomSheet = "map_picker";
+    }
+
+    private void ShowDeliveryMapPicker() {
+        MapPickerTarget = "delivery";
+        ActiveBottomSheet = "map_picker";
+    }
+
+    private async Task HandleMapPick(MapPickerBottomSheet.MapPickResult result)
+    {
+        if (MapPickerTarget == "pickup")
+            PickupLocation = result.Address;
+        else if (MapPickerTarget == "delivery")
+            DeliveryLocation = result.Address;
+
+        MapPickerTarget = null;
+        ActiveBottomSheet = null;
+    }
+
+    private FreightBidRequest BuildFreightBidRequest(User LoggedUser)
+    {
+        return new FreightBidRequest
+        {
+            CustomerProfile      = CustomerProfileRequest.ToCustomerProfileRequest(AuthSession.LoggedUser),
+            PickupLocation       = PickupLocation, 
+            DeliveryLocation     = DeliveryLocation,
+            TruckType            = SelectedTruckType!,
+            TruckCategory        = SelectedTruckCategory,
+            BedType              = SelectedBedType,
+            TruckMake            = SelectedTruckMake,
+            TruckModel           = SelectedTruckModel,
+            UseTags              = SelectedUseTags.ToList(),
+            HelpOptions          = SelectedHelpOptions.ToList(),
+            TravelWithPayload    = TravelWithPayload,
+            TravelRequirement    = TravelWithPayload ? TravelRequirement : null,
+            Insurance            = Insurance,
+            Weight               = Weight,
+            SpecialInstructions  = SpecialInstructions,
+            ExpressService       = ExpressService, // set if needed
+            // PaymentAccount    = SelectedPaymentAccount
+        };
+    }
+
+
+    private void ShowAdvancedFilters(MouseEventArgs args)
+    {
+        ActiveBottomSheet = "advanced_filters";
+    }
+
+    private bool IsRequestFreightEnabled =>
+        !string.IsNullOrWhiteSpace(PickupLocation)
+        && !string.IsNullOrWhiteSpace(DeliveryLocation)
+        && SelectedTruckType != null
+        && SelectedUseTags.Any()
+        && SelectedHelpOptions.Any()
+        && (!TravelWithPayload || !string.IsNullOrWhiteSpace(TravelRequirement));
+
+    private Task HandleBottomSheetLogin()
+    {
+        NavigationManager.NavigateTo(AppRoutes.Login);
+        return Task.CompletedTask;
+    }
+
+    private Task HandleBottomSheetRegister()
+    {
+        NavigationManager.NavigateTo(AppRoutes.StartupRouter); // or wherever your register route is
+        return Task.CompletedTask;
+    }
+
+    private void CloseAdvancedFilter()
+    {
+        ActiveBottomSheet = null;
+    }
+
+    private void ApplyAdvancedFilter(AdvancedFiltersBottomSheet.AdvancedFilterResult result)
+    {
+        // UI state
+        SelectedTruckCategory = TruckCategories.FirstOrDefault(tc => tc.Id == result.TruckCategoryId);
+        SelectedBedType       = BedTypes.FirstOrDefault(b => b.Id == result.BedTypeId);
+        SelectedTruckMake     = TruckMakes.FirstOrDefault(m => m.Id == result.TruckMakeId);
+        SelectedTruckModel    = TruckModels.FirstOrDefault(m => m.Id == result.TruckModelId);
+
+        SelectedUseTagIds = result.UseTagIds != null
+            ? new HashSet<Guid>(result.UseTagIds)
+            : new HashSet<Guid>();
+
+        SelectedHelpOptionIds = result.HelpOptionIds != null
+            ? new HashSet<Guid>(result.HelpOptionIds)
+            : new HashSet<Guid>();
+
+        FreightBidRequest.TruckCategory = TruckCategories.FirstOrDefault(tc => tc.Id == result.TruckCategoryId);
+        FreightBidRequest.BedType       = BedTypes.FirstOrDefault(bt => bt.Id == result.BedTypeId);
+        FreightBidRequest.TruckMake     = TruckMakes.FirstOrDefault(tm => tm.Id == result.TruckMakeId);
+        FreightBidRequest.TruckModel    = TruckModels.FirstOrDefault(tm => tm.Id == result.TruckModelId);
+
+        // Multi-select for UseTags and HelpOptions
+        FreightBidRequest.UseTags = UseTags
+            .Where(tag => result.UseTagIds != null && result.UseTagIds.Contains(tag.Id))
+            .ToList();
+
+        FreightBidRequest.HelpOptions = HelpOptions
+            .Where(h => result.HelpOptionIds != null && result.HelpOptionIds.Contains(h.Id))
+            .ToList();
+
+
+        ActiveBottomSheet = null;
+        StateHasChanged();
+    }
+
+    private void HandleCancelRequest()
+    {
+        // TODO: Cancel the freight bid (if you've already posted), or just close the bottomsheet.
+        // For now, just close the sheet:
+        ActiveBottomSheet = null;
+    }
+
+    private void StartSearchTimer()
+    {
+        SearchTimerText = "00:00";
+        searchSeconds = 0;
+        searchTimer = new System.Timers.Timer(1000);
+        searchTimer.Elapsed += (s, e) =>
+        {
+            searchSeconds++;
+            SearchTimerText = TimeSpan.FromSeconds(searchSeconds).ToString(@"mm\:ss");
+            InvokeAsync(StateHasChanged);
+        };
+        searchTimer.Start();
+    }
+
+    private void StopSearchTimer()
+    {
+        searchTimer?.Stop();
+        searchTimer?.Dispose();
+        searchTimer = null;
+    }
+
+    private RenderFragment RenderVehicleTab() => __builder =>
+    {
+        <div class="grid grid-cols-3 gap-4">
+            @foreach (var t in TruckTypes)
+            {
+                <div class="@GetTruckTypeClass(t)"
+                     @onclick="() => SelectTruckType(t)">
+                    <i class="@($"{t.Icon} text-2xl mb-2 {(SelectedTruckType == t ? "text-orange-500" : "text-gray-600")}")"></i>
+                    <p class="font-bold text-base">@t.Name</p>
+                </div> 
+            }
+        </div>
+    };
+
+    private RenderFragment RenderPayloadTab() => __builder =>
+    {
+        <div class="grid grid-cols-3 gap-4">
+            @foreach (var tag in UseTags)
+            {
+                <div class="@GetUseTagClass(tag)"
+                     @onclick="() => ToggleUseTag(tag)">
+                    <i class="@($"{tag.Icon} text-xl mb-2 {(SelectedUseTags.Any(t => t.Id == tag.Id) ? "text-orange-500" : "text-gray-600")}")"></i>
+                    <p class="font-bold text-base">@tag.Name</p>
+                </div>
+            }
+        </div>
+
+        @if (SelectedUseTags.Any(x => x.Name == "Other"))
+        {
+            <div class="mt-4">
+                <label class="block text-sm font-medium mb-2">Please specify</label>
+                <input type="text" placeholder="Enter payload type..."
+                       class="w-full px-4 py-3 bg-white rounded-xl border-0 focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                       @bind="OtherPayload" />
+            </div>
+        }
+    };
+
+    private RenderFragment RenderHelpTab() => __builder =>
+    {
+        <div class="grid grid-cols-3 gap-4">
+            @foreach (var h in HelpOptions)
+            {
+                <div class="@GetHelpClass(h)"
+                     @onclick="() => ToggleHelpOption(h)">
+                    <i class="@($"{h.Icon} text-2xl mb-2 {(SelectedHelpOptions.Any(opt => opt.Id == h.Id) ? "text-orange-500" : "text-gray-600")}")"></i>
+                    <p class="font-bold text-base">@h.Name</p>
+                </div>
+            }
+        </div>
+    };
+
+
+    private void ToggleUseTag(UseTag tag)
+    {
+        var existing = SelectedUseTags.FirstOrDefault(t => t.Id == tag.Id);
+        if (existing != null)
+            SelectedUseTags.Remove(existing);
+        else
+            SelectedUseTags.Add(tag);
+
+        FreightBidRequest.UseTags = SelectedUseTags.ToList(); // update DTO
+    }
+
+
 }

@@ -13,7 +13,7 @@ using Truckero.Infrastructure.Data;
 namespace Truckero.Infrastructure.Services;
 
 public class OnboardingService : IOnboardingService {
-    private readonly ICustomerRepository _customerRepo;
+    private readonly ICustomerProfileRepository _customerRepo;
     private readonly IOnboardingProgressRepository _progressRepo;
     private readonly IUserRepository _userRepo;
     private readonly IAuthService _authService;
@@ -25,7 +25,7 @@ public class OnboardingService : IOnboardingService {
     private readonly IPayoutAccountRepository _payoutAccountRepo;
 
     public OnboardingService(
-        ICustomerRepository customerRepo,
+        ICustomerProfileRepository customerRepo,
         IOnboardingProgressRepository progressRepo,
         IUserRepository userRepo,
         IAuthService authService,

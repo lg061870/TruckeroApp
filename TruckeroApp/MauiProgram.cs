@@ -41,20 +41,21 @@ public static class MauiProgram
         var apiBase = "https://localhost:7224";
 #endif
 
-        // Modular API client registration
-        builder.Services
-            .AddPaymentMethodTypeClient(apiBase)
-            .AddCustomerClient(apiBase)
-            .AddDriverClient(apiBase)
-            .AddUserClient(apiBase)
-            .AddTruckClient(apiBase)
-            .AddOnboardingClient(apiBase)
-            .AddAuthClient(apiBase)
-            .AddAuthTokenClient(apiBase)
-            .AddMediaClient(apiBase)
-            .AddPayoutAccountClient(apiBase)
-            .AddPaymentAccountClient(apiBase)
-            .AddViewProviderClient(apiBase);
+        //Modular API client registration
+                builder.Services
+                    .AddPaymentMethodTypeApiClientService(apiBase)
+                    .AddCustomerApiClientService(apiBase)
+                    .AddDriverApiClientService(apiBase)
+                    .AddUserApiClientService(apiBase)
+                    .AddTruckApiClientService(apiBase)
+                    .AddOnboardingApiClientService(apiBase)
+                    .AddAuthApiClientService(apiBase)
+                    .AddAuthTokenApiClientService(apiBase)
+                    .AddMediaApiClientService(apiBase)
+                    .AddPayoutAccountApiClientService(apiBase)
+                    .AddPaymentAccountApiClientService(apiBase)
+                    .AddViewProviderApiClientService(apiBase)
+                    .AddCustomerFlowApiClientService(apiBase);
 
         builder.Services.AddToastService();
         builder.Services.AddSingleton<ITokenStorageService, SecureTokenStorageService>();
@@ -68,7 +69,7 @@ public static class MauiProgram
 #if DEBUG || UNITTESTING
         builder.Services.AddSingleton<IBlobStorageService, MockBlobStorageService>();
 #else
-        builder.Services.AddSingleton<IBlobStorageService, AzureBlobStorageService>();
+                builder.Services.AddSingleton<IBlobStorageService, AzureBlobStorageService>();
 #endif
 
         return builder.Build();

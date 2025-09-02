@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Truckero.Core.Entities;
 using Truckero.Core.Interfaces;
 
 namespace Truckero.API.Controllers;

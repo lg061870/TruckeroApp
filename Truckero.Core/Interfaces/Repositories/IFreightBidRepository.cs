@@ -1,8 +1,5 @@
-﻿// ---------------------- Truckero.Core.Repositories.IFreightBidRepository.cs ----------------------
-namespace Truckero.Core.Interfaces.Repositories; 
-
-public interface IFreightBidRepository {
-    // FreightBid
+﻿public interface IFreightBidRepository {
+    // FreightBid core
     Task<FreightBid> GetFreightBidByIdAsync(Guid id);
     Task<IReadOnlyList<FreightBid>> GetAllFreightBidsAsync();
     Task<IReadOnlyList<FreightBid>> GetFreightBidsByCustomerIdAsync(Guid customerId);
@@ -16,5 +13,10 @@ public interface IFreightBidRepository {
     Task<IReadOnlyList<FreightBidUseTag>> GetFreightBidUseTagsByUseTagIdAsync(Guid useTagId);
     Task<FreightBidUseTag> AddFreightBidUseTagAsync(FreightBidUseTag entity);
     Task DeleteFreightBidUseTagAsync(Guid id);
-}
 
+    // Bid History
+    Task<IReadOnlyList<FreightBid>> GetBidHistoryByCustomerIdAsync(Guid customerId);
+
+    // Assigning a driver (this updates the FreightBid)
+    Task<bool> AssignDriverAsync(Guid freightBidId, Guid driverBidId);
+}

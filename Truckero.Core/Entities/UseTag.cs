@@ -11,4 +11,5 @@ public class UseTag
     public string Name { get; set; } = string.Empty;
 
     public ICollection<TruckUseTag> TruckUseTags { get; set; } = new List<TruckUseTag>();
+    public string? Icon { get; set; }
 }

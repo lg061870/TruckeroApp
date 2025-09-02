@@ -1,25 +1,41 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Truckero.Core.DTOs.PayoutAccount;
+using Truckero.Core.Entities;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Truckero.Core.DTOs.Onboarding;
 
 public class CustomerProfileRequest
 {
+    [Required(ErrorMessage = "The record appears t.")]
     public Guid UserId { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public Guid Id { get; set; }
 
-    [Required(ErrorMessage = "Full name is required")]
-    public string FullName { get; set; } = null!;
+    public static CustomerProfileRequest ToCustomerProfileRequest(CustomerProfile profile) {
+        if (profile == null) throw new ArgumentNullException(nameof(profile));
 
-    [Required(ErrorMessage = "Address is required")]
-    public string Address { get; set; } = null!;
+        return new CustomerProfileRequest {
+            UserId = profile.UserId,
+            Id = profile.Id,
+            CreatedAt = profile.CreatedAt
+        };
+    }
 
-    [Required(ErrorMessage = "Phone number is required")]
-    [Phone(ErrorMessage = "Invalid phone number")]
-    public string PhoneNumber { get; set; } = null!;
+    public static CustomerProfileRequest ToCustomerProfileRequest(User user) {
+        if (user == null)
+            throw new ArgumentNullException(nameof(user));
 
-    [Required(ErrorMessage = "Email address is required")]
-    [EmailAddress(ErrorMessage = "Please enter a valid email address")]
-    public string Email { get; set; } = string.Empty;
+        // Truckero SRS: Defensive for nullable profiles
+        var profile = user.CustomerProfile;
+        if (profile == null)
+            throw new InvalidOperationException("CustomerProfile is missing for user ID: " + user.Id);
 
-    public DateTime LastUpdated { get; set; }
+        // If any CustomerProfile subfield might be nullable, fallback to default or log a warning
+        return new CustomerProfileRequest {
+            UserId = profile.UserId,                         // Could be profile?.UserId ?? ""
+            Id = profile.Id,
+            CreatedAt = profile.CreatedAt
+        };
+    }
 }
-

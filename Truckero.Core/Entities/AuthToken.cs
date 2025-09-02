@@ -1,9 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
-using Truckero.Core.Entities;
 
-public class AuthToken
-{
+namespace Truckero.Core.Entities; 
+public class AuthToken {
     [Key]
     public Guid Id { get; set; }
 

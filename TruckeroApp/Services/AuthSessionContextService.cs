@@ -1,5 +1,6 @@
 ﻿using TruckeroApp.Interfaces;
 using Truckero.Core.DTOs.Auth;
+using Truckero.Core.Entities;
 
 namespace TruckeroApp.Services;
 
@@ -8,6 +9,7 @@ public class AuthSessionContextService : IAuthSessionContext
 
     public string? AccessToken { get; private set; }
     public string? ActiveRole { get; private set; }
+    public User LoggedUser { get; private set; }
     public List<string> AvailableRoles { get; private set; } = new();
     public Guid? UserId { get; private set; }
     public string? Email { get; private set; }
@@ -31,7 +33,7 @@ public class AuthSessionContextService : IAuthSessionContext
         AccessToken = accessToken;
         AvailableRoles = session.AvailableRoles ?? new();
         ActiveRole = session.ActiveRole;
-        UserId = session.UserId;
+        LoggedUser = session.LoggedUser;
         Email = session.Email;
         IsInitialized = true;
     }

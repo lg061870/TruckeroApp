@@ -1,4 +1,5 @@
 ﻿using Truckero.Core.DTOs.Auth;
+using Truckero.Core.Entities;
 using Truckero.Core.Interfaces;
 
 namespace TruckeroApp.ServiceClients.Mock;

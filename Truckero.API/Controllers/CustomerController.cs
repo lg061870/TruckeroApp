@@ -11,9 +11,9 @@ namespace Truckero.API.Controllers;
 [Authorize] // 🔒 Require authentication for all endpoints
 public class CustomerController : ControllerBase
 {
-    private readonly ICustomerRepository _repo;
+    private readonly ICustomerProfileRepository _repo;
 
-    public CustomerController(ICustomerRepository repo)
+    public CustomerController(ICustomerProfileRepository repo)
     {
         _repo = repo;
     }

@@ -10,6 +10,7 @@ using Truckero.API.TestAuth;
 using Truckero.Core.Interfaces;
 using Truckero.Core.Interfaces.Repositories;
 using Truckero.Core.Interfaces.Services;
+using Truckero.Core.Services;
 using Truckero.Diagnostics.Mocks;
 using Truckero.Infrastructure.Data;
 using Truckero.Infrastructure.Repositories;
@@ -97,7 +98,7 @@ builder.Services.AddDbContext<AppDbContext>((sp, options) =>
 builder.Services.AddAuthTokenRepository();
 builder.Services.AddRoleRepository();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
+builder.Services.AddScoped<ICustomerProfileRepository, CustomerProfileRepository>();
 builder.Services.AddScoped<IDriverProfileRepository, DriverRepository>();
 builder.Services.AddScoped<ITruckRepository, TruckRepository>();
 builder.Services.AddScoped<IOnboardingProgressRepository, OnboardingProgressRepository>();
@@ -108,6 +109,9 @@ builder.Services.AddScoped<IPaymentAccountRepository, PaymentAccountRepository>(
 builder.Services.AddScoped<IBankRepository, BankRepository>();
 builder.Services.AddScoped<ICountryRepository, CountryRepository>();
 builder.Services.AddScoped<IHelpOptionRepository, HelpOptionRepository>();
+builder.Services.AddScoped<IFreightBidRepository, FreightBidRepository>();
+builder.Services.AddScoped<IDriverBidRepository, DriverBidRepository>();
+
 
 // Register Services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -122,6 +126,8 @@ builder.Services.AddSingleton<IHashService, HashService>();
 builder.Services.AddScoped<IBankService, BankService>();
 builder.Services.AddScoped<ICountryService, CountryService>();
 builder.Services.AddScoped<IHelpOptionService, HelpOptionService>();
+builder.Services.AddScoped<IFreightBidService, FreightBidService>();
+builder.Services.AddScoped<IDriverBidService, DriverBidService>();
 
 
 // Register Email Service per environment

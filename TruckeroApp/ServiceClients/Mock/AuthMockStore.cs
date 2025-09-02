@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using Truckero.Core.Entities;
 
 namespace TruckeroApp.ServiceClients.Mock;
 

@@ -6,7 +6,7 @@ namespace TruckeroApp.ServiceClients;
 public interface ICustomerFlowApiClientService {
     Task<FreightBidResponse> CreateFreightBidAsync(FreightBidRequest request);
     Task<FreightBidDetailsResponse> GetFreightBidDetailsAsync(Guid freightBidId);
-    Task<List<BidHistoryItemResponse>> GetBidHistoryAsync(Guid customerId);
+    Task<List<BidHistoryResponse>> GetBidHistoryAsync(Guid customerId);
     Task<FindDriversStatusResponse> GetFindDriversStatusAsync(Guid freightBidId);
 
     Task<List<DriverBidResponse>> GetDriverBidsForFreightBidAsync(Guid freightBidId);

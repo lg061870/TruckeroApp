@@ -124,12 +124,12 @@ public class PaymentAccountApiClientService : IPaymentAccountService {
                 }
             }
 
-            var error = JsonSerializer.Deserialize<ErrorResponse>(content);
-            if (error != null && !string.IsNullOrWhiteSpace(error.Error)) {
-                if (IsReferentialIntegrityCode(error.Code)) {
-                    throw new ReferentialIntegrityClientException(error.Error, error.Code, response.StatusCode);
+            var error = JsonSerializer.Deserialize<BaseResponse>(content);
+            if (error != null && !string.IsNullOrWhiteSpace(error.Message)) {
+                if (IsReferentialIntegrityCode(error.ErrorCode)) {
+                    throw new ReferentialIntegrityClientException(error.Message, error.ErrorCode, response.StatusCode);
                 }
-                throw new PaymentAccountClientException(error.Error, error.Code, response.StatusCode);
+                throw new PaymentAccountClientException(error.Message, error.ErrorCode, response.StatusCode);
             }
         } catch (JsonException) {
             // fall through to generic error below

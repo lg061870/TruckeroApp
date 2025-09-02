@@ -14,41 +14,36 @@ public class PaymentMethodTypeController : ControllerBase {
     [HttpGet]
     [AllowAnonymous]
     public async Task<ActionResult<PaymentMethodTypeResponse>> GetAll() {
-        var types = await _service.GetAllPaymentMethodTypesAsync();
-        return Ok(new PaymentMethodTypeResponse {
-            Success = true,
-            Message = "Fetched all payment method types.",
-            PaymentMethodTypes = types
-        });
+        var response = await _service.GetAllPaymentMethodTypesAsync();
+        response.Success = true;
+        response.Message = "Fetched all payment method types.";
+        return Ok(response);
     }
 
     [HttpGet("country/{countryCode}")]
     [AllowAnonymous]
     public async Task<ActionResult<PaymentMethodTypeResponse>> GetByCountry(string countryCode) {
-        var types = await _service.GetPaymentMethodTypesByCountryAsync(countryCode);
-        return Ok(new PaymentMethodTypeResponse {
-            Success = true,
-            Message = $"Fetched payment method types for {countryCode}.",
-            PaymentMethodTypes = types
-        });
+        var response = await _service.GetPaymentMethodTypesByCountryAsync(countryCode);
+        response.Success = true;
+        response.Message = $"Fetched payment method types for {countryCode}.";
+        return Ok(response);
     }
 
     [HttpGet("{id:guid}")]
     [AllowAnonymous]
     public async Task<ActionResult<PaymentMethodTypeResponse>> GetById(Guid id) {
-        var dto = await _service.GetPaymentMethodTypeByIdAsync(id);
-        if (dto == null)
+        var response = await _service.GetPaymentMethodTypeByIdAsync(id);
+
+        if (response == null || response.PaymentMethodTypes == null || !response.PaymentMethodTypes.Any())
             return NotFound(new PaymentMethodTypeResponse {
                 Success = false,
                 Message = "Payment method type not found.",
                 ErrorCode = "NOT_FOUND"
             });
 
-        return Ok(new PaymentMethodTypeResponse {
-            Success = true,
-            Message = "Fetched payment method type.",
-            PaymentMethodTypes = new List<PaymentMethodTypeRequest> { dto }
-        });
+        response.Success = true;
+        response.Message = "Fetched payment method type.";
+        return Ok(response);
     }
 
     // --- Admin endpoints follow same pattern, always wrap in PaymentMethodTypeResponse as needed ---

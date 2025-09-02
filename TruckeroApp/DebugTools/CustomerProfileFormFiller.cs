@@ -58,30 +58,5 @@ public static class CustomerProfileFormFiller
         ["ConfirmPassword"] = "Password123!",
         ["AcceptTerms"] = "true"
     };
-
-    public static void LoadProfile(
-        Dictionary<string, string> values,
-        out CustomerProfileRequest profile,
-        out string password,
-        out string confirmPassword,
-        out bool acceptTerms)
-    {
-        profile = new CustomerProfileRequest();
-
-        values.TryGetValue("FullName", out var fullName);
-        values.TryGetValue("Email", out var email);
-        values.TryGetValue("PhoneNumber", out var phone);
-        values.TryGetValue("Address", out var address);
-        values.TryGetValue("Password", out password);
-        values.TryGetValue("ConfirmPassword", out confirmPassword);
-        values.TryGetValue("AcceptTerms", out var acceptStr);
-
-        profile.FullName = fullName ?? string.Empty;
-        profile.Email = email ?? string.Empty;
-        profile.PhoneNumber = phone ?? string.Empty;
-        profile.Address = address ?? string.Empty;
-
-        acceptTerms = bool.TryParse(acceptStr, out var parsed) && parsed;
-    }
 }
 

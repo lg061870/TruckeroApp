@@ -48,34 +48,41 @@ public class PaymentMethodTypeApiClientService : IPaymentMethodTypeService {
         throw new HttpRequestException($"API request for {operationName} failed. Status: {response.StatusCode}, Content: {content}", null, response.StatusCode);
     }
 
-    public async Task<List<PaymentMethodTypeRequest>> GetAllPaymentMethodTypesAsync() {
+    // ----- NEW PATTERN METHODS -----
+
+    public async Task<PaymentMethodTypeResponse> GetAllPaymentMethodTypesAsync() {
         var response = await _http.GetAsync("/api/paymentmethodtype");
-        return await HandleResponse<List<PaymentMethodTypeRequest>>(response, nameof(GetAllPaymentMethodTypesAsync)) ?? new List<PaymentMethodTypeRequest>();
+        return await HandleResponse<PaymentMethodTypeResponse>(response, nameof(GetAllPaymentMethodTypesAsync))
+            ?? new PaymentMethodTypeResponse { Success = false, Message = "No response from API." };
     }
 
-    public async Task<List<PaymentMethodTypeRequest>> GetPaymentMethodTypesByCountryAsync(string countryCode) {
+    public async Task<PaymentMethodTypeResponse> GetPaymentMethodTypesByCountryAsync(string countryCode) {
         var code = string.IsNullOrWhiteSpace(countryCode) ? "US" : countryCode.Trim().ToUpperInvariant();
         var response = await _http.GetAsync($"/api/paymentmethodtype/country/{code}");
-        return await HandleResponse<List<PaymentMethodTypeRequest>>(response, nameof(GetPaymentMethodTypesByCountryAsync)) ?? new List<PaymentMethodTypeRequest>();
+        return await HandleResponse<PaymentMethodTypeResponse>(response, nameof(GetPaymentMethodTypesByCountryAsync))
+            ?? new PaymentMethodTypeResponse { Success = false, Message = "No response from API." };
     }
 
-    public async Task<PaymentMethodTypeRequest?> GetPaymentMethodTypeByIdAsync(Guid id) {
+    public async Task<PaymentMethodTypeResponse?> GetPaymentMethodTypeByIdAsync(Guid id) {
         var response = await _http.GetAsync($"/api/paymentmethodtype/{id}");
-        return await HandleResponse<PaymentMethodTypeRequest>(response, nameof(GetPaymentMethodTypeByIdAsync));
+        return await HandleResponse<PaymentMethodTypeResponse>(response, nameof(GetPaymentMethodTypeByIdAsync));
     }
 
-    public async Task<PaymentMethodTypeRequest> AddPaymentMethodTypeAsync(PaymentMethodTypeRequest dto) {
+    public async Task<PaymentMethodTypeResponse> AddPaymentMethodTypeAsync(PaymentMethodTypeRequest dto) {
         var response = await _http.PostAsJsonAsync("/api/paymentmethodtype", dto);
-        return await HandleResponse<PaymentMethodTypeRequest>(response, nameof(AddPaymentMethodTypeAsync))!;
+        return await HandleResponse<PaymentMethodTypeResponse>(response, nameof(AddPaymentMethodTypeAsync))
+            ?? new PaymentMethodTypeResponse { Success = false, Message = "No response from API." };
     }
 
-    public async Task UpdatePaymentMethodTypeAsync(PaymentMethodTypeRequest dto) {
+    public async Task<PaymentMethodTypeResponse> UpdatePaymentMethodTypeAsync(PaymentMethodTypeRequest dto) {
         var response = await _http.PutAsJsonAsync($"/api/paymentmethodtype/{dto.Id}", dto);
-        await HandleResponse<object>(response, nameof(UpdatePaymentMethodTypeAsync));
+        return await HandleResponse<PaymentMethodTypeResponse>(response, nameof(UpdatePaymentMethodTypeAsync))
+            ?? new PaymentMethodTypeResponse { Success = false, Message = "No response from API." };
     }
 
-    public async Task DeletePaymentMethodTypeAsync(Guid id) {
+    public async Task<PaymentMethodTypeResponse> DeletePaymentMethodTypeAsync(Guid id) {
         var response = await _http.DeleteAsync($"/api/paymentmethodtype/{id}");
-        await HandleResponse<object>(response, nameof(DeletePaymentMethodTypeAsync));
+        return await HandleResponse<PaymentMethodTypeResponse>(response, nameof(DeletePaymentMethodTypeAsync))
+            ?? new PaymentMethodTypeResponse { Success = false, Message = "No response from API." };
     }
 }

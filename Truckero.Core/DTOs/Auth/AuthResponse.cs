@@ -1,4 +1,6 @@
 ﻿
+using Truckero.Core.Entities;
+
 namespace Truckero.Core.DTOs.Auth;
 
 public class AuthResponse
@@ -10,4 +12,5 @@ public class AuthResponse
     public Guid UserId { get; set; }
     public DateTime ExpiresIn { get; set; }
     public string? Role { get; set; }
+    public User LoggedUser { get; set; }
 }

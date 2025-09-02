@@ -1,6 +1,7 @@
 ﻿@page "/login"
 @using Refit
 @using Truckero.Core.DTOs.Auth
+@using Truckero.Core.Exceptions
 @using TruckeroApp.Components.BottomSheets
 
 @inject IAuthService AuthService
@@ -48,7 +49,14 @@
                     </div>
 
                     <div class="relative">
-                        <input type="@(isPasswordVisible ? "text" : "password")"
+       <button type="button"
+                class="absolute right-4 top-4 text-gray-400"
+                style="background: none; border: none; padding: 0; margin: 0;"
+                @onclick="TogglePasswordVisibility"
+                tabindex="-1" aria-label="Show/Hide password">
+            <i class="fa-regular @(isPasswordVisible ? "fa-eye-slash" : "fa-eye")"></i>
+        </button>
+                 <input type="@(isPasswordVisible ? "text" : "password")"
                                @bind-value="password"
                                @bind-value:event="oninput"
                                placeholder="Password"
@@ -258,7 +266,7 @@
             SessionInfo sessionInfo = new SessionInfo
             {
                 TokenValid = response.Success,
-                UserId = response.UserId,
+                LoggedUser = response.LoggedUser ?? throw new OnboardingClientException("Critical Error: User was not found in token", ExceptionCodes.UserNotFound, System.Net.HttpStatusCode.NotFound),
             };
 
             // We need to set the AccessToken in the session context for API Controller authentication
@@ -300,7 +308,7 @@
             isLoading = false;
         }
 
-        
+
     }
     private async Task SendResetLink()
     {
@@ -317,10 +325,12 @@
             successMessage: "Reset link sent! Check your inbox."
         );
     }
+
     private async Task HandleKeyPress(KeyboardEventArgs e)
     {
         if (e.Key == "Enter") await LoginAsync();
     }
+
     private void ToggleForgotPassword(bool show)
     {
         showForgotPassword = show;
@@ -328,25 +338,31 @@
         resetError = null;
         successMessage = null;
     }
+ 
     private bool ShouldDisableResetButton() => isSending || !string.IsNullOrWhiteSpace(resetError) || emailOrPhone.Trim().Length < 4;
+
     private string GetResetButtonClasses() =>
         ShouldDisableResetButton()
             ? "w-full bg-gray-300 text-white py-3 rounded-lg font-medium cursor-not-allowed"
             : "w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600";
+
     private string GetLoginButtonClasses() =>
         IsLoginDisabled
             ? "w-full bg-gray-300 text-white py-3 rounded-xl font-semibold cursor-not-allowed"
             : "w-full bg-[#FF6B00] text-white py-3 rounded-xl font-semibold hover:bg-[#e65100]";
+    
     private async Task LoginWithGoogleAsync()
     {
         Console.WriteLine("Google login clicked");
         await Task.CompletedTask;
     }
+
     private async Task LoginWithFacebookAsync()
     {
         Console.WriteLine("Facebook login clicked");
         await Task.CompletedTask;
     }
+
     private bool IsLoginDisabled =>
         isLoading ||
         string.IsNullOrWhiteSpace(emailOrPhone) ||
@@ -354,6 +370,7 @@
         emailOrPhone.Trim().Length < 4 ||
         password.Trim().Length < 4 ||
         !IsValidEmail(emailOrPhone);
+
     private bool IsValidEmail(string input)
     {
         try
@@ -366,4 +383,7 @@
             return false;
         }
     }
+
+    private void TogglePasswordVisibility() => isPasswordVisible = !isPasswordVisible;
+
 }

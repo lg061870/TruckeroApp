@@ -12,7 +12,7 @@ public static class AppRoutes
     public const string RegisterPayment = "/registerpaymentaccount"; 
     public const string Login = "/login";
     public const string RoleSwitcher = "/roleswitcher";
-    public const string StartupRouter = "/";
+    public const string StartupRouter = "/";  //"/start";
     public const string PickupQueue = "/pickupqueue";
     public const string LoginExpired = "/login-expired";
     public const string ConfirmReset = "/confirm-reset";

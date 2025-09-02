@@ -1,4 +1,5 @@
 ﻿using Truckero.Core.DTOs.Auth;
+using Truckero.Core.Entities;
 
 namespace TruckeroApp.Interfaces;
 
@@ -7,10 +8,9 @@ public interface IAuthSessionContext
     string? AccessToken { get; }
     string? ActiveRole { get; }
     List<string> AvailableRoles { get; }
-    Guid? UserId { get; }
     string? Email { get; }
     bool IsAuthenticated { get; }
-
+    User LoggedUser { get; }
     bool IsInitialized { get; } // ✅ ADD THIS
 
     void Set(string accessToken, List<string> roles, string activeRole);

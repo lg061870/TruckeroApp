@@ -78,11 +78,11 @@ public class OnboardingApiClientService : IOnboardingService
                 }
             }
 
-            var error = JsonSerializer.Deserialize<ErrorResponse>(content);
+            var error = JsonSerializer.Deserialize<BaseResponse>(content);
 
-            if (error != null && !string.IsNullOrWhiteSpace(error.Error))
+            if (error != null && !string.IsNullOrWhiteSpace(error.Message))
             {
-                throw new OnboardingClientException(error.Error, error.Code, response.StatusCode);
+                throw new OnboardingClientException(error.Message, error.ErrorCode, response.StatusCode);
             }
         }
         catch (JsonException)
@@ -125,11 +125,11 @@ public class OnboardingApiClientService : IOnboardingService
                 }
             }
 
-            var error = JsonSerializer.Deserialize<ErrorResponse>(content);
+            var error = JsonSerializer.Deserialize<BaseResponse>(content);
 
-            if (error != null && !string.IsNullOrWhiteSpace(error.Error))
+            if (error != null && !string.IsNullOrWhiteSpace(error.Message))
             {
-                throw new OnboardingClientException(error.Error, error.Code, response.StatusCode);
+                throw new OnboardingClientException(error.Message, error.ErrorCode, response.StatusCode);
             }
         }
         catch (JsonException)

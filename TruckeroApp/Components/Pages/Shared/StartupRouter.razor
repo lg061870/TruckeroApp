@@ -1,4 +1,4 @@
-﻿@page "/start"
+﻿@page "/"
 @* @page "/start" *@
 @using Truckero.Core.DTOs.Auth
 @using TruckeroApp.Interfaces
@@ -6,7 +6,7 @@
 @inject NavigationManager NavManager
 @inject ITokenStorageService TokenStorage
 @inject IAuthService AuthService
-@inject IAuthSessionContext Session
+@inject IAuthSessionContext SessionContext
 @inject IAuthTokenRepository TokenRepository
 @inject ILogger<StartupRouter> _logger
 
@@ -17,7 +17,7 @@
 
 #if DEBUG || UNITTESTING
     // Optional debug scenarios can be toggled here
-    await StartupTestPaths.NoToken(TokenStorage);
+    // await StartupTestPaths.NoToken(TokenStorage);
 #endif
 
         try
@@ -97,7 +97,7 @@
                 }
             }
 
-            Session.Set(accessToken, null, string.Empty);
+            SessionContext.Set(accessToken, null, string.Empty);
             var user = await AuthService.GetCurrentUserAsync();
             if (user == null)
             {
@@ -119,7 +119,16 @@
                 var role = await AuthService.GetActiveRoleAsync();
                 var roles = await AuthService.GetAllRolesAsync();
 
-                Session.Set(accessToken, roles, role);
+                SessionInfo sessionInfo = new SessionInfo
+                {
+                    TokenValid = validationResult.Valid,
+                    LoggedUser = user,
+                    ActiveRole = role,
+                    AvailableRoles = roles
+                };
+
+                // We need to set the AccessToken in the session context for API Controller authentication
+                SessionContext.SetFromSession(sessionInfo, accessToken);
 
                 var redirect = role?.Trim() switch
                 {
@@ -156,7 +165,7 @@
         {
             var roles = await AuthService.GetAllRolesAsync();
             var activeRole = await AuthService.GetActiveRoleAsync();
-            Session.Set(token, roles, activeRole ?? "");
+            SessionContext.Set(token, roles, activeRole ?? "");
         }
 
         return user;
@@ -166,7 +175,7 @@
     {
         var role = await AuthService.GetActiveRoleAsync();
         var roles = await AuthService.GetAllRolesAsync();
-        Session.Set(token, roles, role ?? "");
+        SessionContext.Set(token, roles, role ?? "");
     }
 
     private async Task HandleUserAfterFailedRefresh()

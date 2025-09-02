@@ -35,16 +35,16 @@ public static class ApiClientProxies
 //    }
 
 
-    public static IServiceCollection AddCustomerClient(this IServiceCollection services, string apiBase)
+    public static IServiceCollection AddCustomerApiClientService(this IServiceCollection services, string apiBase)
     {
 #if ANDROID
-        services.AddHttpClient<ICustomerService, CustomerApiClientService>(c =>
+        services.AddHttpClient<ICustomerProfileService, CustomerApiClientService>(c =>
         {
             c.BaseAddress = new Uri(apiBase);
             c.Timeout = TimeSpan.FromSeconds(10);
         }).ConfigurePrimaryHttpMessageHandler(CreateUnsafeHandler);
 #else
-        services.AddHttpClient<ICustomerService, CustomerApiClientService>(c =>
+        services.AddHttpClient<ICustomerProfileService, CustomerApiClientService>(c =>
         {
             c.BaseAddress = new Uri(apiBase);
             c.Timeout = TimeSpan.FromSeconds(10);
@@ -53,7 +53,7 @@ public static class ApiClientProxies
         return services;
     }
 
-    public static IServiceCollection AddDriverClient(this IServiceCollection services, string apiBase)
+    public static IServiceCollection AddDriverApiClientService(this IServiceCollection services, string apiBase)
     {
 #if ANDROID
         services.AddHttpClient<IDriverService, DriverApiClientService>(c =>
@@ -71,7 +71,7 @@ public static class ApiClientProxies
         return services;
     }
 
-    public static IServiceCollection AddUserClient(this IServiceCollection services, string apiBase)
+    public static IServiceCollection AddUserApiClientService(this IServiceCollection services, string apiBase)
     {
 #if ANDROID
         services.AddHttpClient<IUserService, UserApiClientService>(c =>
@@ -89,7 +89,7 @@ public static class ApiClientProxies
         return services;
     }
 
-    public static IServiceCollection AddTruckClient(this IServiceCollection services, string apiBase)
+    public static IServiceCollection AddTruckApiClientService(this IServiceCollection services, string apiBase)
     {
 #if ANDROID
         services.AddHttpClient<ITruckService, TruckApiClientService>(c =>
@@ -107,7 +107,7 @@ public static class ApiClientProxies
         return services;
     }
 
-    public static IServiceCollection AddOnboardingClient(this IServiceCollection services, string apiBase)
+    public static IServiceCollection AddOnboardingApiClientService(this IServiceCollection services, string apiBase)
     {
 #if ANDROID
         services.AddHttpClient<IOnboardingService, OnboardingApiClientService>(c =>
@@ -125,7 +125,7 @@ public static class ApiClientProxies
         return services;
     }
 
-    public static IServiceCollection AddAuthClient(this IServiceCollection services, string apiBase)
+    public static IServiceCollection AddAuthApiClientService(this IServiceCollection services, string apiBase)
     {
 #if ANDROID
     services.AddHttpClient<IAuthService, AuthApiClientService>(client =>
@@ -144,7 +144,7 @@ public static class ApiClientProxies
         return services;
     }
 
-    public static IServiceCollection AddAuthTokenClient(this IServiceCollection services, string apiBase)
+    public static IServiceCollection AddAuthTokenApiClientService(this IServiceCollection services, string apiBase)
     {
 #if ANDROID
     services.AddHttpClient<IAuthTokenRepository, AuthTokenApiClientService>(client => // IAuthTokenRepository might be from Core
@@ -163,7 +163,7 @@ public static class ApiClientProxies
         return services;
     }
 
-    public static IServiceCollection AddMediaClient(this IServiceCollection services, string apiBase)
+    public static IServiceCollection AddMediaApiClientService(this IServiceCollection services, string apiBase)
     {
 #if ANDROID
         services.AddHttpClient<MediaApiClientService>(c => // Assuming MediaApiClientService doesn't implement a specific core interface directly
@@ -182,7 +182,7 @@ public static class ApiClientProxies
     }
 
     // New methods for PayoutAccount and PaymentMethod
-    public static IServiceCollection AddPayoutAccountClient(this IServiceCollection services, string apiBase)
+    public static IServiceCollection AddPayoutAccountApiClientService(this IServiceCollection services, string apiBase)
     {
 #if ANDROID
         services.AddHttpClient<IPayoutAccountService, PayoutAccountApiClientService>(client =>
@@ -200,7 +200,7 @@ public static class ApiClientProxies
         return services;
     }
 
-    public static IServiceCollection AddPaymentAccountClient(this IServiceCollection services, string apiBase) {
+    public static IServiceCollection AddPaymentAccountApiClientService(this IServiceCollection services, string apiBase) {
 #if ANDROID
         services.AddHttpClient<IPaymentAccountService, PaymentAccountApiClientService>(client => {
             client.BaseAddress = new Uri(apiBase);
@@ -216,7 +216,7 @@ public static class ApiClientProxies
         return services;
     }
 
-    public static IServiceCollection AddPaymentMethodTypeClient(this IServiceCollection services, string apiBase)
+    public static IServiceCollection AddPaymentMethodTypeApiClientService(this IServiceCollection services, string apiBase)
     {
 #if ANDROID
         services.AddHttpClient<IPaymentMethodTypeService, PaymentMethodTypeApiClientService>(client =>
@@ -234,7 +234,7 @@ public static class ApiClientProxies
         return services;
     }
 
-    public static IServiceCollection AddViewProviderClient(this IServiceCollection services, string apiBase) {
+    public static IServiceCollection AddViewProviderApiClientService(this IServiceCollection services, string apiBase) {
 #if ANDROID
         services.AddHttpClient<IViewProviderApiClientService, ViewProviderApiClientService>(client => {
             client.BaseAddress = new Uri(apiBase);
@@ -249,4 +249,23 @@ public static class ApiClientProxies
 #endif
         return services;
     }
+
+    public static IServiceCollection AddCustomerFlowApiClientService(this IServiceCollection services, string apiBase) {
+#if ANDROID
+        services.AddHttpClient<ICustomerFlowApiClientService, CustomerFlowApiClientService>(client =>
+        {
+            client.BaseAddress = new Uri(apiBase);
+            client.Timeout = TimeSpan.FromSeconds(10);
+        }).ConfigurePrimaryHttpMessageHandler(CreateUnsafeHandler);
+#else
+    services.AddHttpClient<ICustomerFlowApiClientService, CustomerFlowApiClientService>(client =>
+    {
+        client.BaseAddress = new Uri(apiBase);
+        client.Timeout = TimeSpan.FromSeconds(10);
+    });
+#endif
+        return services;
+    }
+
+
 }

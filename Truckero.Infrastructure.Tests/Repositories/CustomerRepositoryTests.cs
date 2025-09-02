@@ -13,11 +13,11 @@ namespace Truckero.Infrastructure.Tests.Repositories;
 
 public class CustomerRepositoryTests : IClassFixture<TestDbContextFixture> {
     private readonly TestDbContextFixture _fixture;
-    private readonly CustomerRepository _repo;
+    private readonly CustomerProfileRepository _repo;
 
     public CustomerRepositoryTests(TestDbContextFixture fixture) {
         _fixture = fixture;
-        _repo = new CustomerRepository(fixture.DbContext);
+        _repo = new CustomerProfileRepository(fixture.DbContext);
     }
 
     [Fact]

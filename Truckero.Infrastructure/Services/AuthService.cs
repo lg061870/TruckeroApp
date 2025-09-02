@@ -17,7 +17,7 @@ public class AuthService : IAuthService
     private readonly IRoleRepository _roleRepo;
     private readonly IHashService _hashService;
     private readonly IEmailService _emailService;
-    private readonly ICustomerRepository _customerRepo;
+    private readonly ICustomerProfileRepository _customerRepo;
     private readonly IConfirmationTokenRepository _confirmationTokenRepo;
     private readonly ILogger<AuthService> _logger;
 
@@ -27,7 +27,7 @@ public class AuthService : IAuthService
         IRoleRepository roleRepo,
         IHashService hashService,
         IEmailService emailService,
-        ICustomerRepository customerRepo,
+        ICustomerProfileRepository customerRepo,
         IConfirmationTokenRepository confirmationTokenRepo,
         ILogger<AuthService> logger)
     {
@@ -124,7 +124,7 @@ public class AuthService : IAuthService
                 AccessToken = existingToken.AccessToken,
                 RefreshToken = existingToken.RefreshToken,
                 Success = true,
-                UserId = user.Id
+                LoggedUser = user
             };
         }
 
@@ -315,10 +315,10 @@ public class AuthService : IAuthService
     public async Task<SessionInfo> GetSessionAsync()
     {
         var token = await _tokenRepo.GetLatestTokenAsync();
-
+        
         return new SessionInfo
         {
-            UserId = token?.UserId ?? Guid.Empty,
+            LoggedUser = token?.User,
             Email = "user@truckero.app",
             FullName = "Truckero User",
             ActiveRole = token?.Role ?? RoleType.Guest.ToString(),

@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using Truckero.Core.Constants;
 using Truckero.Core.DTOs.CustomerFlow;
 using Truckero.Core.Exceptions;
+using Truckero.Core.Interfaces.Services;
 using Truckero.Core.Services;
+using static Truckero.Core.Constants.ExceptionCodes;
 
 namespace Truckero.API.Controllers;
 
@@ -12,9 +14,13 @@ namespace Truckero.API.Controllers;
 [AllowAnonymous]
 public class FreightBidController : ControllerBase {
     private readonly IFreightBidService _freightBidService;
+    private readonly IDriverBidService _driverBidService; // You need to add/implement this!
 
-    public FreightBidController(IFreightBidService freightBidService) {
+    public FreightBidController(
+        IFreightBidService freightBidService,
+        IDriverBidService driverBidService) {
         _freightBidService = freightBidService;
+        _driverBidService = driverBidService;
     }
 
     // --- FreightBid endpoints ---
@@ -33,8 +39,16 @@ public class FreightBidController : ControllerBase {
                 ErrorCode = ex.ErrorCode,
                 Message = ex.Message
             };
+            // Use switch expression to match your latest codes
             return ex.ErrorCode switch {
-                ExceptionCodes.FreightBidErrorCodes.ForeignKeyNotFound => NotFound(error),
+                FreightBidErrorCodes.CustomerNotFound or
+                FreightBidErrorCodes.PreferredTruckTypeNotFound or
+                FreightBidErrorCodes.AssignedTruckNotFound or
+                FreightBidErrorCodes.AssignedDriverNotFound or
+                FreightBidErrorCodes.PaymentMethodNotFound or
+                FreightBidErrorCodes.UseTagNotFound or
+                FreightBidErrorCodes.FreightBidUseTagNotFound =>
+                    NotFound(error),
                 _ => Conflict(error)
             };
         } catch (FreightBidException ex) {
@@ -47,7 +61,7 @@ public class FreightBidController : ControllerBase {
         } catch (Exception) {
             return StatusCode(500, new FreightBidResponse {
                 Success = false,
-                ErrorCode = ExceptionCodes.FreightBidErrorCodes.Unknown,
+                ErrorCode = FreightBidErrorCodes.Unknown,
                 Message = "Unhandled error occurred while creating freight bid."
             });
         }
@@ -67,7 +81,14 @@ public class FreightBidController : ControllerBase {
                 Message = ex.Message
             };
             return ex.ErrorCode switch {
-                ExceptionCodes.FreightBidErrorCodes.ForeignKeyNotFound => NotFound(error),
+                FreightBidErrorCodes.CustomerNotFound or
+                FreightBidErrorCodes.PreferredTruckTypeNotFound or
+                FreightBidErrorCodes.AssignedTruckNotFound or
+                FreightBidErrorCodes.AssignedDriverNotFound or
+                FreightBidErrorCodes.PaymentMethodNotFound or
+                FreightBidErrorCodes.UseTagNotFound or
+                FreightBidErrorCodes.FreightBidUseTagNotFound =>
+                    NotFound(error),
                 _ => Conflict(error)
             };
         } catch (FreightBidException ex) {
@@ -80,11 +101,12 @@ public class FreightBidController : ControllerBase {
         } catch (Exception) {
             return StatusCode(500, new FreightBidResponse {
                 Success = false,
-                ErrorCode = ExceptionCodes.FreightBidErrorCodes.Unknown,
+                ErrorCode = FreightBidErrorCodes.Unknown,
                 Message = "Unhandled error occurred while updating freight bid."
             });
         }
     }
+
 
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteFreightBid(Guid id) {
@@ -115,10 +137,10 @@ public class FreightBidController : ControllerBase {
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<FreightBidResponse>> GetFreightBidById(Guid id) {
-        var result = await _freightBidService.GetFreightBidByIdAsync(id);
-        if (!result.Success)
-            return NotFound(result);
+    public async Task<ActionResult<FreightBidDetailsResponse>> GetFreightBidDetails(Guid id) {
+        var result = await _freightBidService.GetFreightBidDetailsAsync(id);
+        if (result == null)
+            return NotFound();
         return Ok(result);
     }
 
@@ -129,12 +151,45 @@ public class FreightBidController : ControllerBase {
     }
 
     [HttpGet("customer/{customerId:guid}")]
-    public async Task<ActionResult<IReadOnlyList<FreightBidResponse>>> GetFreightBidsByCustomerId(Guid customerId) {
-        var results = await _freightBidService.GetFreightBidsByCustomerIdAsync(customerId);
-        return Ok(results);
+    public async Task<ActionResult<BidHistoryResponse>> GetFreightBidsByCustomerId(Guid customerId) {
+        var response = await _freightBidService.GetBidHistoryAsync(customerId);
+        return Ok(response);
     }
 
-    // --- FreightBidUseTag endpoints ---
+    // --- New: Find Drivers Status ---
+    [HttpGet("{freightBidId:guid}/find-drivers-status")]
+    public async Task<ActionResult<FindDriversStatusResponse>> GetFindDriversStatus(Guid freightBidId) {
+        var result = await _freightBidService.GetFindDriversStatusAsync(freightBidId);
+        if (result == null)
+            return NotFound();
+        return Ok(result);
+    }
+
+    [HttpGet("{freightBidId:guid}/driver-bids")]
+    public async Task<ActionResult<DriverBidResponse>> GetDriverBidsForFreightBid(Guid freightBidId) {
+        var response = await _driverBidService.GetDriverBidsByFreightBidIdAsync(freightBidId);
+        return Ok(response);
+    }
+
+    [HttpGet("driver-bid/{bidId:guid}")]
+    public async Task<ActionResult<DriverBidResponse>> GetDriverBidDetails(Guid bidId) {
+        var result = await _driverBidService.GetDriverBidByIdAsync(bidId);
+        if (result == null || !result.Success)
+            return NotFound(result ?? new DriverBidResponse { Success = false, Message = "Driver bid not found." });
+        return Ok(result);
+    }
+
+
+    // --- New: Assign Driver ---
+    [HttpPost("assign-driver")]
+    public async Task<IActionResult> AssignDriver([FromBody] AssignDriverRequest request) {
+        var result = await _freightBidService.AssignDriverAsync(request);
+        if (!result.Success)
+            return BadRequest(result);
+        return Ok(result);
+    }
+
+    // --- Existing: FreightBidUseTag endpoints ---
 
     [HttpPost("usetag")]
     public async Task<ActionResult<FreightBidUseTagResponse>> CreateFreightBidUseTag([FromBody] FreightBidUseTagRequest request) {
@@ -149,8 +204,12 @@ public class FreightBidController : ControllerBase {
                 ErrorCode = ex.ErrorCode,
                 Message = ex.Message
             };
+            // Only use codes you actually have!
             return ex.ErrorCode switch {
-                ExceptionCodes.FreightBidErrorCodes.ForeignKeyNotFound => NotFound(error),
+                FreightBidErrorCodes.NotFound or
+                FreightBidErrorCodes.UseTagNotFound or
+                FreightBidErrorCodes.FreightBidUseTagNotFound =>
+                    NotFound(error),
                 _ => Conflict(error)
             };
         } catch (FreightBidException ex) {
@@ -163,7 +222,7 @@ public class FreightBidController : ControllerBase {
         } catch (Exception) {
             return StatusCode(500, new FreightBidUseTagResponse {
                 Success = false,
-                ErrorCode = ExceptionCodes.FreightBidErrorCodes.Unknown,
+                ErrorCode = FreightBidErrorCodes.Unknown,
                 Message = "Unhandled error occurred while creating FreightBidUseTag."
             });
         }

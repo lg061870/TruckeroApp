@@ -6,8 +6,8 @@ namespace Truckero.Core.Interfaces.Services;
 /// <summary>
 /// Interface to be used by client devices that want to call our Customer API Controller
 /// </summary>
-public interface ICustomerService
+public interface ICustomerProfileService
 {
-    Task<CustomerProfile?> GetByUserIdAsync(Guid userId);
-    Task CreateAsync(CustomerProfileRequest request, Guid userId);
+    Task<CustomerProfileResponse> GetByUserByCustomerProfileIdAsync(Guid userId);
+    Task<CustomerProfileResponse> CreateCustomerProfileAsync(CustomerProfileRequest request, Guid userId);
 }

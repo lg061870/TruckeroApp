@@ -7,23 +7,27 @@ public class DriverBid {
 
     [Required]
     public Guid FreightBidId { get; set; }
+
     [ForeignKey(nameof(FreightBidId))]
     public FreightBid FreightBid { get; set; } = null!;
 
     [Required]
-    public Guid DriverId { get; set; }           // FK to User (Driver)
+    public Guid DriverProfileId { get; set; } // FK to DriverProfile
 
-    public Guid TruckId { get; set; }            // FK to Truck
+    [ForeignKey(nameof(DriverProfileId))]
+    public DriverProfile DriverProfile { get; set; } = null!;
+
+    [Required]
+    public Guid TruckId { get; set; } // FK to Truck
 
     [Required]
     [Column(TypeName = "decimal(18,2)")]
     public decimal OfferAmount { get; set; }
 
-    public string? Message { get; set; }         // Optional message from driver
+    public string? Message { get; set; } // Optional message from driver
 
     public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;
 
-    // Status of this bid: Pending, Accepted, Rejected, Withdrawn
     [MaxLength(16)]
-    public string Status { get; set; } = "Pending";
+    public string Status { get; set; } = "Pending"; // Could be refactored to an enum
 }

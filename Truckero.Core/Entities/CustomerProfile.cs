@@ -21,4 +21,7 @@ public class CustomerProfile
 
     [NotMapped]
     public bool HasPaymentMethods => PaymentAccounts.Count > 0;
+
+    public virtual ICollection<FreightBid> FreightBids { get; set; } = new List<FreightBid>();
+
 }

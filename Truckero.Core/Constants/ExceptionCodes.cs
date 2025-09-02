@@ -56,12 +56,22 @@ public static class ExceptionCodes {
 
     public static class FreightBidErrorCodes {
         public const string NotFound = "FREIGHTBID_NOT_FOUND";
-        public const string ForeignKeyNotFound = "FREIGHTBID_FK_NOT_FOUND";
+        public const string CustomerNotFound = "CUSTOMER_NOT_FOUND";
+        public const string PreferredTruckTypeNotFound = "TRUCK_TYPE_NOT_FOUND";
+        public const string AssignedTruckNotFound = "TRUCK_NOT_FOUND";
+        public const string AssignedDriverNotFound = "DRIVER_NOT_FOUND";
+        public const string PaymentMethodNotFound = "PAYMENT_METHOD_NOT_FOUND";
+        public const string UseTagNotFound = "USETAG_NOT_FOUND";
+        public const string FreightBidUseTagNotFound = "FREIGHTBIDUSETAG_NOT_FOUND";
         public const string SaveFailed = "FREIGHTBID_SAVE_FAILED";
         public const string ValidationError = "FREIGHTBID_VALIDATION_ERROR";
         public const string Conflict = "FREIGHTBID_CONFLICT";
         public const string Unknown = "FREIGHTBID_UNKNOWN";
+
+        public static string DriverBidNotFound { get; set; }
     }
+
+
     public static class DriverBidErrorCodes {
         public const string NotFound = "DRIVER_BID_NOT_FOUND";
         public const string ForeignKeyNotFound = "DRIVER_BID_FOREIGN_KEY_NOT_FOUND";

@@ -6,8 +6,8 @@ using Truckero.Core.DTOs.PaymentAccount;
 using Truckero.Core.DTOs.PaymentMethodType;
 using Truckero.Core.DTOs.PayoutAccount;
 using Truckero.Core.DTOs.Shared;
+using Truckero.Core.Entities;
 using Truckero.Core.Interfaces.Services;
-using Truckero.Infrastructure.Services;
 
 namespace Truckero.API.Controllers;
 
@@ -31,7 +31,7 @@ public class ViewProviderController : ControllerBase {
         _bankService = bankService ?? throw new ArgumentNullException(nameof(bankService));
         _paymentMethodTypeService = paymentMethodTypeService ?? throw new ArgumentNullException(nameof(paymentMethodTypeService));
         _countryService = countryService ?? throw new ArgumentNullException(nameof(countryService));
-        _helpOptionService = helpOptionService ?? throw new ArgumentNullException(nameof(helpOptionService)); 
+        _helpOptionService = helpOptionService ?? throw new ArgumentNullException(nameof(helpOptionService));
     }
 
     [AllowAnonymous]
@@ -53,12 +53,14 @@ public class ViewProviderController : ControllerBase {
     public async Task<ActionResult<PayoutAccountReferenceDataRequest>> GetPayoutPageData([FromQuery] string? countryCode = "CR") {
         countryCode = (countryCode ?? "CR").Trim().ToUpperInvariant();
 
-        var payoutMethodTypes = await _paymentMethodTypeService.GetPaymentMethodTypesByCountryAsync(countryCode)
-            ?? new List<Core.DTOs.PaymentMethodType.PaymentMethodTypeRequest>();
+        // -- REVISION STARTS HERE --
+        var payoutMethodTypeResponse = await _paymentMethodTypeService.GetPaymentMethodTypesByCountryAsync(countryCode);
+        var payoutMethodTypes = payoutMethodTypeResponse?.PaymentMethodTypes ?? new List<PaymentMethodTypeRequest>();
+
         var banks = await _bankService.GetBanksByCountryCodeAsync(countryCode)
-            ?? new List<Core.DTOs.Shared.BankRequest>();
+            ?? new List<BankRequest>();
         var countries = await _countryService.GetAllCountriesAsync()
-            ?? new List<Core.DTOs.Shared.CountryRequest>();
+            ?? new List<CountryRequest>();
 
         var dto = new PayoutAccountReferenceDataRequest {
             PayoutMethodTypes = payoutMethodTypes,
@@ -73,45 +75,52 @@ public class ViewProviderController : ControllerBase {
     public async Task<ActionResult<PaymentAccountReferenceData>> GetPaymentPageReferenceDataAsync(string countryCode) {
         countryCode = (countryCode ?? "CR").Trim().ToUpperInvariant();
 
+        // -- REVISION STARTS HERE --
+        var paymentMethodTypeResponse = await _paymentMethodTypeService.GetPaymentMethodTypesByCountryAsync(countryCode);
+        var paymentMethodTypes = paymentMethodTypeResponse?.PaymentMethodTypes ?? new List<PaymentMethodTypeRequest>();
+
+        var banks = await _bankService.GetBanksByCountryCodeAsync(countryCode)
+                ?? new List<BankRequest>();
+        var countries = await _countryService.GetAllCountriesAsync()
+                   ?? new List<CountryRequest>();
+
         var referenceData = new PaymentAccountReferenceData {
-            PaymentMethodTypes = await _paymentMethodTypeService.GetPaymentMethodTypesByCountryAsync(countryCode)
-                                 ?? new List<PaymentMethodTypeRequest>(),
-            Banks = await _bankService.GetBanksByCountryCodeAsync(countryCode)
-                    ?? new List<BankRequest>(),
-            Countries = await _countryService.GetAllCountriesAsync()
-                       ?? new List<CountryRequest>()
+            PaymentMethodTypes = paymentMethodTypes,
+            Banks = banks,
+            Countries = countries
         };
         return Ok(referenceData);
     }
 
-   
     [AllowAnonymous]
     [HttpGet("freight-bid-reference-data")]
     public async Task<ActionResult<FreightBidReferenceData>> GetFreightBidReferenceData() {
-        var truckTypes = await _truckService.GetTruckTypesAsync();
-        var truckCategories = await _truckService.GetTruckCategoriesAsync();
-        var bedTypes = await _truckService.GetBedTypesAsync();
+        // Truck data
+        var truckTypes = await _truckService.GetTruckTypesAsync() ?? new List<TruckType>();
+        var truckCategories = await _truckService.GetTruckCategoriesAsync() ?? new List<TruckCategory>();
+        var bedTypes = await _truckService.GetBedTypesAsync() ?? new List<BedType>();
+        var truckMakes = await _truckService.GetTruckMakesAsync() ?? new List<TruckMake>();
+        var truckModels = await _truckService.GetTruckModelsAsync() ?? new List<TruckModel>();
 
-        // If you have services for these; if not, use repository or static list.
-        var payloadOptions = await _truckService.GetUseTagsAsync(); // Payload = UseTags per your mapping
-        var useTags = await _truckService.GetUseTagsAsync();
+        // Usage & help options
+        var useTags = await _truckService.GetUseTagsAsync() ?? new List<UseTag>();
+        var helpOptions = await _helpOptionService.GetAllHelpOptionsAsync() ?? new List<HelpOption>();
 
-        // For HelpOptions, implement similar to UseTag service/repository
-        var helpOptions = await _helpOptionService.GetAllHelpOptionsAsync(); // create IHelpOptionService as needed
-
-        var paymentMethodTypes = await _paymentMethodTypeService.GetAllPaymentMethodTypesAsync();
+        // -- REVISION STARTS HERE --
+        var paymentMethodTypeResponse = await _paymentMethodTypeService.GetAllPaymentMethodTypesAsync();
+        var paymentMethodTypes = paymentMethodTypeResponse?.PaymentMethodTypes ?? new List<PaymentMethodTypeRequest>();
 
         var dto = new FreightBidReferenceData {
-            TruckTypes = truckTypes?.ToList() ?? new(),
-            TruckCategories = truckCategories?.ToList() ?? new(),
-            BedTypes = bedTypes?.ToList() ?? new(),
-            UseTags = useTags?.ToList() ?? new(),
-            HelpOptions = helpOptions?.ToList() ?? new(),        // <-- MATCHED!
-            PaymentMethodTypes = paymentMethodTypes?.ToList() ?? new()
+            TruckTypes = truckTypes,
+            TruckCategories = truckCategories,
+            BedTypes = bedTypes,
+            TruckMakes = truckMakes,
+            TruckModels = truckModels,
+            UseTags = useTags,
+            HelpOptions = helpOptions,
+            PaymentMethodTypes = paymentMethodTypes
         };
-
 
         return Ok(dto);
     }
-
 }

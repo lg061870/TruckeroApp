@@ -1,0 +1,231 @@
+﻿@inherits LayoutComponentBase
+@using Truckero.Core.DTOs.CustomerFlow
+
+<div id="request-submitted-screen" class="min-h-screen bg-white">
+    <div id="header" class="bg-white px-4 py-3 shadow-sm">
+        <div class="flex items-center">
+            <h1 class="text-xl font-semibold text-center flex-1">Finding Drivers</h1>
+        </div>
+    </div>
+
+    <div id="content" class="px-4 pt-8">
+        <!-- Spinner/animation -->
+        <div id="status-animation" class="flex justify-center mb-12">
+            <div class="relative">
+                <div class="w-32 h-32 border-4 border-orange-200 rounded-full flex items-center justify-center">
+                    <div class="w-24 h-24 border-4 border-t-orange-500 border-r-orange-500 border-b-transparent border-l-transparent rounded-full animate-spin"></div>
+                </div>
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <i class="fa-solid fa-truck-fast text-3xl text-orange-500"></i>
+                </div>
+            </div>
+        </div>
+
+        <div id="status-message" class="text-center space-y-3 mb-8">
+            <h2 class="text-xl font-semibold text-gray-800">Connecting with Drivers</h2>
+            <p class="text-gray-600">Your request is being sent to available drivers in your area</p>
+        </div>
+
+        <!-- Details Card -->
+        <div id="request-details" class="bg-gray-50 rounded-xl p-4 mb-8">
+            <div class="space-y-4">
+
+                <!-- Locations -->
+                <div id="locations" class="space-y-3">
+                    <div class="flex items-start space-x-3">
+                        <div class="mt-1">
+                            <i class="fa-solid fa-location-dot text-orange-500"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Pickup Location</p>
+                            <p class="font-medium">@FreightBidRequest?.PickupLocation</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <div class="mt-1">
+                            <i class="fa-solid fa-flag-checkered text-orange-500"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Delivery Location</p>
+                            <p class="font-medium">@FreightBidRequest?.DeliveryLocation</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Truck Type -->
+                @if (FreightBidRequest?.TruckType != null)
+                {
+                    <div class="flex items-center space-x-3 border-t border-gray-200 pt-3">
+                        <i class="@FreightBidRequest.TruckType.Icon text-orange-500"></i>
+                        <div>
+                            <p class="text-sm text-gray-500">Vehicle Type</p>
+                            <p class="font-medium">@FreightBidRequest.TruckType.Name</p>
+                        </div>
+                    </div>
+                }
+
+                <!-- Truck Category -->
+                @if (FreightBidRequest?.TruckCategory != null)
+                {
+                    <div class="flex items-center space-x-3 pt-2">
+                        <i class="fa-solid fa-layer-group text-orange-400"></i>
+                        <div>
+                            <p class="text-sm text-gray-500">Truck Category</p>
+                            <p class="font-medium">@FreightBidRequest.TruckCategory.Name</p>
+                        </div>
+                    </div>
+                }
+                <!-- Bed Type -->
+                @if (FreightBidRequest?.BedType != null)
+                {
+                    <div class="flex items-center space-x-3 pt-2">
+                        <i class="fa-solid fa-bed text-orange-400"></i>
+                        <div>
+                            <p class="text-sm text-gray-500">Bed Type</p>
+                            <p class="font-medium">@FreightBidRequest.BedType.Name</p>
+                        </div>
+                    </div>
+                }
+                <!-- Truck Make -->
+                @if (FreightBidRequest?.TruckMake != null)
+                {
+                    <div class="flex items-center space-x-3 pt-2">
+                        <i class="fa-solid fa-industry text-orange-400"></i>
+                        <div>
+                            <p class="text-sm text-gray-500">Truck Make</p>
+                            <p class="font-medium">@FreightBidRequest.TruckMake.Name</p>
+                        </div>
+                    </div>
+                }
+                <!-- Truck Model -->
+                @if (FreightBidRequest?.TruckModel != null)
+                {
+                    <div class="flex items-center space-x-3 pt-2">
+                        <i class="fa-solid fa-car-side text-orange-400"></i>
+                        <div>
+                            <p class="text-sm text-gray-500">Truck Model</p>
+                            <p class="font-medium">@FreightBidRequest.TruckModel.Name</p>
+                        </div>
+                    </div>
+                }
+
+                <!-- Payload(s) -->
+                @if (FreightBidRequest?.UseTags != null && FreightBidRequest.UseTags.Any())
+                {
+                    <div class="border-t border-gray-200 pt-3">
+                        <div class="flex items-center space-x-3 mb-2">
+                            <i class="@FreightBidRequest.UseTags.FirstOrDefault()?.Icon ?? "fa-solid fa-box" text-orange-500"></i>
+                            <p class="text-sm text-gray-500">Payload Type(s)</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2 ml-6">
+                            @foreach (var tag in FreightBidRequest.UseTags)
+                            {
+                                <span class="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">@tag.Name</span>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- Travel Option -->
+                @if (FreightBidRequest?.TravelWithPayload == true)
+                {
+                    <div class="flex items-center space-x-3 border-t border-gray-200 pt-3">
+                        <i class="fa-solid fa-user-check text-orange-500"></i>
+                        <div>
+                            <p class="text-sm text-gray-500">Travel Option</p>
+                            <p class="font-medium">
+                                @(FreightBidRequest.TravelRequirement == "required"
+                                    ? "Required - I must travel with my items"
+                                    : "Optional - I can travel if needed")
+                            </p>
+                        </div>
+                    </div>
+                }
+
+                <!-- Help Options -->
+                @if (FreightBidRequest?.HelpOptions != null && FreightBidRequest.HelpOptions.Any())
+                {
+                    <div class="border-t border-gray-200 pt-3">
+                        <div class="flex items-center space-x-3 mb-2">
+                            <i class="fa-solid fa-hands-helping text-orange-500"></i>
+                            <p class="text-sm text-gray-500">Additional Help</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2 ml-6">
+                            @foreach (var help in FreightBidRequest.HelpOptions)
+                            {
+                                <span class="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">@help.Name</span>
+                            }
+                        </div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(FreightBidRequest?.Weight))
+                {
+                    <div class="flex items-center space-x-3 border-t border-gray-200 pt-3">
+                        <i class="fa-solid fa-weight-hanging text-gray-600"></i>
+                        <div>
+                            <p class="text-sm text-gray-500">Estimated Weight</p>
+                            <p class="font-medium">@FreightBidRequest?.Weight</p>
+                        </div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(EstimatedCost))
+                {
+                    <div class="flex items-center justify-between border-t border-gray-200 pt-3">
+                        <div class="flex items-center space-x-3">
+                            <i class="fa-solid fa-dollar-sign text-green-600"></i>
+                            <div>
+                                <p class="text-sm text-gray-500">Estimated Cost</p>
+                                <p class="font-medium text-green-600">@EstimatedCost</p>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div id="estimated-time" class="text-center mb-8">
+            <div class="inline-flex items-center space-x-2 bg-orange-50 px-4 py-2 rounded-full">
+                <i class="fa-regular fa-clock text-orange-500"></i>
+                <span class="text-sm text-orange-700">This may take a few minutes, please wait</span>
+            </div>
+        </div>
+
+        <div id="action-buttons" class="space-y-4 pb-20">
+            <button id="cancel-request-btn" class="w-full py-4 px-6 bg-red-500 text-white font-medium rounded-xl hover:bg-red-600 transition-colors flex items-center justify-center space-x-2"
+                    @onclick="OnCancel">
+                <i class="fa-solid fa-xmark"></i>
+                <span>Cancel Request</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="status-bar" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span class="text-sm text-gray-600">Searching nearby drivers...</span>
+            </div>
+            <span class="text-sm text-gray-400" id="search-timer">@SearchTimerText</span>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public FreightBidRequest FreightBidRequest { get; set; }
+    [Parameter] public string EstimatedCost { get; set; } = "";
+    [Parameter] public string SearchTimerText { get; set; } = "00:42";
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public FreightBidReferenceData ReferenceData { get; set; } = new();
+
+    protected override Task OnInitializedAsync()
+    {
+        return base.OnInitializedAsync();
+    }
+
+    protected override Task OnParametersSetAsync()
+    {
+        return base.OnParametersSetAsync();
+    }
+}

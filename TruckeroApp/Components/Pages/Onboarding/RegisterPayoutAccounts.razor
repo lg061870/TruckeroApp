@@ -190,7 +190,7 @@
 
     [Inject] private IAuthSessionContext AuthSession { get; set; }
 
-    private Guid UserId => AuthSession.UserId ?? Guid.Empty;
+    private Guid UserId => AuthSession.LoggedUser.Id;
 
     // Holds payout accounts already registered for the user
     private List<PayoutAccountRequest> ExistingPayoutAccounts = new();

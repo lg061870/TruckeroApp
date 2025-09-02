@@ -117,10 +117,10 @@ public class TruckApiClientService : ITruckService {
                 }
             }
 
-            var error = JsonSerializer.Deserialize<ErrorResponse>(content);
+            var error = JsonSerializer.Deserialize<BaseResponse>(content);
 
-            if (error != null && !string.IsNullOrWhiteSpace(error.Error)) {
-                throw new TruckClientException(error.Error, error.Code, response.StatusCode);
+            if (error != null && !string.IsNullOrWhiteSpace(error.Message)) {
+                throw new TruckClientException(error.Message, error.ErrorCode, response.StatusCode);
             }
         } catch (JsonException) {
             // Fall through to generic failure
@@ -155,10 +155,10 @@ public class TruckApiClientService : ITruckService {
                 }
             }
 
-            var error = JsonSerializer.Deserialize<ErrorResponse>(content);
+            var error = JsonSerializer.Deserialize<BaseResponse>(content);
 
-            if (error != null && !string.IsNullOrWhiteSpace(error.Error)) {
-                throw new TruckClientException(error.Error, error.Code, response.StatusCode);
+            if (error != null && !string.IsNullOrWhiteSpace(error.Message)) {
+                throw new TruckClientException(error.Message, error.ErrorCode, response.StatusCode);
             }
         } catch (JsonException) {
             // Fall through to generic failure

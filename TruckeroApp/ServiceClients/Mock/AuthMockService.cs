@@ -152,7 +152,7 @@ public class AuthMockService : IAuthService
 
         return new SessionInfo
         {
-            UserId = _mockUserId,
+            //UserId = _mockUserId,
             Email = _mockEmail,
             FullName = "Mock User",
             ActiveRole = token?.Role ?? _activeRole,

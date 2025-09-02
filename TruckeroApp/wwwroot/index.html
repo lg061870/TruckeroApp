@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
@@ -26,8 +27,8 @@
         window.FontAwesomeConfig = { autoReplaceSvg: 'nest' };
     </script>
 
-    <!-- Tailwind via CDN (for prototyping) -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind v3.4.4 via CDN (for prototyping) -->
+    <!--<script src="https://cdn.tailwindcss.com/3.4.4"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -53,7 +54,7 @@
                 }
             }
         };
-    </script>
+    </script>-->
 
     <!-- Favicon placeholder -->
     <link rel="icon" href="data:,">
@@ -77,12 +78,12 @@
                 <div id="trukero-splash-page" class="min-h-[720px] flex flex-col justify-between items-center bg-gray-50">
                     <main id="splash-main" class="flex-1 w-full flex flex-col justify-center items-center px-8">
                         <div id="splash-logo-block" class="flex flex-col items-center justify-center">
-                            <!-- Spinner -->
+                            <!--Spinner-->
                             <div class="flex items-center justify-center mb-4">
                                 <i class="fa-solid fa-spinner animate-spin text-[#FF6B00] text-4xl"></i>
                             </div>
 
-                            <!-- Logo -->
+                            <!--Logo-->
                             <div class="flex items-center justify-center mb-6">
                                 <i class="fa-solid fa-truck text-[#FF6B00] text-[7rem] drop-shadow-xl"></i>
                             </div>
@@ -106,6 +107,29 @@
     </div>
 
     <script src="_framework/blazor.webview.js" autostart="false"></script>
+
+    <!-- Tailwind AFTER Blazor -->
+    <script src="https://cdn.tailwindcss.com/3.4.4"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: "var(--color-primary)" },
+                        secondary: { DEFAULT: "var(--color-secondary)" },
+                        accent: { DEFAULT: "var(--color-accent)" },
+                        neutral: { DEFAULT: "var(--color-neutral)" },
+                        info: { DEFAULT: "var(--color-info)" },
+                        success: { DEFAULT: "var(--color-success)" },
+                        warning: { DEFAULT: "var(--color-warning)" },
+                        error: { DEFAULT: "var(--color-error)" },
+                        danger: { DEFAULT: "var(--color-error)" },
+                        failure: { DEFAULT: "var(--color-error)" }
+                    }
+                }
+            }
+        };
+    </script>
 
 </body>
 

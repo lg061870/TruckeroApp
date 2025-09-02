@@ -18,16 +18,22 @@ public class UserRepository : IUserRepository
     {
         return await _context.Users
             .Include(u => u.Role)
+            .Include(u => u.CustomerProfile)
+            .Include(u => u.DriverProfile)
+            .Include(u => u.Onboarding)
             .FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
     }
 
     public async Task<User?> GetUserByIdAsync(Guid id)
     {
-        var result = await _context.Users
+        var user = await _context.Users
             .Include(u => u.Role)
+            .Include(u => u.CustomerProfile)
+            .Include(u => u.DriverProfile)
+            .Include(u => u.Onboarding)
             .FirstOrDefaultAsync(u => u.Id == id);
 
-        return result;
+        return user;
     }
 
     public async Task<User?> GetUserByAccessTokenAsync(string accessToken)
@@ -53,4 +59,22 @@ public class UserRepository : IUserRepository
         _context.Users.Remove(user);
         await _context.SaveChangesAsync();
     }
+    public async Task<User?> GetUserByCustomerProfileId(Guid customerProfileId) {
+        return await _context.Users
+            .Include(u => u.Role)
+            .Include(u => u.CustomerProfile)
+            .Include(u => u.DriverProfile)
+            .Include(u => u.Onboarding)
+            .FirstOrDefaultAsync(u => u.CustomerProfile != null && u.CustomerProfile.Id == customerProfileId);
+    }
+
+    public async Task<User?> GetUserByDriverProfileId(Guid driverProfileId) {
+        return await _context.Users
+            .Include(u => u.Role)
+            .Include(u => u.CustomerProfile)
+            .Include(u => u.DriverProfile)
+            .Include(u => u.Onboarding)
+            .FirstOrDefaultAsync(u => u.DriverProfile != null && u.DriverProfile.Id == driverProfileId);
+    }
+
 }

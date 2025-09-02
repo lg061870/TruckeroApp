@@ -15,5 +15,6 @@ public class TruckType
     public string? Description { get; set; }
 
     public ICollection<Truck> Vehicles { get; set; } = new List<Truck>();
+    public string? Icon { get; set; }
 }
 

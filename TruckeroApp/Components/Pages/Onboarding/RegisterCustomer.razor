@@ -24,7 +24,7 @@
 @inject IMediaPicker MediaPicker
 @inject IMediaService MediaService
 @inject ILocalStorageService LocalStorage
-
+@inject IAuthSessionContext AuthSession
 
 <CenterWrapper>
     <div id="registration-screen" class="p-6 min-h-screen">
@@ -49,26 +49,26 @@
             <div id="personal-info-section" class="space-y-4">
                 <div class="space-y-2">
                     <label class="block text-sm font-medium text-gray-700">Full Name</label>
-                    <InputText @bind-Value="CustomerProfile.FullName" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter your full name" />
-                    <ValidationMessage For="@(() => CustomerProfile.FullName)" class="text-red-500 text-xs" />
+                    <InputText @bind-Value="User.FullName" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter your full name" />
+                    <ValidationMessage For="@(() => User.FullName)" class="text-red-500 text-xs" />
                 </div>
 
                 <div class="space-y-2">
                     <label class="block text-sm font-medium text-gray-700">Email Address</label>
-                    <InputText @bind-Value="CustomerProfile.Email" type="email" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter your email address" />
-                    <ValidationMessage For="@(() => CustomerProfile.Email)" class="text-red-500 text-xs" />
+                    <InputText @bind-Value="User.Email" type="email" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter your email address" />
+                    <ValidationMessage For="@(() => User.Email)" class="text-red-500 text-xs" />
                 </div>
 
                 <div class="space-y-2">
                     <label class="block text-sm font-medium text-gray-700">Phone Number</label>
-                    <InputText @bind-Value="CustomerProfile.PhoneNumber" type="tel" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter your phone number" />
-                    <ValidationMessage For="@(() => CustomerProfile.PhoneNumber)" class="text-red-500 text-xs" />
+                    <InputText @bind-Value="User.PhoneNumber" type="tel" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter your phone number" />
+                    <ValidationMessage For="@(() => User.PhoneNumber)" class="text-red-500 text-xs" />
                 </div>
 
                 <div class="space-y-2">
                     <label class="block text-sm font-medium text-gray-700">Address</label>
-                    <InputText @bind-Value="CustomerProfile.Address" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter your address" />
-                    <ValidationMessage For="@(() => CustomerProfile.Address)" class="text-red-500 text-xs" />
+                    <InputText @bind-Value="User.Address" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter your address" />
+                    <ValidationMessage For="@(() => User.Address)" class="text-red-500 text-xs" />
                 </div>
             </div>
 
@@ -195,7 +195,7 @@
                     break;
 
                 case "failure_send_confirmationemail":
-                    <EmailResendBottomSheet Email="@CustomerProfile.Email"
+                    <EmailResendBottomSheet Email="@User.Email"
                                             IsResendingEmail="@IsResendingEmail"
                                             ResendEmailMessage="@ResendEmailMessage"
                                             ResendToOriginalEmail="@ResendToOriginalEmailAsync"
@@ -208,13 +208,13 @@
                                              OnDismiss="@(() => ActiveBottomSheet = null)" />
                     break;
                 case "email_already_exist":
-                    <UserExistsBottomSheet Email="@CustomerProfile.Email"
+                    <UserExistsBottomSheet Email="@User.Email"
                        OnDismiss="@(() => ActiveBottomSheet = null)"
                        OnLogin="@(() => NavigationManager.NavigateTo(AppRoutes.Login, forceLoad: true))" />
 
                     break;
                 case "email_confirmation":
-                    <EmailConfirmationBottomSheet Email="@CustomerProfile.Email"
+                    <EmailConfirmationBottomSheet Email="@User.Email"
                                                   RegisteredUserId="@RegisteredUserId" />
                     break;
                 case "registration_restored":
@@ -235,6 +235,7 @@
     private Guid UserId = Guid.NewGuid();
     private CustomerProfileRequest CustomerProfile { get; set; } = new CustomerProfileRequest();
     private Guid RegisteredUserId; // Set this after registration
+    private User User => AuthSession.LoggedUser;
 
     // ---------------------------
     // Persistent Storage & Auto-Save
@@ -294,15 +295,26 @@
             CustomerProfile = saved;
             UserId = saved.UserId != Guid.Empty ? saved.UserId : Guid.NewGuid();
             CustomerProfile.UserId = UserId;
-            _lastSavedDateTime = saved.LastUpdated;
+            _lastSavedDateTime = saved.CreatedAt;
             ActiveBottomSheet = "registration_restored";
         }
         else
         {
             UserId = Guid.NewGuid();
-            CustomerProfile.UserId = UserId;
+            CustomerProfile = new CustomerProfileRequest { UserId = UserId }; // create new instance!
             _lastSavedDateTime = null;
         }
+
+        // Always recreate EditContext after assigning CustomerProfile!
+        _editContext = new EditContext(CustomerProfile);
+        _editContext.OnFieldChanged += async (sender, args) =>
+        {
+            CustomerProfile.UserId = UserId; // Keep in sync
+            await LocalStorage.SetItemAsync(STORAGE_KEY, CustomerProfile);
+            StateHasChanged();
+        };
+        StateHasChanged(); // Ensure UI refresh
+
     }
 
     private async Task SubmitAsync()
@@ -326,10 +338,11 @@
 
             var completeProfile = new CustomerOnboardingRequest
             {
-                FullName = CustomerProfile.FullName,
-                Email = CustomerProfile.Email,
-                PhoneNumber = CustomerProfile.PhoneNumber,
-                Address = CustomerProfile.Address,
+                UserId = UserId,
+                FullName = User.FullName,
+                Email = User.Email,
+                PhoneNumber = User.PhoneNumber,
+                Address = User.Address,
                 Password = Password,
                 HasPaymentMethod = HasPaymentMethod
             };
@@ -434,11 +447,11 @@
             : null;
 
     private bool IsFormValid =>
-    IsTextValid(CustomerProfile.FullName) &&
-    IsTextValid(CustomerProfile.Email) &&
-    IsTextValid(CustomerProfile.PhoneNumber) &&
-    IsTextValid(CustomerProfile.Address) &&
-    IsValidEmail(CustomerProfile.Email) &&
+    IsTextValid(User.FullName) &&
+    IsTextValid(User.Email) &&
+    IsTextValid(User.PhoneNumber) &&
+    IsTextValid(User.Address) &&
+    IsValidEmail(User.Email) &&
     IsValidPassword() &&
     AcceptTerms;
 

@@ -231,7 +231,7 @@
     {
         // Prefer to check .HasValue && .Value == Guid.Empty
         if (UserId.HasValue && UserId.Value == Guid.Empty)
-            UserId = SessionContext.UserId;
+            UserId = SessionContext.LoggedUser?.Id;
 
         // Optionally: Could also check FromRegisterCustomer here or set up a flag
         return base.OnParametersSetAsync();

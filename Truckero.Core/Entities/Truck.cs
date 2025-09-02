@@ -7,66 +7,67 @@ public class Truck {
     [Key]
     public Guid Id { get; set; } = Guid.NewGuid();
 
+    // Owner
     [Required]
-    public Guid DriverProfileId { get; set; } = Guid.Empty;
+    public Guid DriverProfileId { get; set; }
 
+    [ForeignKey(nameof(DriverProfileId))]
+    public DriverProfile DriverProfile { get; set; } = null!;
+
+    // Type/Make/Model
     [Required]
-    public Guid TruckTypeId { get; set; } = Guid.Empty;
-
+    public Guid TruckTypeId { get; set; }
     [ForeignKey(nameof(TruckTypeId))]
-    public TruckType TruckType { get; set; }
+    public TruckType TruckType { get; set; } = null!;
 
     [Required]
-    public Guid TruckMakeId { get; set; } = Guid.Empty;
-
+    public Guid TruckMakeId { get; set; }
     [ForeignKey(nameof(TruckMakeId))]
-    public TruckMake TruckMake { get; set; }
+    public TruckMake TruckMake { get; set; } = null!;
 
     [Required]
-    public Guid TruckModelId { get; set; } = Guid.Empty;
-
+    public Guid TruckModelId { get; set; }
     [ForeignKey(nameof(TruckModelId))]
-    public TruckModel TruckModel { get; set; }
+    public TruckModel TruckModel { get; set; } = null!;
 
-    [Required]
-    public string? LicensePlate { get; set; } = string.Empty;
-
-    [Required]
-    public int Year { get; set; } = 0;
-
-    // Photos
-    public string? PhotoFrontUrl { get; set; } = null;
-    public string? PhotoBackUrl { get; set; } = null;
-    public string? PhotoLeftUrl { get; set; } = null;
-    public string? PhotoRightUrl { get; set; } = null;
-
-    // Categorization
-    public Guid? TruckCategoryId { get; set; } = null;
+    // Category/BedType (nullable)
+    public Guid? TruckCategoryId { get; set; }
     [ForeignKey(nameof(TruckCategoryId))]
     public TruckCategory? TruckCategory { get; set; }
 
-    public Guid? BedTypeId { get; set; } = null;
+    public Guid? BedTypeId { get; set; }
     [ForeignKey(nameof(BedTypeId))]
     public BedType? BedTypeNav { get; set; }
 
-    // Tags
+    // Tags (many-to-many)
     public ICollection<TruckUseTag> UseTags { get; set; } = new List<TruckUseTag>();
 
-    // Ownership
-    public OwnershipType? OwnershipType { get; set; } = null;
+    // Required fields
+    [Required]
+    public string LicensePlate { get; set; } = string.Empty;
+
+    [Required]
+    public int Year { get; set; }
+
+    // Photos (optional)
+    public string? PhotoFrontUrl { get; set; }
+    public string? PhotoBackUrl { get; set; }
+    public string? PhotoLeftUrl { get; set; }
+    public string? PhotoRightUrl { get; set; }
+
+    // Ownership (enum, not a navigation)
+    public OwnershipType? OwnershipType { get; set; }
 
     // Insurance
     [Required]
-    public string? InsuranceProvider { get; set; } = string.Empty;
+    public string InsuranceProvider { get; set; } = string.Empty;
+
     [Required]
-    public string? PolicyNumber { get; set; } = string.Empty;
-    public string? InsuranceDocumentUrl { get; set; } = null;
+    public string PolicyNumber { get; set; } = string.Empty;
+
+    public string? InsuranceDocumentUrl { get; set; }
 
     // Status flags
     public bool IsVerified { get; set; } = false;
     public bool IsActive { get; set; } = false;
-
-    // Navigation
-    [ForeignKey(nameof(DriverProfileId))]
-    public DriverProfile DriverProfile { get; set; }
 }

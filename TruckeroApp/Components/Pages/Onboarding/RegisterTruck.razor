@@ -411,7 +411,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _userId = AuthSession.UserId ?? Guid.NewGuid();
+        _userId = AuthSession.LoggedUser.Id;
 
         try
         {

@@ -45,7 +45,7 @@ public class DriverBidRepository : IDriverBidRepository {
     public async Task<IReadOnlyList<DriverBid>> GetDriverBidsByDriverIdAsync(Guid driverId) {
         try {
             return await _context.DriverBids
-                .Where(db => db.DriverId == driverId)
+                .Where(db => db.DriverProfileId == driverId)
                 .Include(db => db.FreightBid)
                 .ToListAsync();
         } catch (Exception ex) {
@@ -59,7 +59,7 @@ public class DriverBidRepository : IDriverBidRepository {
             if (!await _context.FreightBids.AnyAsync(fb => fb.Id == entity.FreightBidId))
                 throw new DriverBidException("FreightBidId does not exist.", ExceptionCodes.DriverBidErrorCodes.FreightBidNotFound);
 
-            if (!await _context.Users.AnyAsync(u => u.Id == entity.DriverId))
+            if (!await _context.Users.AnyAsync(u => u.Id == entity.DriverProfileId))
                 throw new DriverBidException("DriverId does not exist.", ExceptionCodes.DriverBidErrorCodes.DriverNotFound);
 
             if (!await _context.Trucks.AnyAsync(t => t.Id == entity.TruckId))
@@ -88,7 +88,7 @@ public class DriverBidRepository : IDriverBidRepository {
             if (!await _context.FreightBids.AnyAsync(fb => fb.Id == entity.FreightBidId))
                 throw new DriverBidException("FreightBidId does not exist.", ExceptionCodes.DriverBidErrorCodes.FreightBidNotFound);
 
-            if (!await _context.Users.AnyAsync(u => u.Id == entity.DriverId))
+            if (!await _context.Users.AnyAsync(u => u.Id == entity.DriverProfileId))
                 throw new DriverBidException("DriverId does not exist.", ExceptionCodes.DriverBidErrorCodes.DriverNotFound);
 
             if (!await _context.Trucks.AnyAsync(t => t.Id == entity.TruckId))
@@ -96,7 +96,7 @@ public class DriverBidRepository : IDriverBidRepository {
 
             // Update fields
             existing.FreightBidId = entity.FreightBidId;
-            existing.DriverId = entity.DriverId;
+            existing.DriverProfileId = entity.DriverProfileId;
             existing.TruckId = entity.TruckId;
             existing.OfferAmount = entity.OfferAmount;
             existing.Message = entity.Message;

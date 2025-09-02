@@ -247,7 +247,7 @@ public class DriverBidService : IDriverBidService {
     private static DriverBid ToDriverBidEntity(DriverBidRequest request) {
         return new DriverBid {
             FreightBidId = request.FreightBidId,
-            DriverId = request.DriverId,
+            DriverProfileId = request.DriverId,
             TruckId = request.TruckId,
             OfferAmount = request.OfferAmount,
             Message = request.Message,
@@ -257,7 +257,7 @@ public class DriverBidService : IDriverBidService {
     private static DriverBidRequest ToDriverBidRequest(DriverBid entity) {
         return new DriverBidRequest {
             FreightBidId = entity.FreightBidId,
-            DriverId = entity.DriverId,
+            DriverId = entity.DriverProfileId,
             TruckId = entity.TruckId,
             OfferAmount = entity.OfferAmount,
             Message = entity.Message
