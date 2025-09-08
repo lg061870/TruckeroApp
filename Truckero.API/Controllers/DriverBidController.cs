@@ -134,5 +134,17 @@ namespace Truckero.API.Controllers {
             var result = await _driverBidService.GetDriverBidsByDriverIdAsync(driverId);
             return Ok(result);
         }
+
+        [HttpGet("status/{freightBidId:guid}")]
+        public async Task<ActionResult<FindDriversStatusResponse>> GetFindDriversStatus(Guid freightBidId) {
+            var result = await _driverBidService.GetFindDriversStatusAsync(freightBidId);
+            if (!result.Success) {
+                return result.ErrorCode switch {
+                    ExceptionCodes.DriverBidErrorCodes.FreightBidNotFound => NotFound(result),
+                    _ => BadRequest(result)
+                };
+            }
+            return Ok(result);
+        }
     }
 }

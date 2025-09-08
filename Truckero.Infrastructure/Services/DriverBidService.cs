@@ -242,6 +242,55 @@ public class DriverBidService : IDriverBidService {
             }
         });
     }
+    
+    public async Task<FindDriversStatusResponse> GetFindDriversStatusAsync(Guid freightBidId) {
+        try {
+            // Verify the freight bid exists
+            var freightBid = await _dbContext.FreightBids
+                .FirstOrDefaultAsync(fb => fb.Id == freightBidId);
+                
+            if (freightBid == null) {
+                return new FindDriversStatusResponse {
+                    Success = false,
+                    Message = "Freight bid not found.",
+                    ErrorCode = ExceptionCodes.DriverBidErrorCodes.FreightBidNotFound,
+                    BidsStatuses = new List<FindDriversStatusRequest>(),
+                    NotifiedDrivers = 0
+                };
+            }
+            
+            // Get driver bids for the freight bid
+            var driverBids = await _driverBidRepository.GetDriverBidsByFreightBidIdAsync(freightBidId);
+            
+            // Create the status request
+            var status = new FindDriversStatusRequest(
+                FreightBidId: freightBidId,
+                DriversFound: driverBids.Any(),
+                TotalDriversFound: driverBids.Count,
+                RequestTime: DateTime.UtcNow,
+                StatusMessage: driverBids.Any()
+                    ? $"Found {driverBids.Count} driver(s) for this freight bid"
+                    : "No drivers found for this freight bid"
+            );
+            
+            return new FindDriversStatusResponse {
+                Success = true,
+                Message = "Driver search status retrieved successfully.",
+                BidsStatuses = new List<FindDriversStatusRequest> { status },
+                NotifiedDrivers = driverBids.Count // Add the NotifiedDrivers property value
+            };
+        }
+        catch (Exception ex) {
+            _logger.LogError(ex, "Error retrieving driver search status for freight bid {FreightBidId}", freightBidId);
+            return new FindDriversStatusResponse {
+                Success = false,
+                Message = "An error occurred while retrieving driver search status.",
+                ErrorCode = ExceptionCodes.DriverBidErrorCodes.Unknown,
+                BidsStatuses = new List<FindDriversStatusRequest>(),
+                NotifiedDrivers = 0
+            };
+        }
+    }
 
     // ---------- Mapping Helpers ----------
     private static DriverBid ToDriverBidEntity(DriverBidRequest request) {

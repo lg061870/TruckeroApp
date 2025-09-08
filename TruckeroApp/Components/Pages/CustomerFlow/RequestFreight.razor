@@ -479,7 +479,7 @@
 
     private string GetTruckTypeClass(TruckType t) =>
         $"p-4 text-center border-2 shadow-sm transition-colors cursor-pointer " +
-        (SelectedTruckType == t ? "border-orange-500 bg-orange-50" : "border-transparent bg-gray-50 hover:border-orange-500");
+        (SelectedTruckType?.Id == t.Id ? "border-orange-500 bg-orange-50" : "border-transparent bg-gray-50 hover:border-orange-500");
 
     private string GetUseTagClass(UseTag tag) =>
         $"p-4 text-center border-2 shadow-sm transition-colors cursor-pointer " +
@@ -578,7 +578,7 @@
             {
                 // Show confirmation bottomsheet for "Finding Drivers"
                 ActiveBottomSheet = "finding_drivers";
-                StartSearchTimer();
+                // StartSearchTimer();
                 // (Optional: clear form or reset state)
             }
             else
@@ -728,19 +728,19 @@
         ActiveBottomSheet = null;
     }
 
-    private void StartSearchTimer()
-    {
-        SearchTimerText = "00:00";
-        searchSeconds = 0;
-        searchTimer = new System.Timers.Timer(1000);
-        searchTimer.Elapsed += (s, e) =>
-        {
-            searchSeconds++;
-            SearchTimerText = TimeSpan.FromSeconds(searchSeconds).ToString(@"mm\:ss");
-            InvokeAsync(StateHasChanged);
-        };
-        searchTimer.Start();
-    }
+    // private void StartSearchTimer()
+    // {
+    //     SearchTimerText = "00:00";
+    //     searchSeconds = 0;
+    //     searchTimer = new System.Timers.Timer(1000);
+    //     searchTimer.Elapsed += (s, e) =>
+    //     {
+    //         searchSeconds++;
+    //         SearchTimerText = TimeSpan.FromSeconds(searchSeconds).ToString(@"mm\:ss");
+    //         InvokeAsync(StateHasChanged);
+    //     };
+    //     searchTimer.Start();
+    // }
 
     private void StopSearchTimer()
     {
@@ -756,7 +756,7 @@
             {
                 <div class="@GetTruckTypeClass(t)"
                      @onclick="() => SelectTruckType(t)">
-                    <i class="@($"{t.Icon} text-2xl mb-2 {(SelectedTruckType == t ? "text-orange-500" : "text-gray-600")}")"></i>
+                    <i class="@($"{t.Icon} text-2xl mb-2 {(SelectedTruckType?.Id == t.Id ? "text-orange-500" : "text-gray-600")}")"></i>
                     <p class="font-bold text-base">@t.Name</p>
                 </div> 
             }

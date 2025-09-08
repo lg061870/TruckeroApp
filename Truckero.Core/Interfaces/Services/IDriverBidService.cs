@@ -10,4 +10,5 @@ public interface IDriverBidService {
     Task<DriverBidResponse> GetDriverBidsByFreightBidIdAsync(Guid freightBidId);
     Task<DriverBidResponse> GetDriverBidsByDriverIdAsync(Guid driverId);
     Task<DriverBidResponse> DeleteDriverBidAsync(Guid id);
+    Task<FindDriversStatusResponse> GetFindDriversStatusAsync(Guid freightBidId);
 }

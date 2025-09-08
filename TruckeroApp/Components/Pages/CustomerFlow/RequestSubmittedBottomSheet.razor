@@ -1,5 +1,11 @@
 ﻿@inherits LayoutComponentBase
 @using Truckero.Core.DTOs.CustomerFlow
+@using System.Timers
+@using System.Collections.Generic
+@using TruckeroApp.ServiceClients
+
+@inject ICustomerFlowApiClientService CustomerFlowApiClientService
+@inject NavigationManager NavigationManager
 
 <div id="request-submitted-screen" class="min-h-screen bg-white">
     <div id="header" class="bg-white px-4 py-3 shadow-sm">
@@ -8,103 +14,142 @@
         </div>
     </div>
 
-    <div id="content" class="px-4 pt-8">
+    <div id="content" class="px-4 pt-4">
         <!-- Spinner/animation -->
-        <div id="status-animation" class="flex justify-center mb-12">
+        <div id="status-animation" class="flex justify-center mb-6 animate-pulse">
             <div class="relative">
-                <div class="w-32 h-32 border-4 border-orange-200 rounded-full flex items-center justify-center">
-                    <div class="w-24 h-24 border-4 border-t-orange-500 border-r-orange-500 border-b-transparent border-l-transparent rounded-full animate-spin"></div>
+                <div class="w-24 h-24 border-4 border-orange-200 rounded-full flex items-center justify-center">
+                    <div class="w-18 h-18 border-4 border-t-orange-500 border-r-orange-500 border-b-transparent border-l-transparent rounded-full animate-spin"></div>
                 </div>
                 <div class="absolute inset-0 flex items-center justify-center">
-                    <i class="fa-solid fa-truck-fast text-3xl text-orange-500"></i>
+                    <i class="fa-solid fa-truck-fast text-2xl text-orange-500"></i>
                 </div>
             </div>
         </div>
 
-        <div id="status-message" class="text-center space-y-3 mb-8">
-            <h2 class="text-xl font-semibold text-gray-800">Connecting with Drivers</h2>
-            <p class="text-gray-600">Your request is being sent to available drivers in your area</p>
+        <div id="status-message" class="text-center space-y-2 mb-4">
+            <h2 class="text-lg font-semibold text-gray-800">@_statusMessage</h2>
+            <p class="text-gray-600 text-sm">Your request is being sent to available drivers</p>
+            <div class="flex justify-center items-center space-x-1">
+                <div class="w-2 h-2 bg-orange-500 rounded-full animate-ping"></div>
+                <div class="w-2 h-2 bg-orange-500 rounded-full animate-ping" style="animation-delay: 0.2s"></div>
+                <div class="w-2 h-2 bg-orange-500 rounded-full animate-ping" style="animation-delay: 0.4s"></div>
+            </div>
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <p class="text-red-500 mt-2">@_errorMessage</p>
+            }
+            @if (_driverBids.Any())
+            {
+                <div class="mt-4 text-green-600">
+                    <p>@_driverBids.Count drivers found! Preparing to show options...</p>
+                </div>
+            }
+            @if (_findDriversStatus != null && _findDriversStatus.NotifiedDrivers > 0)
+            {
+                <div class="mt-2 text-blue-600">
+                    <p><i class="fa-solid fa-bell"></i> Notified @_findDriversStatus.NotifiedDrivers drivers in your area</p>
+                </div>
+            }
         </div>
 
         <!-- Details Card -->
-        <div id="request-details" class="bg-gray-50 rounded-xl p-4 mb-8">
-            <div class="space-y-4">
+        <div id="request-details" class="bg-gray-50 rounded-xl p-3 mb-4">
+            <div class="space-y-2">
 
                 <!-- Locations -->
-                <div id="locations" class="space-y-3">
-                    <div class="flex items-start space-x-3">
+                <div id="locations" class="space-y-2">
+                    <div class="flex items-start space-x-2">
                         <div class="mt-1">
                             <i class="fa-solid fa-location-dot text-orange-500"></i>
                         </div>
                         <div>
-                            <p class="text-sm text-gray-500">Pickup Location</p>
-                            <p class="font-medium">@FreightBidRequest?.PickupLocation</p>
+                            <p class="text-xs text-gray-500">Pickup Location</p>
+                            <p class="font-medium text-sm">@FreightBidRequest?.PickupLocation</p>
                         </div>
                     </div>
-                    <div class="flex items-start space-x-3">
+                    <div class="flex items-start space-x-2">
                         <div class="mt-1">
                             <i class="fa-solid fa-flag-checkered text-orange-500"></i>
                         </div>
                         <div>
-                            <p class="text-sm text-gray-500">Delivery Location</p>
-                            <p class="font-medium">@FreightBidRequest?.DeliveryLocation</p>
+                            <p class="text-xs text-gray-500">Delivery Location</p>
+                            <p class="font-medium text-sm">@FreightBidRequest?.DeliveryLocation</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Truck Type -->
-                @if (FreightBidRequest?.TruckType != null)
-                {
-                    <div class="flex items-center space-x-3 border-t border-gray-200 pt-3">
-                        <i class="@FreightBidRequest.TruckType.Icon text-orange-500"></i>
-                        <div>
-                            <p class="text-sm text-gray-500">Vehicle Type</p>
-                            <p class="font-medium">@FreightBidRequest.TruckType.Name</p>
+                <!-- Request Details Summary Row -->
+                <div class="grid grid-cols-2 gap-2 border-t border-gray-200 pt-2">
+                    <!-- Truck Type -->
+                    @if (FreightBidRequest?.TruckType != null)
+                    {
+                        <div class="flex items-start space-x-2">
+                            <div class="mt-1">
+                                <i class="@FreightBidRequest.TruckType.Icon text-orange-500 text-xs"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Vehicle Type</p>
+                                <p class="font-medium text-sm">@FreightBidRequest.TruckType.Name</p>
+                            </div>
                         </div>
-                    </div>
-                }
+                    }
 
-                <!-- Truck Category -->
-                @if (FreightBidRequest?.TruckCategory != null)
-                {
-                    <div class="flex items-center space-x-3 pt-2">
-                        <i class="fa-solid fa-layer-group text-orange-400"></i>
-                        <div>
-                            <p class="text-sm text-gray-500">Truck Category</p>
-                            <p class="font-medium">@FreightBidRequest.TruckCategory.Name</p>
+                    <!-- Truck Category -->
+                    @if (FreightBidRequest?.TruckCategory != null)
+                    {
+                        <div class="flex items-start space-x-2">
+                            <div class="mt-1">
+                                <i class="fa-solid fa-layer-group text-orange-400 text-xs"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Category</p>
+                                <p class="font-medium text-sm">@FreightBidRequest.TruckCategory.Name</p>
+                            </div>
                         </div>
-                    </div>
-                }
-                <!-- Bed Type -->
-                @if (FreightBidRequest?.BedType != null)
-                {
-                    <div class="flex items-center space-x-3 pt-2">
-                        <i class="fa-solid fa-bed text-orange-400"></i>
-                        <div>
-                            <p class="text-sm text-gray-500">Bed Type</p>
-                            <p class="font-medium">@FreightBidRequest.BedType.Name</p>
+                    }
+                    <!-- Weight -->
+                    @if (!string.IsNullOrWhiteSpace(FreightBidRequest?.Weight))
+                    {
+                        <div class="flex items-start space-x-2">
+                            <div class="mt-1">
+                                <i class="fa-solid fa-weight-hanging text-orange-400 text-xs"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Weight</p>
+                                <p class="font-medium text-sm">@FreightBidRequest?.Weight</p>
+                            </div>
                         </div>
-                    </div>
-                }
-                <!-- Truck Make -->
-                @if (FreightBidRequest?.TruckMake != null)
-                {
-                    <div class="flex items-center space-x-3 pt-2">
-                        <i class="fa-solid fa-industry text-orange-400"></i>
-                        <div>
-                            <p class="text-sm text-gray-500">Truck Make</p>
-                            <p class="font-medium">@FreightBidRequest.TruckMake.Name</p>
+                    }
+
+                    <!-- Travel Option -->
+                    @if (FreightBidRequest?.TravelWithPayload == true)
+                    {
+                        <div class="flex items-start space-x-2">
+                            <div class="mt-1">
+                                <i class="fa-solid fa-user-check text-orange-400 text-xs"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Travel</p>
+                                <p class="font-medium text-sm">@(FreightBidRequest?.TravelRequirement == "required" ? "Required" : "Optional")</p>
+                            </div>
                         </div>
-                    </div>
-                }
-                <!-- Truck Model -->
-                @if (FreightBidRequest?.TruckModel != null)
+                    }
+
+                </div> <!-- End of grid -->
+
+                <!-- Special Instructions -->
+                @if (!string.IsNullOrWhiteSpace(FreightBidRequest?.SpecialInstructions))
                 {
-                    <div class="flex items-center space-x-3 pt-2">
-                        <i class="fa-solid fa-car-side text-orange-400"></i>
-                        <div>
-                            <p class="text-sm text-gray-500">Truck Model</p>
-                            <p class="font-medium">@FreightBidRequest.TruckModel.Name</p>
+                    <div class="border-t border-gray-200 pt-2 mt-2">
+                        <div class="flex items-start space-x-2">
+                            <div class="mt-1">
+                                <i class="fa-solid fa-info-circle text-orange-400 text-xs"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Instructions</p>
+                                <p class="font-medium text-sm">@FreightBidRequest?.SpecialInstructions</p>
+                            </div>
                         </div>
                     </div>
                 }
@@ -112,32 +157,20 @@
                 <!-- Payload(s) -->
                 @if (FreightBidRequest?.UseTags != null && FreightBidRequest.UseTags.Any())
                 {
-                    <div class="border-t border-gray-200 pt-3">
-                        <div class="flex items-center space-x-3 mb-2">
-                            <i class="@FreightBidRequest.UseTags.FirstOrDefault()?.Icon ?? "fa-solid fa-box" text-orange-500"></i>
-                            <p class="text-sm text-gray-500">Payload Type(s)</p>
-                        </div>
-                        <div class="flex flex-wrap gap-2 ml-6">
-                            @foreach (var tag in FreightBidRequest.UseTags)
-                            {
-                                <span class="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">@tag.Name</span>
-                            }
-                        </div>
-                    </div>
-                }
-
-                <!-- Travel Option -->
-                @if (FreightBidRequest?.TravelWithPayload == true)
-                {
-                    <div class="flex items-center space-x-3 border-t border-gray-200 pt-3">
-                        <i class="fa-solid fa-user-check text-orange-500"></i>
-                        <div>
-                            <p class="text-sm text-gray-500">Travel Option</p>
-                            <p class="font-medium">
-                                @(FreightBidRequest.TravelRequirement == "required"
-                                    ? "Required - I must travel with my items"
-                                    : "Optional - I can travel if needed")
-                            </p>
+                    <div class="border-t border-gray-200 pt-2 mt-2">
+                        <div class="flex items-start space-x-2">
+                            <div class="mt-1">
+                                <i class="@(FreightBidRequest.UseTags.FirstOrDefault()?.Icon ?? "fa-solid fa-box") text-orange-400 text-xs"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Payload</p>
+                                <div class="flex flex-wrap gap-1">
+                                    @foreach (var tag in FreightBidRequest.UseTags)
+                                    {
+                                        <span class="px-1 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full">@tag.Name</span>
+                                    }
+                                </div>
+                            </div>
                         </div>
                     </div>
                 }
@@ -145,39 +178,34 @@
                 <!-- Help Options -->
                 @if (FreightBidRequest?.HelpOptions != null && FreightBidRequest.HelpOptions.Any())
                 {
-                    <div class="border-t border-gray-200 pt-3">
-                        <div class="flex items-center space-x-3 mb-2">
-                            <i class="fa-solid fa-hands-helping text-orange-500"></i>
-                            <p class="text-sm text-gray-500">Additional Help</p>
-                        </div>
-                        <div class="flex flex-wrap gap-2 ml-6">
-                            @foreach (var help in FreightBidRequest.HelpOptions)
-                            {
-                                <span class="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">@help.Name</span>
-                            }
-                        </div>
-                    </div>
-                }
-
-                @if (!string.IsNullOrWhiteSpace(FreightBidRequest?.Weight))
-                {
-                    <div class="flex items-center space-x-3 border-t border-gray-200 pt-3">
-                        <i class="fa-solid fa-weight-hanging text-gray-600"></i>
-                        <div>
-                            <p class="text-sm text-gray-500">Estimated Weight</p>
-                            <p class="font-medium">@FreightBidRequest?.Weight</p>
+                    <div class="border-t border-gray-200 pt-2 mt-2">
+                        <div class="flex items-start space-x-2">
+                            <div class="mt-1">
+                                <i class="fa-solid fa-handshake-angle text-orange-400 text-xs"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Help</p>
+                                <div class="flex flex-wrap gap-1">
+                                    @foreach (var help in FreightBidRequest.HelpOptions)
+                                    {
+                                        <span class="px-1 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full">@help.Name</span>
+                                    }
+                                </div>
+                            </div>
                         </div>
                     </div>
                 }
 
                 @if (!string.IsNullOrWhiteSpace(EstimatedCost))
                 {
-                    <div class="flex items-center justify-between border-t border-gray-200 pt-3">
-                        <div class="flex items-center space-x-3">
-                            <i class="fa-solid fa-dollar-sign text-green-600"></i>
+                    <div class="flex items-center justify-between border-t border-gray-200 pt-2 mt-2">
+                        <div class="flex items-center space-x-2">
+                            <div class="mt-1">
+                                <i class="fa-solid fa-dollar-sign text-green-500 text-xs"></i>
+                            </div>
                             <div>
-                                <p class="text-sm text-gray-500">Estimated Cost</p>
-                                <p class="font-medium text-green-600">@EstimatedCost</p>
+                                <p class="text-xs text-gray-500">Est. Cost</p>
+                                <p class="font-medium text-sm text-green-600">@EstimatedCost</p>
                             </div>
                         </div>
                     </div>
@@ -185,47 +213,197 @@
             </div>
         </div>
 
-        <div id="estimated-time" class="text-center mb-8">
-            <div class="inline-flex items-center space-x-2 bg-orange-50 px-4 py-2 rounded-full">
-                <i class="fa-regular fa-clock text-orange-500"></i>
-                <span class="text-sm text-orange-700">This may take a few minutes, please wait</span>
+        <div id="estimated-time" class="text-center mb-4">
+            <div class="inline-flex items-center space-x-1 bg-orange-50 px-3 py-1 rounded-full">
+                <i class="fa-regular fa-clock text-orange-500 text-xs"></i>
+                <span class="text-xs text-orange-700">This may take a few minutes</span>
             </div>
         </div>
 
-        <div id="action-buttons" class="space-y-4 pb-20">
-            <button id="cancel-request-btn" class="w-full py-4 px-6 bg-red-500 text-white font-medium rounded-xl hover:bg-red-600 transition-colors flex items-center justify-center space-x-2"
-                    @onclick="OnCancel">
+        <div id="action-buttons" class="space-y-3 pb-16">
+            <button id="cancel-request-btn" class="w-full py-2 px-4 bg-red-500 text-white font-medium rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center space-x-2"
+                    @onclick="CancelRequest">
                 <i class="fa-solid fa-xmark"></i>
                 <span>Cancel Request</span>
             </button>
         </div>
     </div>
 
-    <div id="status-bar" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3">
+    <div id="status-bar" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-2 shadow-lg">
         <div class="flex items-center justify-between">
             <div class="flex items-center space-x-2">
-                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span class="text-sm text-gray-600">Searching nearby drivers...</span>
+                <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                <span class="text-xs font-medium text-gray-700">Searching nearby drivers...</span>
             </div>
-            <span class="text-sm text-gray-400" id="search-timer">@SearchTimerText</span>
+            <span class="text-xs font-medium text-orange-500" id="search-timer">@SearchTimerText</span>
         </div>
     </div>
 </div>
 
 @code {
-    [Parameter] public FreightBidRequest FreightBidRequest { get; set; }
+    [Parameter] public FreightBidRequest? FreightBidRequest { get; set; }
     [Parameter] public string EstimatedCost { get; set; } = "";
     [Parameter] public string SearchTimerText { get; set; } = "00:42";
     [Parameter] public EventCallback OnCancel { get; set; }
     [Parameter] public FreightBidReferenceData ReferenceData { get; set; } = new();
+    [Parameter] public EventCallback<List<DriverBidResponse>> OnDriversFound { get; set; }
+
+    // Polling mechanism
+    private Timer? _pollingTimer;
+    private int _pollingIntervalMs = 5000; // Poll every 5 seconds
+    private int _totalPollTime = 0;
+    private int _maxPollTimeMs = 300000; // Stop polling after 5 minutes
+    private bool _isPolling = false;
+    private List<DriverBidResponse> _driverBids = new List<DriverBidResponse>();
+    private string _statusMessage = "Searching for Drivers...";
+    private string _errorMessage = string.Empty;
+    private FindDriversStatusResponse? _findDriversStatus;
 
     protected override Task OnInitializedAsync()
     {
+        // Initialize the timer but don't start it yet
+        _pollingTimer = new Timer(_pollingIntervalMs);
+        _pollingTimer.Elapsed += OnPollingTimerElapsed;
+        _pollingTimer.AutoReset = true;
+        
         return base.OnInitializedAsync();
     }
 
     protected override Task OnParametersSetAsync()
     {
+        // Start polling when parameters are set and we have a FreightBidRequest
+        if (FreightBidRequest != null && !_isPolling && FreightBidRequest.Id != Guid.Empty)
+        {
+            StartPolling();
+        }
+        
         return base.OnParametersSetAsync();
+    }
+
+    private void StartPolling()
+    {
+        if (_pollingTimer != null && !_isPolling)
+        {
+            _isPolling = true;
+            _totalPollTime = 0;
+            _pollingTimer.Start();
+            
+            // Also immediately check for responses
+            _ = CheckForDriverResponses();
+        }
+    }
+
+    private void StopPolling()
+    {
+        if (_pollingTimer != null)
+        {
+            _pollingTimer.Stop();
+            _isPolling = false;
+        }
+    }
+
+    private async void OnPollingTimerElapsed(object? sender, ElapsedEventArgs e)
+    {
+        _totalPollTime += _pollingIntervalMs;
+        
+        // Update the timer text
+        int seconds = _totalPollTime / 1000;
+        int minutes = seconds / 60;
+        seconds %= 60;
+        SearchTimerText = $"{minutes:00}:{seconds:00}";
+        
+        // Check if we've reached the maximum polling time
+        if (_totalPollTime >= _maxPollTimeMs)
+        {
+            StopPolling();
+            _statusMessage = "No drivers found within the time limit";
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+        
+        await CheckForDriverResponses();
+    }
+
+    private async Task CheckForDriverResponses()
+    {
+        try
+        {
+            if (FreightBidRequest?.Id != Guid.Empty && FreightBidRequest?.Id != null)
+            {
+                // First check the status of finding drivers
+                _findDriversStatus = await CustomerFlowApiClientService.GetFindDriversStatusAsync(FreightBidRequest.Id);
+                
+                if (_findDriversStatus != null)
+                {
+                    // Update status message based on response
+                    if (_findDriversStatus.NotifiedDrivers > 0)
+                    {
+                        _statusMessage = $"Notified {_findDriversStatus.NotifiedDrivers} drivers";
+                    }
+                    
+                    // Now check for actual bids
+                    var driverBids = await CustomerFlowApiClientService.GetDriverBidsForFreightBidAsync(FreightBidRequest.Id);
+                    
+                    if (driverBids != null && driverBids.Any())
+                    {
+                        // We found driver responses
+                        _driverBids = driverBids;
+                        _statusMessage = $"Found {_driverBids.Count} driver offers!";
+                        
+                        // Stop polling as we've found drivers
+                        StopPolling();
+                        
+                        // Notify the parent component
+                        await OnDriversFound.InvokeAsync(_driverBids);
+                        
+                        // The parent can navigate to driver selection or show another bottom sheet
+                    }
+                }
+                else
+                {
+                    // No status yet, keep polling
+                    _statusMessage = "Searching for available drivers...";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error: {ex.Message}";
+            _statusMessage = "Error checking for drivers";
+            StopPolling();
+        }
+        
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task CancelRequest()
+    {
+        StopPolling();
+        
+        try
+        {
+            // Currently there's no CancelFreightBidAsync method in the interface
+            // If implemented in the future, it would be called here
+            
+            // For now, just invoke the cancel callback from the parent
+            await OnCancel.InvokeAsync();
+            
+            // Navigate back or handle cancellation in parent component
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error cancelling request: {ex.Message}";
+        }
+    }
+
+    public void Dispose()
+    {
+        // Clean up timer when component is disposed
+        if (_pollingTimer != null)
+        {
+            _pollingTimer.Elapsed -= OnPollingTimerElapsed;
+            _pollingTimer.Stop();
+            _pollingTimer.Dispose();
+        }
     }
 }

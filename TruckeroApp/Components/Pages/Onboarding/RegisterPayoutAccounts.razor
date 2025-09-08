@@ -254,7 +254,7 @@
             }
             else
             {
-                PayoutAccountResponse? response = await PayoutAccountService.GetPayoutAccountByIdAsync(EditingPayoutAccountId);
+                Truckero.Core.DTOs.PayoutAccount.PayoutAccountResponse? response = await PayoutAccountService.GetPayoutAccountByIdAsync(EditingPayoutAccountId);
                 PayoutAccountRequest? acc = response?.PayoutAccounts?.FirstOrDefault(p => p.Id == EditingPayoutAccountId);
                 if (acc != null)
                 {
@@ -305,7 +305,7 @@
         else
         {
             // API returns List<PayoutAccountResponse> and each response has List<PayoutAccountRequest>
-            PayoutAccountResponse apiList = await PayoutAccountService.GetPayoutAccountsByUserIdAsync(UserId);
+            Truckero.Core.DTOs.PayoutAccount.PayoutAccountResponse apiList = await PayoutAccountService.GetPayoutAccountsByUserIdAsync(UserId);
             ExistingPayoutAccounts = apiList.PayoutAccounts;
         }
     }
@@ -338,7 +338,7 @@
         }
         else
         {
-            var response = await PayoutAccountService.GetPayoutAccountByIdAsync(payoutAccountId);
+            var response = await PayoutAccountService.GetPayoutAccountByIdAsync(payoutAccountId) as Truckero.Core.DTOs.PayoutAccount.PayoutAccountResponse;
             // Adjusted for the list-style response (per your recent changes):
             acc = response?.PayoutAccounts?.FirstOrDefault(p => p.Id == payoutAccountId);
         }

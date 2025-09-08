@@ -5,4 +5,7 @@ public class FindDriversStatusResponse {
     public string? Message { get; set; }
     public List<FindDriversStatusRequest> BidsStatuses { get; set; } = new();
     public string? ErrorCode { get; set; }
+    
+    // Property used by the mobile app to display notifications
+    public int NotifiedDrivers { get; set; }
 }

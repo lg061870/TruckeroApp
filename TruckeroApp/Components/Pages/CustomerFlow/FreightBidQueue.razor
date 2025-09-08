@@ -1,0 +1,207 @@
+﻿<CenterWrapper>
+    <div id="drivers-list-screen" class="min-h-screen bg-gray-50">
+
+        <!-- Header -->
+        <div id="header" class="bg-white px-4 py-3 shadow-sm">
+            <div class="flex items-center">
+                <button class="text-gray-600">
+                    <i class="fa-solid fa-arrow-left text-xl"></i>
+                </button>
+                <h1 class="text-xl font-semibold text-center flex-1 mr-8">Available Drivers</h1>
+            </div>
+        </div>
+
+        <!-- Map -->
+        <div id="map-container" class="relative h-[200px] w-full">
+            <div class="absolute inset-0 bg-gray-200">
+                <img class="w-full h-full object-cover"
+                     src="https://storage.googleapis.com/uxpilot-auth.appspot.com/66f10f7d1b-112991046bc2b5ef71f9.png"
+                     alt="map view with multiple truck icons scattered around, showing available drivers, map style like Google Maps" />
+            </div>
+        </div>
+
+        <!-- Panel -->
+        <div id="drivers-panel" class="bg-white rounded-t-3xl -mt-6 relative z-10">
+            <div class="p-4">
+
+                <!-- Filters -->
+                <div id="search-filters" class="mb-3">
+                    <div class="flex items-center mb-2">
+                        <div class="relative flex-1">
+                            <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                            <input type="text"
+                                   class="w-full pl-9 pr-8 py-2 text-sm rounded-lg border border-gray-300"
+                                   placeholder="Search by truck type, rating..." />
+                        </div>
+                        <button class="ml-2 p-2 rounded-lg border border-gray-300">
+                            <i class="fa-solid fa-sliders text-gray-600"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center space-x-1 mb-2">
+                        <button class="px-3 py-1.5 rounded-full bg-gray-100 text-xs text-gray-600 flex items-center">
+                            <i class="fa-solid fa-sort-amount-down text-xs mr-1"></i>
+                            Price
+                        </button>
+                        <button class="px-3 py-1.5 rounded-full bg-gray-100 text-xs text-gray-600 flex items-center">
+                            <i class="fa-solid fa-location-dot text-xs mr-1"></i>
+                            Distance
+                        </button>
+                        <button class="px-3 py-1.5 rounded-full bg-gray-100 text-xs text-gray-600 flex items-center">
+                            <i class="fa-solid fa-star text-xs mr-1"></i>
+                            Rating
+                        </button>
+                        <button class="px-3 py-1.5 rounded-full bg-gray-100 text-xs text-gray-600">Help</button>
+                        <button class="px-3 py-1.5 rounded-full bg-gray-100 text-xs text-gray-600">Size</button>
+                        <button class="px-3 py-1.5 rounded-full bg-gray-100 text-xs text-gray-600">Category</button>
+                    </div>
+                </div>
+
+                <!-- Delivery Type Toggle -->
+                <div id="delivery-type-toggle" class="flex space-x-2 mb-4">
+                    <button class="flex-1 bg-orange-500 text-white py-2 rounded-lg">Express Delivery</button>
+                    <button class="flex-1 bg-gray-100 text-gray-600 py-2 rounded-lg">Scheduled Delivery</button>
+                </div>
+
+                <!-- Driver List -->
+                <div id="drivers-list" class="space-y-4">
+                    <!-- Driver Card 1 -->
+                    <div id="driver-card-1" class="bg-white rounded-xl border border-gray-200 p-4">
+                        <div class="flex items-start justify-between">
+                            <div class="flex space-x-3">
+                                <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg"
+                                     class="w-12 h-12 rounded-full"
+                                     alt="Driver photo" />
+                                <div>
+                                    <h3 class="font-medium">John Smith</h3>
+                                    <div class="flex items-center text-sm text-yellow-400">
+                                        <i class="fa-solid fa-star"></i>
+                                        <i class="fa-solid fa-star"></i>
+                                        <i class="fa-solid fa-star"></i>
+                                        <i class="fa-solid fa-star"></i>
+                                        <i class="fa-regular fa-star"></i>
+                                        <span class="text-gray-600 ml-1">(4.0)</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="text-orange-500">
+                                <i class="fa-solid fa-comment-dots text-xl"></i>
+                            </button>
+                        </div>
+
+                        <div class="mt-3 p-3 bg-gray-50 rounded-lg text-sm">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fa-solid fa-box text-gray-500"></i>
+                                    <span>Category: Heavy</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <i class="fa-solid fa-ruler text-gray-500"></i>
+                                    <span>Size: Large</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <i class="fa-solid fa-hands-helping text-gray-500"></i>
+                                    <span>Help: Loading</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <i class="fa-solid fa-truck text-gray-500"></i>
+                                    <span>Box Truck 26ft</span>
+                                </div>
+                            </div>
+                            <button class="w-full mt-2 text-orange-500 text-center flex items-center justify-center">
+                                <span>View Truck Photos</span>
+                                <i class="fa-solid fa-chevron-right ml-1"></i>
+                            </button>
+                        </div>
+
+                        <div class="mt-3 flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-location-dot text-gray-500"></i>
+                                <span class="text-sm">2.5 miles away</span>
+                            </div>
+                            <div class="text-lg font-semibold text-orange-500">$120.00</div>
+                        </div>
+
+                        <div class="mt-3 grid grid-cols-2 gap-2">
+                            <button class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm flex items-center justify-center">
+                                <i class="fa-regular fa-eye mr-1"></i>
+                                View Bid
+                            </button>
+                            <button class="bg-orange-500 text-white px-4 py-2 rounded-lg text-sm flex items-center justify-center">
+                                <i class="fa-solid fa-check mr-1"></i>
+                                Select
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Driver Card 2 -->
+                    <div id="driver-card-2" class="bg-white rounded-xl border border-gray-200 p-4">
+                        <div class="flex items-start justify-between">
+                            <div class="flex space-x-3">
+                                <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-3.jpg"
+                                     class="w-12 h-12 rounded-full"
+                                     alt="Driver photo" />
+                                <div>
+                                    <h3 class="font-medium">Mike Johnson</h3>
+                                    <div class="flex items-center text-sm text-yellow-400">
+                                        <i class="fa-solid fa-star"></i>
+                                        <i class="fa-solid fa-star"></i>
+                                        <i class="fa-solid fa-star"></i>
+                                        <i class="fa-solid fa-star"></i>
+                                        <i class="fa-solid fa-star"></i>
+                                        <span class="text-gray-600 ml-1">(5.0)</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="text-orange-500">
+                                <i class="fa-solid fa-comment-dots text-xl"></i>
+                            </button>
+                        </div>
+
+                        <div class="mt-3 p-3 bg-gray-50 rounded-lg text-sm">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fa-solid fa-box text-gray-500"></i>
+                                    <span>Category: Medium</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <i class="fa-solid fa-ruler text-gray-500"></i>
+                                    <span>Size: Medium</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <i class="fa-solid fa-hands-helping text-gray-500"></i>
+                                    <span>Help: None</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <i class="fa-solid fa-truck-ramp-box text-gray-500"></i>
+                                    <span>Flatbed 20ft</span>
+                                </div>
+                            </div>
+                            <button class="w-full mt-2 text-orange-500 text-center flex items-center justify-center">
+                                <span>View Truck Photos</span>
+                                <i class="fa-solid fa-chevron-right ml-1"></i>
+                            </button>
+                        </div>
+
+                        <div class="mt-3 flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-location-dot text-gray-500"></i>
+                                <span class="text-sm">3.8 miles away</span>
+                            </div>
+                            <div class="text-lg font-semibold text-orange-500">$145.00</div>
+                        </div>
+
+                        <button class="w-full mt-3 bg-orange-500 text-white px-4 py-2 rounded-lg text-sm">Select Driver</button>
+                    </div>
+                </div>
+
+                <!-- Request More Drivers -->
+                <button id="request-more-drivers" class="w-full mt-4 py-3 border-2 border-orange-500 text-orange-500 rounded-lg font-medium">
+                    Request More Drivers
+                </button>
+
+            </div> <!-- /.p-4 -->
+        </div> <!-- /#drivers-panel -->
+
+    </div> <!-- ✅ Fixed: Close #drivers-list-screen -->
+</CenterWrapper>
