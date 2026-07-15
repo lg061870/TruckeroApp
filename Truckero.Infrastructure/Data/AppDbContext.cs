@@ -1,6 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Truckero.Core.Entities;
 using Truckero.Core.Enums;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace Truckero.Infrastructure.Data; 
 public class AppDbContext : DbContext {
@@ -44,8 +47,22 @@ public class AppDbContext : DbContext {
     public DbSet<DriverBid> DriverBids => Set<DriverBid>();
     public DbSet<HelpOption> HelpOptions => Set<HelpOption>();
 
+    // 🏢 Companies & Deliveries
+    public DbSet<Company> Companies => Set<Company>();
+    public DbSet<BusinessType> BusinessTypes => Set<BusinessType>();
+    public DbSet<Industry> Industries => Set<Industry>();
+    public DbSet<CompanyIndustry> CompanyIndustries => Set<CompanyIndustry>();
+    public DbSet<StoreDeliveryJob> StoreDeliveryJobs => Set<StoreDeliveryJob>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
         base.OnModelCreating(modelBuilder);
+
+        var jsonOptions = new JsonSerializerOptions();
+        var stringListComparer = new ValueComparer<List<string>>(
+            (c1, c2) => c1 != null && c2 != null && c1.SequenceEqual(c2),
+            c => c == null ? 0 : c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+            c => c == null ? new List<string>() : c.ToList());
+
 
         // --- Enum conversions ---
         modelBuilder.Entity<Role>()
@@ -185,6 +202,106 @@ public class AppDbContext : DbContext {
             .WithMany(mk => mk.Models)
             .HasForeignKey(m => m.MakeId);
 
+        // --- BusinessType Entity ---
+        modelBuilder.Entity<BusinessType>(entity =>
+        {
+            entity.HasKey(bt => bt.Id);
+            entity.Property(bt => bt.Name)
+                  .IsRequired()
+                  .HasMaxLength(100);
+            entity.Property(bt => bt.Description)
+                  .HasMaxLength(250);
+            entity.Property(bt => bt.IsActive)
+                  .HasDefaultValue(true);
+        });
+
+        // --- Industry Entity ---
+        modelBuilder.Entity<Industry>(entity =>
+        {
+            entity.HasKey(i => i.Id);
+
+            entity.Property(i => i.Name)
+                  .IsRequired()
+                  .HasMaxLength(100);
+
+            entity.Property(i => i.Description)
+                  .HasMaxLength(250);
+        });
+
+        // --- CompanyIndustry (many-to-many Company <-> Industry) ---
+        modelBuilder.Entity<CompanyIndustry>(entity =>
+        {
+            entity.HasKey(ci => new { ci.CompanyId, ci.IndustryId });
+
+            entity.HasOne(ci => ci.Company)
+                  .WithMany(c => c.CompanyIndustries)
+                  .HasForeignKey(ci => ci.CompanyId);
+
+            entity.HasOne(ci => ci.Industry)
+                  .WithMany(i => i.Companies)
+                  .HasForeignKey(ci => ci.IndustryId);
+        });
+
+        // --- Company Entity ---
+        modelBuilder.Entity<Company>(entity =>
+        {
+            entity.HasKey(c => c.Id);
+
+            entity.Property(c => c.Name)
+                  .IsRequired()
+                  .HasMaxLength(100);
+
+            entity.Property(c => c.LogoUrl)
+                  .HasMaxLength(512);
+
+            entity.Property(c => c.Industries)
+                  .HasConversion(
+                      v => JsonSerializer.Serialize(v, jsonOptions),
+                      v => string.IsNullOrWhiteSpace(v)
+                            ? new List<string>()
+                            : JsonSerializer.Deserialize<List<string>>(v, jsonOptions) ?? new List<string>())
+                  .Metadata.SetValueComparer(stringListComparer);
+
+            entity.HasOne(c => c.BusinessType)
+                  .WithMany(bt => bt.Companies)
+                  .HasForeignKey(c => c.BusinessTypeId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(c => c.Stores)
+                  .WithOne(s => s.Company)
+                  .HasForeignKey(s => s.CompanyId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // --- StoreDeliveryJob ---
+        modelBuilder.Entity<StoreDeliveryJob>().HasKey(j => j.Id);
+
+        modelBuilder.Entity<StoreDeliveryJob>()
+            .Property(j => j.EstimatedVolumeM3)
+            .HasPrecision(18, 3);
+
+        modelBuilder.Entity<StoreDeliveryJob>()
+            .Property(j => j.EstimatedWeightKg)
+            .HasPrecision(18, 3);
+
+        modelBuilder.Entity<StoreDeliveryJob>()
+            .HasOne(j => j.Store)
+            .WithMany(s => s.DeliveryJobs)
+            .HasForeignKey(j => j.StoreId)
+            .OnDelete(DeleteBehavior.Restrict); // 🚫 Prevents cascade conflict
+
+        modelBuilder.Entity<StoreDeliveryJob>()
+            .HasOne(j => j.ClerkProfile)
+            .WithMany(cp => cp.DeliveryJobs)
+            .HasForeignKey(j => j.ClerkUserId)
+            .OnDelete(DeleteBehavior.Restrict); // 🚫 Prevents cascade conflict
+
+        modelBuilder.Entity<StoreDeliveryJob>()
+            .HasOne(j => j.AssignedDriver)
+            .WithMany(dp => dp.StoreDeliveryJobs)
+            .HasForeignKey(j => j.DriverProfileId)
+            .OnDelete(DeleteBehavior.SetNull); // ✅ Already safe
+
         // --- Country & Bank ---
         modelBuilder.Entity<Country>().HasKey(c => c.Code);
         modelBuilder.Entity<Bank>().HasKey(b => b.Id);
@@ -280,6 +397,14 @@ public class AppDbContext : DbContext {
             new Role { Id = Guid.Parse("00000000-0000-0000-0000-000000000003"), Name = RoleType.Driver.ToString() },
             new Role { Id = Guid.Parse("00000000-0000-0000-0000-000000000004"), Name = RoleType.StoreClerk.ToString() },
             new Role { Id = Guid.Parse("00000000-0000-0000-0000-000000000005"), Name = RoleType.Admin.ToString() }
+        );
+
+        modelBuilder.Entity<BusinessType>().HasData(
+            new BusinessType { Id = Guid.Parse("00000000-0000-0000-0000-000000001001"), Name = "Appliance Store", Description = "Large & small appliance retailers" },
+            new BusinessType { Id = Guid.Parse("00000000-0000-0000-0000-000000001002"), Name = "Furniture Store", Description = "Furniture showrooms and outlets" },
+            new BusinessType { Id = Guid.Parse("00000000-0000-0000-0000-000000001003"), Name = "Electronics Retailer", Description = "Consumer electronics" },
+            new BusinessType { Id = Guid.Parse("00000000-0000-0000-0000-000000001004"), Name = "Home Improvement", Description = "Hardware & DIY" },
+            new BusinessType { Id = Guid.Parse("00000000-0000-0000-0000-000000001005"), Name = "Other", Description = "General retail" }
         );
 
         modelBuilder.Entity<TruckType>().HasData(
@@ -418,6 +543,14 @@ public class AppDbContext : DbContext {
             new HelpOption { Id = Guid.Parse("00000000-0000-0000-0000-000000000702"), Name = "Unloading Help", Description = "Driver helps unload your items", Icon = "fa-solid fa-dolly" },
             new HelpOption { Id = Guid.Parse("00000000-0000-0000-0000-000000000703"), Name = "Assembly", Description = "Driver helps assemble items", Icon = "fa-solid fa-wrench" },
             new HelpOption { Id = Guid.Parse("00000000-0000-0000-0000-000000000704"), Name = "Packing", Description = "Driver helps pack items", Icon = "fa-solid fa-box-open" }
+        );
+
+        // Seed Industries so API/Blazor can consume them
+        modelBuilder.Entity<Industry>().HasData(
+            new Industry { Id = Guid.Parse("00000000-0000-0000-0000-000000002001"), Name = "Furniture", Description = "Furniture retail" },
+            new Industry { Id = Guid.Parse("00000000-0000-0000-0000-000000002002"), Name = "Appliances", Description = "Home appliances" },
+            new Industry { Id = Guid.Parse("00000000-0000-0000-0000-000000002003"), Name = "Electronics", Description = "Consumer electronics" },
+            new Industry { Id = Guid.Parse("00000000-0000-0000-0000-000000002004"), Name = "Home Improvement", Description = "Hardware and DIY" }
         );
     }
 }

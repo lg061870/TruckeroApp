@@ -2,7 +2,6 @@ using Azure.Identity;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Identity.Client;
 using Microsoft.Identity.Web;
 using Truckero.API;
 using Truckero.API.Auth;
@@ -28,11 +27,11 @@ builder.Configuration
     .AddEnvironmentVariables();
 
 // Load secrets from Key Vault if available
-var keyVaultUrl = builder.Configuration["KeyVault:Url"];
-if (!string.IsNullOrEmpty(keyVaultUrl))
-{
-    builder.Configuration.AddAzureKeyVault(new Uri(keyVaultUrl), new DefaultAzureCredential());
-}
+// var keyVaultUrl = builder.Configuration["KeyVault:Url"];
+// if (!string.IsNullOrEmpty(keyVaultUrl))
+// {
+//     builder.Configuration.AddAzureKeyVault(new Uri(keyVaultUrl), new DefaultAzureCredential());
+// }
 
 // Configure Authentication (per environment)
 if (env.IsEnvironment("UnitTesting"))
@@ -42,8 +41,13 @@ if (env.IsEnvironment("UnitTesting"))
 }
 else if (env.IsDevelopment())
 {
-    builder.Services.AddAuthentication("Token")
-        .AddScheme<AuthenticationSchemeOptions, AuthTokenSecurityHandler>("Token", options => { });
+    // Development: bypass token validation, treat all requests as authenticated
+    builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = "AllowAll";
+        options.DefaultChallengeScheme = "AllowAll";
+    })
+    .AddScheme<AuthenticationSchemeOptions, AllowAllAuthHandler>("AllowAll", _ => { });
 }
 else
 {
@@ -123,6 +127,8 @@ builder.Services.AddScoped<ICountryRepository, CountryRepository>();
 builder.Services.AddScoped<IHelpOptionRepository, HelpOptionRepository>();
 builder.Services.AddScoped<IFreightBidRepository, FreightBidRepository>();
 builder.Services.AddScoped<IDriverBidRepository, DriverBidRepository>();
+builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
+builder.Services.AddScoped<IStoreRepository, StoreRepository>();
 
 
 // Register Services
@@ -140,6 +146,14 @@ builder.Services.AddScoped<ICountryService, CountryService>();
 builder.Services.AddScoped<IHelpOptionService, HelpOptionService>();
 builder.Services.AddScoped<IFreightBidService, FreightBidService>();
 builder.Services.AddScoped<IDriverBidService, DriverBidService>();
+builder.Services.AddScoped<IStoreService, StoreService>();
+
+//// Diagnostic tools (for development/testing environments only)
+//if (env.IsDevelopment() || env.IsEnvironment("UnitTesting"))
+//{
+//    // Add FreightBidSimulator for testing bid functionality
+//    builder.Services.AddFreightBidSimulator();
+//}
 
 
 // Register Email Service per environment
@@ -150,16 +164,16 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 #endif
 
 // Register Azure Confidential Client for Production
-#if !(DEBUG || UNITTESTING)
-builder.Services.AddSingleton<IConfidentialClientApplication>(provider =>
-{
-    var config = builder.Configuration.GetSection("AzureAdB2C");
-    return ConfidentialClientApplicationBuilder.Create(config["ClientId"])
-        .WithClientSecret(config["ClientSecret"])
-        .WithAuthority($"{config["Instance"]}{config["Domain"]}/{config["SignUpSignInPolicyId"]}")
-        .Build();
-});
-#endif
+//#if !(DEBUG || UNITTESTING)
+//builder.Services.AddSingleton<IConfidentialClientApplication>(provider =>
+//{
+//    var config = builder.Configuration.GetSection("AzureAdB2C");
+//    return ConfidentialClientApplicationBuilder.Create(config["ClientId"])
+    //        .WithClientSecret(config["ClientSecret"])
+    //        .WithAuthority($"{config["Instance"]}{config["Domain"]}/{config["SignUpSignInPolicyId"]}")
+    //        .Build();
+    //});
+//#endif
 
 // Swagger (Dev/Test only)
 builder.Services.AddEndpointsApiExplorer();

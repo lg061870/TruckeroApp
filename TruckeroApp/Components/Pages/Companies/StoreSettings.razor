@@ -1,0 +1,253 @@
+﻿    <div id="settings-container" class="flex h-[1366px] w-full">
+        <!-- Collapsed Sidebar -->
+        <aside id="sidebar" class="w-20 bg-white border-r border-truckero-gray-200 flex flex-col items-center py-6 shadow-sm">
+            <div id="logo-container" class="mb-12">
+                <a href="#" class="text-truckero-orange text-3xl font-bold">
+                    <i class="fa-solid fa-truck-fast"></i>
+                </a>
+            </div>
+            <nav id="main-nav" class="flex flex-col items-center space-y-6">
+                <a href="#" class="w-12 h-12 flex items-center justify-center text-truckero-gray-500 hover:bg-truckero-gray-100 hover:text-truckero-orange rounded-lg transition-colors duration-200" aria-label="Dashboard">
+                    <i class="fa-solid fa-table-columns fa-lg"></i>
+                </a>
+                <a href="#" class="w-12 h-12 flex items-center justify-center text-truckero-gray-500 hover:bg-truckero-gray-100 hover:text-truckero-orange rounded-lg transition-colors duration-200" aria-label="Deliveries">
+                    <i class="fa-solid fa-box-open fa-lg"></i>
+                </a>
+                <a href="#" class="w-12 h-12 flex items-center justify-center text-truckero-gray-500 hover:bg-truckero-gray-100 hover:text-truckero-orange rounded-lg transition-colors duration-200" aria-label="Fleet">
+                    <i class="fa-solid fa-truck fa-lg"></i>
+                </a>
+                <a href="#" class="w-12 h-12 flex items-center justify-center text-truckero-gray-500 hover:bg-truckero-gray-100 hover:text-truckero-orange rounded-lg transition-colors duration-200" aria-label="Analytics">
+                    <i class="fa-solid fa-chart-pie fa-lg"></i>
+                </a>
+                 <a href="#" class="w-12 h-12 flex items-center justify-center text-truckero-gray-500 hover:bg-truckero-gray-100 hover:text-truckero-orange rounded-lg transition-colors duration-200" aria-label="Customers">
+                    <i class="fa-solid fa-users fa-lg"></i>
+                </a>
+            </nav>
+            <div id="sidebar-footer" class="mt-auto flex flex-col items-center space-y-6">
+                <a href="#" class="w-12 h-12 flex items-center justify-center bg-truckero-orange-light text-truckero-orange rounded-lg transition-colors duration-200" aria-label="Settings">
+                    <i class="fa-solid fa-gear fa-lg"></i>
+                </a>
+                <a href="#" class="w-12 h-12 flex items-center justify-center text-truckero-gray-500 hover:bg-truckero-gray-100 hover:text-truckero-orange rounded-lg transition-colors duration-200" aria-label="Logout">
+                    <i class="fa-solid fa-arrow-right-from-bracket fa-lg"></i>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main id="main-content" class="flex-1 overflow-y-auto">
+            <header id="header" class="sticky top-0 bg-truckero-gray-50/80 backdrop-blur-sm z-10 flex items-center justify-between px-10 py-6 border-b border-truckero-gray-200">
+                <div class="flex items-center space-x-4">
+                    <button class="text-truckero-gray-900 text-2xl" aria-label="Toggle menu">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <h1 class="text-3xl font-bold text-truckero-gray-900">Store Settings</h1>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <div class="relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-truckero-gray-400"></i>
+                        <input type="text" placeholder="Search settings..." class="bg-white border border-truckero-gray-200 rounded-lg py-3 pl-12 pr-4 w-80 focus:outline-none focus:ring-2 focus:ring-truckero-orange/50 transition-shadow">
+                    </div>
+                    <button class="text-truckero-gray-500 hover:text-truckero-gray-900 text-2xl relative" aria-label="Notifications">
+                        <i class="fa-regular fa-bell"></i>
+                        <span class="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-truckero-orange ring-2 ring-truckero-gray-50"></span>
+                    </button>
+                    <div class="flex items-center space-x-3">
+                        <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-5.jpg" alt="Store Manager Avatar" class="w-12 h-12 rounded-full object-cover">
+                        <div>
+                            <p class="font-semibold text-truckero-gray-900">Ana Reyes</p>
+                            <p class="text-sm text-truckero-gray-500">Store Manager</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div id="settings-body" class="p-10">
+                <div class="grid grid-cols-12 gap-8">
+                    <!-- Settings Navigation -->
+                    <nav id="settings-nav" class="col-span-3">
+                        <div class="bg-white p-4 rounded-2xl border border-truckero-gray-200 shadow-sm">
+                            <ul class="space-y-1">
+                                <li><a href="#business-hours" class="flex items-center space-x-3 px-4 py-3 bg-truckero-orange-light text-truckero-orange font-semibold rounded-lg"><i class="fa-solid fa-clock fa-fw"></i><span>Business Hours</span></a></li>
+                                <li><a href="#delivery-rules" class="flex items-center space-x-3 px-4 py-3 text-truckero-gray-700 hover:bg-truckero-gray-100 hover:text-truckero-gray-900 font-medium rounded-lg"><i class="fa-solid fa-map-location-dot fa-fw"></i><span>Delivery Rules</span></a></li>
+                                <li><a href="#clerk-permissions" class="flex items-center space-x-3 px-4 py-3 text-truckero-gray-700 hover:bg-truckero-gray-100 hover:text-truckero-gray-900 font-medium rounded-lg"><i class="fa-solid fa-users-gear fa-fw"></i><span>Clerk Permissions</span></a></li>
+                                <li><a href="#payment-methods" class="flex items-center space-x-3 px-4 py-3 text-truckero-gray-700 hover:bg-truckero-gray-100 hover:text-truckero-gray-900 font-medium rounded-lg"><i class="fa-solid fa-credit-card fa-fw"></i><span>Payment Methods</span></a></li>
+                            </ul>
+                        </div>
+                    </nav>
+
+                    <!-- Settings Content -->
+                    <div id="settings-content" class="col-span-9 space-y-8">
+                        
+                        <!-- Business Hours Card -->
+                        <section id="business-hours-card" class="bg-white p-8 rounded-2xl border border-truckero-gray-200 shadow-sm">
+                            <div class="flex justify-between items-center pb-6 border-b border-truckero-gray-200">
+                                <div>
+                                    <h2 class="text-xl font-bold text-truckero-gray-900">Business Hours</h2>
+                                    <p class="text-truckero-gray-500 mt-1">Set the weekly hours of operation for your store.</p>
+                                </div>
+                                <button class="h-12 px-6 bg-truckero-orange text-white font-semibold rounded-xl shadow-md hover:bg-orange-600 transition-all duration-200">Save Changes</button>
+                            </div>
+                            <div class="mt-6 space-y-5">
+                                <div class="grid grid-cols-12 items-center gap-4">
+                                    <div class="col-span-3"><p class="font-medium text-truckero-gray-700">Monday</p></div>
+                                    <div class="col-span-2 flex items-center space-x-2"><input type="checkbox" id="mon-check" class="h-5 w-5 rounded border-truckero-gray-300 text-truckero-orange focus:ring-truckero-orange/50" checked><label for="mon-check" class="text-truckero-gray-600">Open</label></div>
+                                    <div class="col-span-3"><input type="time" value="09:00" class="w-full bg-truckero-gray-100 border-truckero-gray-200 rounded-lg p-3 text-center focus:ring-2 focus:ring-truckero-orange/50 focus:border-truckero-orange"></div>
+                                    <div class="col-span-1 text-center text-truckero-gray-400">-</div>
+                                    <div class="col-span-3"><input type="time" value="18:00" class="w-full bg-truckero-gray-100 border-truckero-gray-200 rounded-lg p-3 text-center focus:ring-2 focus:ring-truckero-orange/50 focus:border-truckero-orange"></div>
+                                </div>
+                                <div class="grid grid-cols-12 items-center gap-4">
+                                    <div class="col-span-3"><p class="font-medium text-truckero-gray-700">Tuesday - Friday</p></div>
+                                    <div class="col-span-2 flex items-center space-x-2"><input type="checkbox" id="tue-fri-check" class="h-5 w-5 rounded border-truckero-gray-300 text-truckero-orange focus:ring-truckero-orange/50" checked><label for="tue-fri-check" class="text-truckero-gray-600">Open</label></div>
+                                    <div class="col-span-7"><button class="w-full text-left text-truckero-gray-500 hover:text-truckero-gray-800">Same as Monday <i class="fa-solid fa-copy ml-2"></i></button></div>
+                                </div>
+                                <div class="grid grid-cols-12 items-center gap-4">
+                                    <div class="col-span-3"><p class="font-medium text-truckero-gray-700">Saturday</p></div>
+                                    <div class="col-span-2 flex items-center space-x-2"><input type="checkbox" id="sat-check" class="h-5 w-5 rounded border-truckero-gray-300 text-truckero-orange focus:ring-truckero-orange/50" checked><label for="sat-check" class="text-truckero-gray-600">Open</label></div>
+                                    <div class="col-span-3"><input type="time" value="10:00" class="w-full bg-truckero-gray-100 border-truckero-gray-200 rounded-lg p-3 text-center focus:ring-2 focus:ring-truckero-orange/50 focus:border-truckero-orange"></div>
+                                    <div class="col-span-1 text-center text-truckero-gray-400">-</div>
+                                    <div class="col-span-3"><input type="time" value="16:00" class="w-full bg-truckero-gray-100 border-truckero-gray-200 rounded-lg p-3 text-center focus:ring-2 focus:ring-truckero-orange/50 focus:border-truckero-orange"></div>
+                                </div>
+                                <div class="grid grid-cols-12 items-center gap-4">
+                                    <div class="col-span-3"><p class="font-medium text-truckero-gray-700">Sunday</p></div>
+                                    <div class="col-span-2 flex items-center space-x-2"><input type="checkbox" id="sun-check" class="h-5 w-5 rounded border-truckero-gray-300 text-truckero-orange focus:ring-truckero-orange/50"><label for="sun-check" class="text-truckero-gray-600">Open</label></div>
+                                    <div class="col-span-7"><p class="text-truckero-gray-400">Closed</p></div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Delivery Rules Card -->
+                        <section id="delivery-rules-card" class="bg-white p-8 rounded-2xl border border-truckero-gray-200 shadow-sm">
+                             <div class="flex justify-between items-center pb-6 border-b border-truckero-gray-200">
+                                <div>
+                                    <h2 class="text-xl font-bold text-truckero-gray-900">Delivery Rules</h2>
+                                    <p class="text-truckero-gray-500 mt-1">Configure your delivery radius and fleet assignment logic.</p>
+                                </div>
+                                <button class="h-12 px-6 bg-truckero-orange text-white font-semibold rounded-xl shadow-md hover:bg-orange-600 transition-all duration-200">Save Changes</button>
+                            </div>
+                            <div class="mt-6 grid grid-cols-2 gap-8">
+                                <div>
+                                    <label for="delivery-radius" class="block font-medium text-truckero-gray-700 mb-2">Delivery Radius</label>
+                                    <div class="relative">
+                                        <input type="number" id="delivery-radius" value="15" class="w-full bg-white border border-truckero-gray-300 rounded-lg p-3 pr-14 focus:ring-2 focus:ring-truckero-orange/50 focus:border-truckero-orange">
+                                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-truckero-gray-500">mi</span>
+                                    </div>
+                                    <p class="text-sm text-truckero-gray-500 mt-2">Maximum distance from store for deliveries.</p>
+                                </div>
+                                <div>
+                                    <label class="block font-medium text-truckero-gray-700 mb-2">Fleet Assignment</label>
+                                     <select class="w-full bg-white border border-truckero-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-truckero-orange/50 focus:border-truckero-orange">
+                                        <option selected>Prioritize Own Fleet</option>
+                                        <option>Freelance Drivers Only</option>
+                                        <option>Manual Assignment</option>
+                                    </select>
+                                    <p class="text-sm text-truckero-gray-500 mt-2">Default rule for assigning new delivery jobs.</p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Clerk Permissions Card -->
+                        <section id="clerk-permissions-card" class="bg-white p-8 rounded-2xl border border-truckero-gray-200 shadow-sm">
+                            <div class="pb-6 border-b border-truckero-gray-200">
+                                <h2 class="text-xl font-bold text-truckero-gray-900">Clerk Permissions</h2>
+                                <p class="text-truckero-gray-500 mt-1">Enable or disable specific actions for your store clerks.</p>
+                            </div>
+                            <div class="mt-6 space-y-4">
+                                <div class="flex items-center justify-between p-4 bg-truckero-gray-50 rounded-lg">
+                                    <div>
+                                        <p class="font-medium text-truckero-gray-800">Create New Deliveries</p>
+                                        <p class="text-sm text-truckero-gray-500">Allow clerks to schedule new jobs for customers.</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" value="" class="sr-only peer" checked><div class="w-14 h-8 bg-truckero-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-truckero-orange"></div></label>
+                                </div>
+                                <div class="flex items-center justify-between p-4 bg-truckero-gray-50 rounded-lg">
+                                    <div>
+                                        <p class="font-medium text-truckero-gray-800">Assign Drivers to Jobs</p>
+                                        <p class="text-sm text-truckero-gray-500">Allow clerks to manually assign drivers from the fleet.</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" value="" class="sr-only peer" checked><div class="w-14 h-8 bg-truckero-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-truckero-orange"></div></label>
+                                </div>
+                                <div class="flex items-center justify-between p-4 bg-truckero-gray-50 rounded-lg">
+                                    <div>
+                                        <p class="font-medium text-truckero-gray-800">Cancel Deliveries</p>
+                                        <p class="text-sm text-truckero-gray-500">Allow clerks to cancel scheduled deliveries.</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" value="" class="sr-only peer"><div class="w-14 h-8 bg-truckero-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-truckero-orange"></div></label>
+                                </div>
+                                <div class="flex items-center justify-between p-4 bg-truckero-gray-50 rounded-lg">
+                                    <div>
+                                        <p class="font-medium text-truckero-gray-800">View Analytics</p>
+                                        <p class="text-sm text-truckero-gray-500">Allow clerks to access delivery analytics and reports.</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" value="" class="sr-only peer" checked><div class="w-14 h-8 bg-truckero-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-truckero-orange"></div></label>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Payment Methods Card -->
+                        <section id="payment-methods-card" class="bg-white p-8 rounded-2xl border border-truckero-gray-200 shadow-sm">
+                            <div class="flex justify-between items-center pb-6 border-b border-truckero-gray-200">
+                                <div>
+                                    <h2 class="text-xl font-bold text-truckero-gray-900">Payment Methods</h2>
+                                    <p class="text-truckero-gray-500 mt-1">Set default payment method for company-paid deliveries.</p>
+                                </div>
+                                <button class="h-12 px-6 bg-truckero-gray-200 text-truckero-gray-700 font-semibold rounded-xl hover:bg-truckero-gray-300 transition-all duration-200">Add Payment Method</button>
+                            </div>
+                            <div class="mt-6 space-y-4">
+                                <div class="flex items-center justify-between p-5 border-2 border-truckero-orange bg-truckero-orange-light rounded-xl">
+                                    <div class="flex items-center space-x-4">
+                                        <div class="w-14 h-14 bg-white rounded-lg flex items-center justify-center">
+                                            <i class="fa-brands fa-cc-visa fa-2xl text-truckero-blue"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-semibold text-truckero-gray-900">Visa •••• 4532</p>
+                                            <p class="text-sm text-truckero-gray-600">Expires 08/2026</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <span class="px-3 py-1 bg-truckero-orange text-white text-sm font-semibold rounded-full">Default</span>
+                                        <button class="text-truckero-gray-500 hover:text-truckero-gray-800"><i class="fa-solid fa-ellipsis-vertical fa-lg"></i></button>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between p-5 border border-truckero-gray-200 bg-white rounded-xl hover:border-truckero-gray-300 transition-colors">
+                                    <div class="flex items-center space-x-4">
+                                        <div class="w-14 h-14 bg-truckero-gray-100 rounded-lg flex items-center justify-center">
+                                            <i class="fa-brands fa-cc-mastercard fa-2xl text-red-500"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-semibold text-truckero-gray-900">Mastercard •••• 8821</p>
+                                            <p class="text-sm text-truckero-gray-600">Expires 12/2025</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <button class="text-truckero-gray-500 hover:text-truckero-gray-800"><i class="fa-solid fa-ellipsis-vertical fa-lg"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        window.addEventListener('load', function() {
+            const navLinks = document.querySelectorAll('#settings-nav a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    navLinks.forEach(l => {
+                        l.classList.remove('bg-truckero-orange-light', 'text-truckero-orange', 'font-semibold');
+                        l.classList.add('text-truckero-gray-700', 'font-medium');
+                    });
+                    this.classList.add('bg-truckero-orange-light', 'text-truckero-orange', 'font-semibold');
+                    this.classList.remove('text-truckero-gray-700', 'font-medium');
+                });
+            });
+        });
+    </script>
+
+@code {
+
+}

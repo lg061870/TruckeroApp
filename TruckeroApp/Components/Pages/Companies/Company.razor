@@ -1,0 +1,407 @@
+@page "/company-setup"
+
+@using Truckero.Core.DTOs
+@using Truckero.Core.DTOs.Store
+@using TruckeroApp.Components.Pages.Companies
+@inject TruckeroApp.ServiceClients.IStoreApiClientService StoreApi
+@inject TruckeroApp.ServiceClients.ICompanyApiClientService CompanyApi
+
+<div id="app-container" class="flex h-[1366px] w-full">
+    <!-- Collapsed Sidebar -->
+    <aside id="sidebar" class="w-20 bg-white border-r border-truckero-gray-200 flex flex-col items-center py-6 shadow-sm">
+        <div id="logo-container" class="mb-12">
+            <a href="#" class="text-truckero-orange text-3xl font-bold">
+                <i class="fa-solid fa-truck-fast"></i>
+            </a>
+        </div>
+        <nav id="main-nav" class="flex flex-col items-center space-y-6">
+            <a href="#" class="w-12 h-12 flex items-center justify-center text-truckero-gray-500 hover:bg-truckero-gray-100 hover:text-truckero-orange rounded-lg transition-colors duration-200" aria-label="Dashboard">
+                <i class="fa-solid fa-table-columns fa-lg"></i>
+            </a>
+            <a href="#" class="w-12 h-12 flex items-center justify-center text-truckero-gray-500 hover:bg-truckero-gray-100 hover:text-truckero-orange rounded-lg transition-colors duration-200" aria-label="Deliveries">
+                <i class="fa-solid fa-box-open fa-lg"></i>
+            </a>
+            <a href="#" class="w-12 h-12 flex items-center justify-center text-truckero-gray-500 hover:bg-truckero-gray-100 hover:text-truckero-orange rounded-lg transition-colors duration-200" aria-label="Fleet">
+                <i class="fa-solid fa-truck fa-lg"></i>
+            </a>
+            <a href="#" class="w-12 h-12 flex items-center justify-center text-truckero-gray-500 hover:bg-truckero-gray-100 hover:text-truckero-orange rounded-lg transition-colors duration-200" aria-label="Analytics">
+                <i class="fa-solid fa-chart-pie fa-lg"></i>
+            </a>
+             <a href="#" class="w-12 h-12 flex items-center justify-center text-truckero-gray-500 hover:bg-truckero-gray-100 hover:text-truckero-orange rounded-lg transition-colors duration-200" aria-label="Customers">
+                <i class="fa-solid fa-users fa-lg"></i>
+            </a>
+        </nav>
+        <div id="sidebar-footer" class="mt-auto flex flex-col items-center space-y-6">
+             <a href="#" class="w-12 h-12 flex items-center justify-center bg-truckero-orange-light text-truckero-orange rounded-lg transition-colors duration-200" aria-label="Settings">
+                <i class="fa-solid fa-gear fa-lg"></i>
+            </a>
+            <a href="#" class="w-12 h-12 flex items-center justify-center text-truckero-gray-500 hover:bg-truckero-gray-100 hover:text-truckero-orange rounded-lg transition-colors duration-200" aria-label="Logout">
+                <i class="fa-solid fa-arrow-right-from-bracket fa-lg"></i>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main id="main-content" class="flex-1 overflow-y-auto">
+        <header id="header" class="sticky top-0 bg-truckero-gray-50/80 backdrop-blur-sm z-10 flex items-center justify-between px-10 py-6 border-b border-truckero-gray-200">
+            <div class="flex items-center space-x-4">
+                <button class="text-truckero-gray-900 text-2xl" aria-label="Toggle menu">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <h1 class="text-3xl font-bold text-truckero-gray-900">Company & Store Setup</h1>
+            </div>
+            <div class="flex items-center space-x-6">
+                <button class="text-truckero-gray-500 hover:text-truckero-gray-900 text-2xl relative" aria-label="Notifications">
+                    <i class="fa-regular fa-bell"></i>
+                    <span class="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-truckero-orange ring-2 ring-truckero-gray-50"></span>
+                </button>
+                <div class="flex items-center space-x-3">
+                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-5.jpg" alt="Store Manager Avatar" class="w-12 h-12 rounded-full object-cover">
+                    <div>
+                        <p class="font-semibold text-truckero-gray-900">Ana Reyes</p>
+                        <p class="text-sm text-truckero-gray-500">Store Manager</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div id="company-setup-body" class="p-10">
+            <div id="onboarding-notice" class="bg-truckero-orange-light border border-truckero-orange/50 rounded-xl p-6 flex items-center space-x-6 mb-8">
+                <div class="w-16 h-16 flex-shrink-0 bg-white rounded-full flex items-center justify-center shadow-sm">
+                    <i class="fa-solid fa-rocket text-truckero-orange text-3xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-truckero-gray-900">Welcome to Truckero!</h2>
+                    <p class="text-truckero-gray-700 mt-1">Let's get your business set up. Complete your company profile and add your store locations to start creating deliveries.</p>
+                </div>
+            </div>
+
+            <div id="setup-form-container" class="grid grid-cols-5 gap-8">
+                <!-- Left Column: Company Details -->
+@*                 <CompanyDetailsForm 
+                                    Company="companyForm"
+                                    FormMode="@(isEditMode ? CompanyFormMode.Edit : CompanyFormMode.New)"
+                                    BusinessTypes="businessTypeOptions"
+                                    IndustryTypes="industryTypeOptions"
+                                    OnCompanyChanged="HandleCompanyChanged"
+                                    OnUploadLogo="HandleLogoUploadAsync" /> *@
+
+                <!-- Right Column: Store Locations -->
+                <div id="store-locations-section" class="col-span-3 bg-white p-8 rounded-2xl border border-truckero-gray-200 shadow-sm flex flex-col">
+                    <div class="flex justify-between items-center mb-6">
+                         <h3 class="text-2xl font-bold text-truckero-gray-900">Store Locations</h3>
+                         <button class="h-14 px-6 bg-truckero-orange text-white font-semibold rounded-xl shadow-md hover:bg-orange-600 transition-all duration-200 flex items-center space-x-2"
+                                 @onclick="AddNewStore">
+                            <i class="fa-solid fa-plus-circle"></i>
+                            <span>Add New Store</span>
+                        </button>
+                    </div>
+                    
+                    <div id="store-list" class="space-y-4 mb-6">
+                        @if (stores.Count == 0)
+                        {
+                            <p class="text-truckero-gray-500">No stores added yet. Click "Add New Store" to create one.</p>
+                        }
+                        else
+                        {
+                            @foreach (var store in stores)
+                            {
+                                <div class="flex items-center p-4 border border-truckero-gray-200 rounded-xl hover:bg-truckero-gray-50 transition-colors">
+                                    <div class="w-14 h-14 flex-shrink-0 bg-truckero-orange-light rounded-lg flex items-center justify-center">
+                                        <i class="fa-solid fa-shop text-truckero-orange text-xl"></i>
+                                    </div>
+                                    <div class="ml-4 flex-grow">
+                                        <p class="font-semibold text-truckero-gray-800">@store.Name</p>
+                                        <p class="text-sm text-truckero-gray-500">@store.Address</p>
+                                    </div>
+                                    <div class="flex items-center space-x-4 ml-4">
+                                        <button class="w-12 h-12 flex items-center justify-center text-truckero-gray-500 hover:text-truckero-blue hover:bg-truckero-blue/10 rounded-lg"
+                                                @onclick="() => EditStore(store)">
+                                            <i class="fa-solid fa-pencil"></i>
+                                        </button>
+                                        <button class="w-12 h-12 flex items-center justify-center text-truckero-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg"
+                                                @onclick="() => RemoveStore(store)">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+
+                    @if (isStoreEditorOpen && editingStore is not null)
+                    {
+                        <div class="mt-4 p-4 border border-truckero-gray-200 rounded-xl bg-truckero-gray-50">
+@*                             <StoreDetailsForm Store="editingStore"
+                                              FormMode="storeFormMode"
+                                              OnStoreSaved="HandleStoreSaved"
+                                              OnCancel="CloseStoreEditor" /> *@
+                        </div>
+                    }
+
+                    <div id="map-container" class="flex-grow rounded-xl overflow-hidden border border-truckero-gray-200">
+                       <img class="w-full h-full object-cover" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/bf759832de-d9c7043ecd32de0f4df6.png" alt="map view of San Francisco and Oakland with two location pins, bright and clean UI style" />
+                    </div>
+                </div>
+            </div>
+
+            <div id="form-actions" class="mt-8 flex justify-end pt-6 border-t border-truckero-gray-200">
+                <button class="h-14 px-8 bg-white border border-truckero-gray-300 text-truckero-gray-700 font-semibold rounded-xl shadow-sm hover:bg-truckero-gray-100 transition-all duration-200 mr-4">
+                    Cancel
+                </button>
+                <button class="h-14 px-10 bg-truckero-green text-white font-semibold rounded-xl shadow-md hover:bg-green-600 transition-all duration-200 flex items-center space-x-2"
+                        @onclick="SaveAsync">
+                    <i class="fa-solid fa-check-circle"></i>
+                    <span>Save Changes</span>
+                </button>
+            </div>
+        </div>
+    </main>
+</div>
+
+@if (isLoading)
+{
+    <p>Loading company setup...</p>
+}
+else if (!string.IsNullOrEmpty(loadError))
+{
+    <p class="text-red-600">Error: @loadError</p>
+}
+else
+{
+    <!-- existing UI -->
+}
+
+@code {
+    [Parameter]
+    public Guid? CompanyId { get; set; }
+
+    private CompanyRequest companyForm = new()
+    {
+        Name = string.Empty,
+        Industries = new List<string>()
+    };
+
+    private Guid companyId;
+    private readonly List<StoreRequest> stores = new();
+
+    private List<BusinessTypeRequest> businessTypeOptions = new();
+    private List<IndustryTypeRequest> industryTypeOptions = new();
+
+    private bool isEditMode;
+
+    private StoreRequest? editingStore;
+    private bool isStoreEditorOpen;
+    private StoreFormMode storeFormMode;
+
+    private bool isLoading = true;
+    private string? loadError;
+
+
+    protected override void OnParametersSet()
+    {
+        if (CompanyId.HasValue && CompanyId.Value != Guid.Empty)
+        {
+            companyId = CompanyId.Value;
+            isEditMode = true;
+        }
+        else
+        {
+            companyId = Guid.NewGuid();
+            isEditMode = false;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        loadError = null;
+
+        try
+        {
+            await LoadMetadataAsync();
+
+            if (isEditMode)
+            {
+                await LoadCompanyAndStoresAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            loadError = ex.Message;
+            Console.WriteLine($"Company.OnInitializedAsync error: {ex}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadMetadataAsync()
+    {
+        var metadata = await CompanyApi.LoadMetadataAsync();
+        if (!metadata.Success)
+            throw new InvalidOperationException("Failed to load company metadata.");
+
+        businessTypeOptions = metadata.BusinessTypes ?? new();
+        industryTypeOptions = metadata.IndustryTypes ?? new();
+    }
+
+    private async Task LoadCompanyAndStoresAsync()
+    {
+        var response = await CompanyApi.GetCompanyByIdAsync(companyId);
+        if (!response.Success || !response.CompanyRequests.Any())
+            return;
+
+        companyForm = response.CompanyRequests.First();
+        companyId = companyForm.Id;
+
+        var storeList = await StoreApi.GetStoresByCompanyIdAsync(companyId);
+        if (storeList.Success && storeList.Stores is { Count: > 0 })
+        {
+            stores.Clear();
+            foreach (var s in storeList.Stores)
+            {
+                stores.Add(new StoreRequest
+                {
+                    Id = s.Id,
+                    CompanyId = s.CompanyId,
+                    Name = s.Name,
+                    Address = s.Address,
+                    Region = s.Region,
+                    LegalEntity = s.LegalEntity,
+                    DomainWhitelist = s.DomainWhitelist,
+                    StoreType = s.StoreType,
+                    ParentStoreId = s.ParentStoreId
+                });
+            }
+        }
+    }
+
+    private void AddNewStore()
+    {
+        editingStore = new StoreRequest
+        {
+            Id = Guid.Empty,
+            CompanyId = companyId,
+            Name = $"{companyForm.Name} - Store {stores.Count + 1}",
+            Address = string.Empty,
+            Region = string.Empty
+        };
+        storeFormMode = StoreFormMode.New;
+        isStoreEditorOpen = true;
+    }
+
+    private void EditStore(StoreRequest store)
+    {
+        editingStore = new StoreRequest
+        {
+            Id = store.Id,
+            CompanyId = store.CompanyId,
+            Name = store.Name,
+            Address = store.Address,
+            Region = store.Region,
+            LegalEntity = store.LegalEntity,
+            DomainWhitelist = store.DomainWhitelist,
+            StoreType = store.StoreType,
+            ParentStoreId = store.ParentStoreId
+        };
+        storeFormMode = StoreFormMode.Edit;
+        isStoreEditorOpen = true;
+    }
+
+    private void CloseStoreEditor()
+    {
+        editingStore = null;
+        isStoreEditorOpen = false;
+    }
+
+    private Task HandleStoreSaved(StoreRequest updated)
+    {
+        if (storeFormMode == StoreFormMode.New)
+        {
+            stores.Add(updated);
+        }
+        else
+        {
+            var existing = stores.FirstOrDefault(s => s.Id == updated.Id);
+            if (existing != null)
+            {
+                existing.Name = updated.Name;
+                existing.Address = updated.Address;
+                existing.Region = updated.Region;
+                existing.LegalEntity = updated.LegalEntity;
+                existing.DomainWhitelist = updated.DomainWhitelist;
+                existing.StoreType = updated.StoreType;
+                existing.ParentStoreId = updated.ParentStoreId;
+            }
+        }
+
+        CloseStoreEditor();
+        return Task.CompletedTask;
+    }
+
+    private async Task RemoveStore(StoreRequest store)
+    {
+        // New store that hasn't been persisted yet: just drop from the working set
+        if (store.Id == Guid.Empty)
+        {
+            stores.Remove(store);
+            return;
+        }
+
+        // Existing store: disable via API, then remove from the list on success
+        var disableResult = await StoreApi.DisableStoreAsync(store.Id);
+        if (!disableResult.Success)
+        {
+            // TODO: surface disableResult.Message / ErrorCode to the user via toast or inline error
+            return;
+        }
+
+        stores.Remove(store);
+    }
+
+    private async Task SaveAsync()
+    {
+        var response = await CompanyApi.CreateOrUpdateCompanyAsync(companyForm);
+        if (!response.Success)
+        {
+            return;
+        }
+
+        var savedCompany = response.CompanyRequests.FirstOrDefault();
+        if (savedCompany == null)
+        {
+            return;
+        }
+
+        companyId = savedCompany.Id;
+
+        foreach (var store in stores)
+        {
+            store.CompanyId = companyId;
+
+            if (store.Id == Guid.Empty)
+            {
+                var created = await StoreApi.CreateStoreAsync(store);
+                if (created.Success && created.Store != null)
+                {
+                    store.Id = created.Store.Id; // update local id to mark as existing
+                }
+            }
+            else
+            {
+                await StoreApi.UpdateStoreAsync(store.Id, store);
+            }
+        }
+    }
+
+    private Task HandleLogoUploadAsync() => Task.CompletedTask;
+
+    private Task HandleCompanyChanged(CompanyRequest updated)
+    {
+        companyForm = updated;
+        return Task.CompletedTask;
+    }
+}
+

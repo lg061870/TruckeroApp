@@ -1,0 +1,165 @@
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
+@using Truckero.Core.DTOs
+@using TruckeroApp.Components.Pages.Companies
+
+@* <div class="bg-white p-8 rounded-2xl border border-truckero-gray-200 shadow-sm">
+    <h3 class="text-2xl font-bold text-truckero-gray-900 mb-8">
+        @(FormMode == CompanyFormMode.Edit ? "Edit Company" : "Create Company")
+    </h3>
+
+    <div class="space-y-8">
+        <!-- Logo Upload -->
+        <div id="logo-upload-field">
+            <label class="block text-md font-semibold text-truckero-gray-700 mb-3">Company Logo</label>
+            <div class="flex items-center space-x-6">
+                <div class="w-24 h-24 bg-truckero-gray-100 rounded-full flex items-center justify-center border-2 border-dashed border-truckero-gray-300">
+                    @if (!string.IsNullOrWhiteSpace(Company.LogoUrl))
+                    {
+                        <img src="@Company.LogoUrl" alt="Company Logo" class="w-full h-full rounded-full object-cover" />
+                    }
+                    else
+                    {
+                        <i class="fa-solid fa-store text-truckero-gray-400 text-3xl"></i>
+                    }
+                </div>
+                <div class="flex flex-col">
+                    <button type="button"
+                            class="px-6 h-12 bg-truckero-orange text-white font-semibold rounded-xl shadow-sm hover:bg-orange-600 transition-colors duration-200"
+                            @onclick="OnUploadLogoClick">
+                        Upload Logo
+                    </button>
+                    <p class="text-sm text-truckero-gray-500 mt-2">PNG, JPG, SVG. Max 2MB.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Company Name -->
+        <div id="company-name-field">
+            <label for="company-name" class="block text-md font-semibold text-truckero-gray-700 mb-3">Company Name</label>
+            <input type="text"
+                   id="company-name"
+                   placeholder="e.g., Ana's Appliance Emporium"
+                   class="w-full h-14 px-4 bg-truckero-gray-50 border border-truckero-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-truckero-orange/50 transition-shadow"
+                   value="@Company.Name"
+                   @oninput="HandleCompanyNameChanged" />
+        </div>
+
+        <!-- Business Type -->
+        <div id="business-type-field">
+            <label for="business-type" class="block text-md font-semibold text-truckero-gray-700 mb-3">Business Type</label>
+            <div class="relative">
+                <select id="business-type"
+                        class="w-full appearance-none h-14 px-4 bg-truckero-gray-50 border border-truckero-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-truckero-orange/50 transition-shadow"
+                        value="@SelectedBusinessTypeId"
+                        @onchange="HandleBusinessTypeChanged">
+                    <option value="">Select a business type</option>
+                    @foreach (var bt in BusinessTypes)
+                    {
+                        <option value="@bt.Id">@bt.Name</option>
+                    }
+                </select>
+                <i class="fa-solid fa-chevron-down absolute right-5 top-1/2 -translate-y-1/2 text-truckero-gray-400 pointer-events-none"></i>
+            </div>
+        </div>
+
+        <!-- Primary Industries -->
+        <div id="industries-field">
+            <label for="industries" class="block text-md font-semibold text-truckero-gray-700 mb-3">Primary Industries</label>
+            <div class="relative">
+                <select id="industries"
+                        class="w-full appearance-none h-14 px-4 bg-truckero-gray-50 border border-truckero-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-truckero-orange/50 transition-shadow"
+                        multiple
+                        @onchange="HandleIndustriesChanged">
+                    @foreach (var it in IndustryTypes)
+                    {
+                        <option value="@it.Name" selected="@Company.Industries.Contains(it.Name)">@it.Name</option>
+                    }
+                </select>
+                <i class="fa-solid fa-chevron-down absolute right-5 top-1/2 -translate-y-1/2 text-truckero-gray-400 pointer-events-none"></i>
+            </div>
+        </div>
+    </div>
+</div> *@
+
+@code {
+    [Parameter] public CompanyRequest Company { get; set; } = new();
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+    }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+    }
+
+    // [Parameter] public CompanyFormMode FormMode { get; set; } = CompanyFormMode.New;
+
+    // [Parameter] public List<BusinessTypeRequest> BusinessTypes { get; set; } = new();
+    // [Parameter] public List<IndustryTypeRequest> IndustryTypes { get; set; } = new();
+
+    // [Parameter] public EventCallback<CompanyRequest> OnCompanyChanged { get; set; }
+    // [Parameter] public EventCallback OnUploadLogo { get; set; }
+
+    // private string? SelectedBusinessTypeId => Company.BusinessTypeId?.ToString();
+
+    // private async Task OnUploadLogoClick()
+    // {
+    //     if (OnUploadLogo.HasDelegate)
+    //     {
+    //         await OnUploadLogo.InvokeAsync();
+    //     }
+    // }
+
+    // private async Task HandleCompanyNameChanged(ChangeEventArgs args)
+    // {
+    //     var value = args.Value?.ToString() ?? string.Empty;
+    //     if (Company.Name != value)
+    //     {
+    //         Company.Name = value;
+    //         if (OnCompanyChanged.HasDelegate)
+    //         {
+    //             await OnCompanyChanged.InvokeAsync(Company);
+    //         }
+    //     }
+    // }
+
+    // private async Task HandleBusinessTypeChanged(ChangeEventArgs args)
+    // {
+    //     var value = args.Value?.ToString();
+    //     if (Guid.TryParse(value, out var id))
+    //     {
+    //         Company.BusinessTypeId = id;
+    //     }
+    //     else
+    //     {
+    //         Company.BusinessTypeId = null;
+    //     }
+
+    //     if (OnCompanyChanged.HasDelegate)
+    //     {
+    //         await OnCompanyChanged.InvokeAsync(Company);
+    //     }
+    // }
+
+    // private async Task HandleIndustriesChanged(ChangeEventArgs args)
+    // {
+    //     var selected = new List<string>();
+    //     if (args.Value is not null)
+    //     {
+    //         var raw = args.Value.ToString();
+    //         if (!string.IsNullOrWhiteSpace(raw))
+    //         {
+    //             selected.AddRange(raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+    //         }
+    //     }
+
+    //     Company.Industries = selected;
+    //     if (OnCompanyChanged.HasDelegate)
+    //     {
+    //         await OnCompanyChanged.InvokeAsync(Company);
+    //     }
+    // }
+}

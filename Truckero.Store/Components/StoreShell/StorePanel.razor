@@ -1,0 +1,33 @@
+<section class="store-panel @ClassName">
+    @if (!string.IsNullOrWhiteSpace(Title) || !string.IsNullOrWhiteSpace(Subtitle) || HeaderContent is not null)
+    {
+        <header class="store-panel-header">
+            <div>
+                @if (!string.IsNullOrWhiteSpace(Title))
+                {
+                    <h2 class="store-panel-title">@Title</h2>
+                }
+                @if (!string.IsNullOrWhiteSpace(Subtitle))
+                {
+                    <p class="store-panel-subtitle">@Subtitle</p>
+                }
+            </div>
+            @if (HeaderContent is not null)
+            {
+                <div class="store-panel-header-extra">@HeaderContent</div>
+            }
+        </header>
+    }
+
+    <div class="store-panel-body">
+        @ChildContent
+    </div>
+</section>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public string? ClassName { get; set; }
+    [Parameter] public RenderFragment? HeaderContent { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

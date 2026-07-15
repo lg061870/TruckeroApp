@@ -1,0 +1,86 @@
+<div class="store-shell">
+    <aside class="store-shell-sidebar">
+        <a class="store-brand" href="@StoreRoutes.Dashboard" title="Truckero Store">
+            <i class="fa-solid fa-truck-fast"></i>
+        </a>
+
+        <nav class="store-nav" aria-label="Store Navigation">
+            @NavItem(StoreNavSection.Dashboard, StoreRoutes.Dashboard, "Dashboard", "fa-table-columns", true)
+            @NavItem(StoreNavSection.Deliveries, StoreRoutes.DeliveryTracker, "Deliveries", "fa-box-open")
+            @NavItem(StoreNavSection.Fleet, StoreRoutes.FleetManagement, "Fleet", "fa-truck")
+            @NavItem(StoreNavSection.Staff, StoreRoutes.StaffManagement, "Staff", "fa-users")
+            @NavItem(StoreNavSection.Notifications, StoreRoutes.Notifications, "Notifications", "fa-bell")
+            @NavItem(StoreNavSection.Settings, StoreRoutes.Settings, "Settings", "fa-gear")
+        </nav>
+    </aside>
+
+    <section class="store-shell-main">
+        <header class="store-shell-header">
+            <div class="store-header-left">
+                <button class="store-icon-button" type="button" aria-label="Menu">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="store-header-title-wrap">
+                    <h1 class="store-page-title">@Title</h1>
+                    @if (!string.IsNullOrWhiteSpace(Subtitle))
+                    {
+                        <p class="store-page-subtitle">@Subtitle</p>
+                    }
+                </div>
+            </div>
+
+            <div class="store-header-actions-wrap">
+                @if (ShowSearch)
+                {
+                    <div class="store-search-wrap">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input class="store-search" type="text" placeholder="@SearchPlaceholder" />
+                    </div>
+                }
+
+                @if (HeaderActions is not null)
+                {
+                    <div class="store-header-custom-actions">
+                        @HeaderActions
+                    </div>
+                }
+
+                <button class="store-icon-button" type="button" aria-label="Alerts">
+                    <i class="fa-regular fa-bell"></i>
+                </button>
+
+                <div class="store-user-pill">
+                    <div class="store-avatar">AR</div>
+                    <div>
+                        <div class="store-user-name">Ana Reyes</div>
+                        <div class="store-user-role">Store Manager</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="store-shell-content">
+            @ChildContent
+        </main>
+    </section>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Store";
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public string SearchPlaceholder { get; set; } = "Search deliveries, drivers, or customers";
+    [Parameter] public bool ShowSearch { get; set; } = true;
+    [Parameter] public StoreNavSection ActiveSection { get; set; } = StoreNavSection.Dashboard;
+    [Parameter] public RenderFragment? HeaderActions { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private RenderFragment NavItem(StoreNavSection section, string href, string label, string icon, bool exact = false) => @<NavLink href="@href" Match="@(exact ? NavLinkMatch.All : NavLinkMatch.Prefix)" class="@NavClass(section)" title="@label" aria-label="@label">
+        <i class="fa-solid @icon"></i>
+    </NavLink>;
+
+    private string NavClass(StoreNavSection section)
+    {
+        const string baseClass = "store-nav-link";
+        return section == ActiveSection ? $"{baseClass} is-active" : baseClass;
+    }
+}

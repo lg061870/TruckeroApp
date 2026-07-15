@@ -1,9 +1,11 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using System; // Added for Uri and TimeSpan
 using System.Net.Http;
 using Truckero.Core.Interfaces; // Assuming IAuthTokenRepository is here
 using Truckero.Core.Interfaces.Services;
 using TruckeroApp.ServiceClients;
+using TruckeroApp.ServiceClients.ApiHelpers;
 // Ensure TruckeroApp.ServiceClients.Mock is present if used, or remove if not
 // using TruckeroApp.ServiceClients.Mock; 
 
@@ -267,5 +269,48 @@ public static class ApiClientProxies
         return services;
     }
 
+    public static IServiceCollection AddStoreApiClientService(this IServiceCollection services, string apiBase)
+    {
+        services.TryAddTransient<AccessTokenHttpMessageHandler>();
+#if ANDROID
+        services.AddHttpClient<IStoreApiClientService, StoreApiClientService>(client =>
+        {
+            client.BaseAddress = new Uri(apiBase);
+            client.Timeout = TimeSpan.FromSeconds(10);
+        })
+        .ConfigurePrimaryHttpMessageHandler(CreateUnsafeHandler)
+        .AddHttpMessageHandler<AccessTokenHttpMessageHandler>();
+#else
+        services.AddHttpClient<IStoreApiClientService, StoreApiClientService>(client =>
+        {
+            client.BaseAddress = new Uri(apiBase);
+            client.Timeout = TimeSpan.FromSeconds(10);
+        })
+        .AddHttpMessageHandler<AccessTokenHttpMessageHandler>();
+#endif
+        return services;
+    }
 
+    public static IServiceCollection AddCompanyApiClientService(this IServiceCollection services, string apiBase)
+    {
+        services.TryAddTransient<AccessTokenHttpMessageHandler>();
+#if ANDROID
+        services.AddHttpClient<ICompanyApiClientService, CompanyApiClientService>(client =>
+        {
+            client.BaseAddress = new Uri(apiBase);
+            client.Timeout = TimeSpan.FromSeconds(10);
+        })
+        .ConfigurePrimaryHttpMessageHandler(CreateUnsafeHandler)
+        .AddHttpMessageHandler<AccessTokenHttpMessageHandler>();
+#else
+        services.AddHttpClient<ICompanyApiClientService, CompanyApiClientService>(client =>
+        {
+            client.BaseAddress = new Uri(apiBase);
+            client.Timeout = TimeSpan.FromSeconds(10);
+        })
+        .AddHttpMessageHandler<AccessTokenHttpMessageHandler>();
+#endif
+
+    return services;
+    }
 }

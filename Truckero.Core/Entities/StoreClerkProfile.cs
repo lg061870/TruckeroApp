@@ -17,4 +17,6 @@ public class StoreClerkProfile
     public bool Verified { get; set; } = false;
 
     public ICollection<StoreClerkAssignment> StoreAssignments { get; set; } = new List<StoreClerkAssignment>();
+    public ICollection<StoreDeliveryJob> DeliveryJobs { get; set; } = new List<StoreDeliveryJob>();
+
 }

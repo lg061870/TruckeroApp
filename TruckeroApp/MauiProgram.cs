@@ -38,7 +38,8 @@ public static class MauiProgram
 #elif IOS
         var apiBase = "http://localhost:5200";
 #else
-        var apiBase = "https://localhost:7224";
+        // Windows / other: use HTTP to avoid HTTPS dev-cert issues
+        var apiBase = "http://localhost:5200";
 #endif
 
         //Modular API client registration
@@ -55,7 +56,9 @@ public static class MauiProgram
                     .AddPayoutAccountApiClientService(apiBase)
                     .AddPaymentAccountApiClientService(apiBase)
                     .AddViewProviderApiClientService(apiBase)
-                    .AddCustomerFlowApiClientService(apiBase);
+                    .AddCustomerFlowApiClientService(apiBase)
+                    .AddStoreApiClientService(apiBase)
+                    .AddCompanyApiClientService(apiBase);
 
         builder.Services.AddToastService();
         builder.Services.AddSingleton<ITokenStorageService, SecureTokenStorageService>();

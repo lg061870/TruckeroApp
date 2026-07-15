@@ -1,0 +1,223 @@
+.store-shell {
+    min-height: 100dvh;
+    display: grid;
+    grid-template-columns: 5.5rem 1fr;
+    background: #f8fafc;
+    color: #0f172a;
+    font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.store-shell-sidebar {
+    background: #ffffff;
+    border-right: 1px solid #e2e8f0;
+    padding: 1.15rem 0.8rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.store-brand {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.8rem;
+    background: #fff7ed;
+    color: #f97316;
+    display: grid;
+    place-items: center;
+    font-size: 1.15rem;
+    text-decoration: none;
+}
+
+.store-nav {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.store-nav-link {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.8rem;
+    color: #64748b;
+    display: grid;
+    place-items: center;
+    text-decoration: none;
+    font-size: 1rem;
+    transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.store-nav-link:hover {
+    background: #f1f5f9;
+    color: #334155;
+}
+
+.store-nav-link.is-active,
+.store-nav-link.active {
+    background: #fff7ed;
+    color: #ea580c;
+}
+
+.store-shell-main {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.store-shell-header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: rgba(248, 250, 252, 0.95);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid #e2e8f0;
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.store-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.store-header-title-wrap {
+    min-width: 0;
+}
+
+.store-page-title {
+    margin: 0;
+    font-size: 1.7rem;
+    line-height: 1.1;
+    font-weight: 800;
+}
+
+.store-page-subtitle {
+    margin: 0.3rem 0 0;
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.store-header-actions-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.store-search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    border-radius: 0.8rem;
+    padding: 0.55rem 0.75rem;
+    color: #64748b;
+}
+
+.store-search {
+    border: 0;
+    background: transparent;
+    min-width: 250px;
+    color: #0f172a;
+    font: inherit;
+}
+
+.store-search:focus {
+    outline: none;
+}
+
+.store-header-custom-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.store-icon-button {
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 0.7rem;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    color: #64748b;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+}
+
+.store-icon-button:hover {
+    background: #f8fafc;
+    color: #334155;
+}
+
+.store-user-pill {
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    border-radius: 999px;
+    padding: 0.35rem 0.45rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.store-avatar {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+    background: #fee2e2;
+    color: #991b1b;
+    display: grid;
+    place-items: center;
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
+.store-user-name {
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.store-user-role {
+    font-size: 0.72rem;
+    color: #64748b;
+    line-height: 1.1;
+}
+
+.store-shell-content {
+    padding: 1.25rem 1.5rem 1.5rem;
+    display: grid;
+    gap: 1rem;
+}
+
+@media (max-width: 1080px) {
+    .store-shell {
+        grid-template-columns: 1fr;
+    }
+
+    .store-shell-sidebar {
+        border-right: 0;
+        border-bottom: 1px solid #e2e8f0;
+        flex-direction: row;
+        justify-content: space-between;
+    }
+
+    .store-nav {
+        width: auto;
+        flex-direction: row;
+        gap: 0.4rem;
+        overflow: auto;
+    }
+
+    .store-search {
+        min-width: 180px;
+    }
+}

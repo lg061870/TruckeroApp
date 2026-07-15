@@ -1,0 +1,287 @@
+﻿
+
+<div id="staff-management-container" class="flex h-[1366px] w-full">
+    <!-- Collapsed Sidebar -->
+    <aside id="sidebar" class="w-20 bg-white border-r border-truckero-gray-200 flex flex-col items-center py-6 shadow-sm">
+        <div id="logo-container" class="mb-12">
+            <a href="#" class="text-truckero-orange text-3xl font-bold">
+                <i class="fa-solid fa-truck-fast"></i>
+            </a>
+        </div>
+        <nav id="main-nav" class="flex flex-col items-center space-y-6">
+            <a href="#" class="w-12 h-12 flex items-center justify-center text-truckero-gray-500 hover:bg-truckero-gray-100 hover:text-truckero-orange rounded-lg transition-colors duration-200" aria-label="Dashboard">
+                <i class="fa-solid fa-table-columns fa-lg"></i>
+            </a>
+            <a href="#" class="w-12 h-12 flex items-center justify-center text-truckero-gray-500 hover:bg-truckero-gray-100 hover:text-truckero-orange rounded-lg transition-colors duration-200" aria-label="Deliveries">
+                <i class="fa-solid fa-box-open fa-lg"></i>
+            </a>
+            <a href="#" class="w-12 h-12 flex items-center justify-center text-truckero-gray-500 hover:bg-truckero-gray-100 hover:text-truckero-orange rounded-lg transition-colors duration-200" aria-label="Fleet">
+                <i class="fa-solid fa-truck fa-lg"></i>
+            </a>
+            <a href="#" class="w-12 h-12 flex items-center justify-center text-truckero-gray-500 hover:bg-truckero-gray-100 hover:text-truckero-orange rounded-lg transition-colors duration-200" aria-label="Analytics">
+                <i class="fa-solid fa-chart-pie fa-lg"></i>
+            </a>
+            <a href="#" class="w-12 h-12 flex items-center justify-center bg-truckero-orange-light text-truckero-orange rounded-lg transition-colors duration-200" aria-label="Customers">
+                <i class="fa-solid fa-users fa-lg"></i>
+            </a>
+        </nav>
+        <div id="sidebar-footer" class="mt-auto flex flex-col items-center space-y-6">
+            <a href="#" class="w-12 h-12 flex items-center justify-center text-truckero-gray-500 hover:bg-truckero-gray-100 hover:text-truckero-orange rounded-lg transition-colors duration-200" aria-label="Settings">
+                <i class="fa-solid fa-gear fa-lg"></i>
+            </a>
+            <a href="#" class="w-12 h-12 flex items-center justify-center text-truckero-gray-500 hover:bg-truckero-gray-100 hover:text-truckero-orange rounded-lg transition-colors duration-200" aria-label="Logout">
+                <i class="fa-solid fa-arrow-right-from-bracket fa-lg"></i>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main id="main-content" class="flex-1 overflow-y-auto">
+        <header id="header" class="sticky top-0 bg-truckero-gray-50/80 backdrop-blur-sm z-20 flex items-center justify-between px-10 py-6 border-b border-truckero-gray-200">
+            <div class="flex items-center space-x-4">
+                <button class="text-truckero-gray-900 text-2xl" aria-label="Toggle menu">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <h1 class="text-3xl font-bold text-truckero-gray-900">Staff Management</h1>
+            </div>
+            <div class="flex items-center space-x-6">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-truckero-gray-400"></i>
+                    <input type="text" placeholder="Search deliveries, drivers..." class="bg-white border border-truckero-gray-200 rounded-lg py-3 pl-12 pr-4 w-80 focus:outline-none focus:ring-2 focus:ring-truckero-orange/50 transition-shadow">
+                </div>
+                <button class="text-truckero-gray-500 hover:text-truckero-gray-900 text-2xl relative" aria-label="Notifications">
+                    <i class="fa-regular fa-bell"></i>
+                    <span class="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-truckero-orange ring-2 ring-truckero-gray-50"></span>
+                </button>
+                <div class="flex items-center space-x-3">
+                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-5.jpg" alt="Store Manager Avatar" class="w-12 h-12 rounded-full object-cover">
+                    <div>
+                        <p class="font-semibold text-truckero-gray-900">Ana Reyes</p>
+                        <p class="text-sm text-truckero-gray-500">Store Manager</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div id="store-users-body" class="p-10">
+            <section id="page-controls" class="flex justify-between items-center mb-8">
+                <div>
+                    <h2 class="text-2xl font-bold text-truckero-gray-900">Store Clerks</h2>
+                    <p class="text-truckero-gray-500">Manage accounts and permissions for your store staff.</p>
+                </div>
+                <button id="add-clerk-button" class="h-14 px-8 bg-truckero-orange text-white font-semibold rounded-xl shadow-md hover:bg-orange-600 transition-all duration-200 flex items-center space-x-3">
+                    <i class="fa-solid fa-user-plus"></i>
+                    <span>Create New Clerk</span>
+                </button>
+            </section>
+
+            <section id="clerk-list-section">
+                <div id="clerk-table-container" class="bg-white rounded-2xl border border-truckero-gray-200 shadow-sm overflow-hidden">
+                    <div class="p-6">
+                        <div class="flex items-center space-x-4">
+                            <div class="relative flex-grow">
+                                <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-truckero-gray-400"></i>
+                                <input type="text" placeholder="Search by name or email..." class="bg-truckero-gray-50 border border-truckero-gray-200 rounded-lg py-3 pl-12 pr-4 w-full focus:outline-none focus:ring-2 focus:ring-truckero-orange/50 transition-shadow">
+                            </div>
+                            <div class="relative">
+                                <select class="appearance-none bg-truckero-gray-50 border border-truckero-gray-200 rounded-lg py-3 pl-4 pr-10 text-truckero-gray-700 focus:outline-none focus:ring-2 focus:ring-truckero-orange/50">
+                                    <option>Status: All</option>
+                                    <option>Active</option>
+                                    <option>Inactive</option>
+                                </select>
+                                <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-truckero-gray-400 pointer-events-none"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <table class="w-full text-left">
+                        <thead class="bg-truckero-gray-50 border-b border-truckero-gray-200">
+                            <tr>
+                                <th class="px-6 py-4 font-semibold text-truckero-gray-500 uppercase text-sm tracking-wider">Clerk Name</th>
+                                <th class="px-6 py-4 font-semibold text-truckero-gray-500 uppercase text-sm tracking-wider">Email Address</th>
+                                <th class="px-6 py-4 font-semibold text-truckero-gray-500 uppercase text-sm tracking-wider">Store Assignment</th>
+                                <th class="px-6 py-4 font-semibold text-truckero-gray-500 uppercase text-sm tracking-wider">Status</th>
+                                <th class="px-6 py-4 font-semibold text-truckero-gray-500 uppercase text-sm tracking-wider text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-truckero-gray-200">
+                            <tr class="hover:bg-truckero-gray-50 transition-colors">
+                                <td class="px-6 py-5 whitespace-nowrap">
+                                    <div class="flex items-center space-x-4">
+                                        <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" alt="Clerk Avatar" class="w-11 h-11 rounded-full object-cover">
+                                        <span class="font-medium text-truckero-gray-900">David Chen</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-5 text-truckero-gray-700">david.chen@example.com</td>
+                                <td class="px-6 py-5 text-truckero-gray-700">Downtown Main St</td>
+                                <td class="px-6 py-5">
+                                    <span class="px-3 py-1 text-xs font-semibold text-truckero-green bg-truckero-green/10 rounded-full">Active</span>
+                                </td>
+                                <td class="px-6 py-5 text-center">
+                                    <button class="text-truckero-gray-400 hover:text-truckero-gray-700 text-lg px-3 py-2 rounded-lg hover:bg-truckero-gray-100"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-truckero-gray-50 transition-colors">
+                                <td class="px-6 py-5 whitespace-nowrap">
+                                    <div class="flex items-center space-x-4">
+                                        <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-7.jpg" alt="Clerk Avatar" class="w-11 h-11 rounded-full object-cover">
+                                        <span class="font-medium text-truckero-gray-900">Maria Garcia</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-5 text-truckero-gray-700">maria.garcia@example.com</td>
+                                <td class="px-6 py-5 text-truckero-gray-700">Northside Plaza</td>
+                                <td class="px-6 py-5">
+                                    <span class="px-3 py-1 text-xs font-semibold text-truckero-green bg-truckero-green/10 rounded-full">Active</span>
+                                </td>
+                                <td class="px-6 py-5 text-center">
+                                    <button class="text-truckero-gray-400 hover:text-truckero-gray-700 text-lg px-3 py-2 rounded-lg hover:bg-truckero-gray-100"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-truckero-gray-50 transition-colors">
+                                <td class="px-6 py-5 whitespace-nowrap">
+                                    <div class="flex items-center space-x-4">
+                                        <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-4.jpg" alt="Clerk Avatar" class="w-11 h-11 rounded-full object-cover">
+                                        <span class="font-medium text-truckero-gray-900">Ben Carter</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-5 text-truckero-gray-700">ben.carter@example.com</td>
+                                <td class="px-6 py-5 text-truckero-gray-700">Downtown Main St</td>
+                                <td class="px-6 py-5">
+                                    <span class="px-3 py-1 text-xs font-semibold text-truckero-gray-500 bg-truckero-gray-200 rounded-full">Inactive</span>
+                                </td>
+                                <td class="px-6 py-5 text-center">
+                                    <button class="text-truckero-gray-400 hover:text-truckero-gray-700 text-lg px-3 py-2 rounded-lg hover:bg-truckero-gray-100"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-truckero-gray-50 transition-colors">
+                                <td class="px-6 py-5 whitespace-nowrap">
+                                    <div class="flex items-center space-x-4">
+                                        <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-6.jpg" alt="Clerk Avatar" class="w-11 h-11 rounded-full object-cover">
+                                        <span class="font-medium text-truckero-gray-900">Chloe Kim</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-5 text-truckero-gray-700">chloe.kim@example.com</td>
+                                <td class="px-6 py-5 text-truckero-gray-700">West End Mall</td>
+                                <td class="px-6 py-5">
+                                    <span class="px-3 py-1 text-xs font-semibold text-truckero-green bg-truckero-green/10 rounded-full">Active</span>
+                                </td>
+                                <td class="px-6 py-5 text-center">
+                                    <button class="text-truckero-gray-400 hover:text-truckero-gray-700 text-lg px-3 py-2 rounded-lg hover:bg-truckero-gray-100"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div id="table-pagination" class="px-6 py-4 border-t border-truckero-gray-200 flex justify-between items-center">
+                        <span class="text-sm text-truckero-gray-500">Showing 1-4 of 12 clerks</span>
+                        <div class="flex items-center space-x-2">
+                            <button class="h-10 w-10 flex items-center justify-center text-truckero-gray-500 bg-white border border-truckero-gray-200 rounded-lg hover:bg-truckero-gray-100 transition-colors"><i class="fa-solid fa-chevron-left"></i></button>
+                            <button class="h-10 w-10 flex items-center justify-center text-truckero-gray-500 bg-white border border-truckero-gray-200 rounded-lg hover:bg-truckero-gray-100 transition-colors"><i class="fa-solid fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Add Clerk Modal -->
+    <div id="add-clerk-modal" class="fixed inset-0 bg-truckero-gray-900/50 z-30 flex items-center justify-center hidden transition-opacity duration-300 opacity-0">
+        <div id="modal-content" class="bg-white rounded-2xl shadow-2xl w-full max-w-lg transform scale-95 transition-all duration-300">
+            <div class="flex items-center justify-between p-6 border-b border-truckero-gray-200">
+                <h3 class="text-xl font-bold text-truckero-gray-900">Create New Clerk Account</h3>
+                <button id="close-modal-button" class="text-truckero-gray-400 hover:text-truckero-gray-700 text-2xl h-11 w-11 flex items-center justify-center rounded-full hover:bg-truckero-gray-100">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="p-8">
+                <div class="bg-truckero-orange-light text-truckero-orange-700 px-4 py-3 rounded-lg mb-6 flex items-center space-x-3">
+                    <i class="fa-solid fa-store"></i>
+                    <p class="font-semibold">Registering as: <span class="uppercase">Store Clerk</span></p>
+                </div>
+                <form id="add-clerk-form" class="space-y-6">
+                    <div>
+                        <label for="clerk-name" class="block text-sm font-medium text-truckero-gray-700 mb-2">Full Name</label>
+                        <input type="text" id="clerk-name" placeholder="Enter clerk's full name" class="w-full px-4 py-3 border border-truckero-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-truckero-orange/50 transition-shadow">
+                    </div>
+                    <div>
+                        <label for="clerk-email" class="block text-sm font-medium text-truckero-gray-700 mb-2">Email Address</label>
+                        <input type="email" id="clerk-email" placeholder="Enter clerk's email address" class="w-full px-4 py-3 border border-truckero-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-truckero-orange/50 transition-shadow">
+                    </div>
+                    <div>
+                        <label for="clerk-store" class="block text-sm font-medium text-truckero-gray-700 mb-2">Store Assignment</label>
+                        <div class="relative">
+                            <select id="clerk-store" class="appearance-none w-full px-4 py-3 border border-truckero-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-truckero-orange/50 transition-shadow bg-white">
+                                <option>Select a store</option>
+                                <option>Downtown Main St</option>
+                                <option>Northside Plaza</option>
+                                <option>West End Mall</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-truckero-gray-400 pointer-events-none"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="clerk-password" class="block text-sm font-medium text-truckero-gray-700 mb-2">Temporary Password</label>
+                        <input type="password" id="clerk-password" placeholder="Auto-generated password" class="w-full px-4 py-3 border border-truckero-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-truckero-orange/50 transition-shadow">
+                        <p class="text-xs text-truckero-gray-500 mt-2">The clerk will be required to change their password on first login.</p>
+                    </div>
+                </form>
+            </div>
+            <div class="flex items-center justify-end space-x-4 p-6 border-t border-truckero-gray-200">
+                <button id="cancel-button" class="h-12 px-6 bg-truckero-gray-100 text-truckero-gray-700 font-semibold rounded-lg hover:bg-truckero-gray-200 transition-all duration-200">
+                    Cancel
+                </button>
+                <button id="create-clerk-button" class="h-12 px-6 bg-truckero-orange text-white font-semibold rounded-lg hover:bg-orange-600 transition-all duration-200 flex items-center space-x-2">
+                    <i class="fa-solid fa-check"></i>
+                    <span>Create Account</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Modal functionality
+        const addClerkButton = document.getElementById('add-clerk-button');
+        const closeModalButton = document.getElementById('close-modal-button');
+        const cancelButton = document.getElementById('cancel-button');
+        const addClerkModal = document.getElementById('add-clerk-modal');
+        const modalContent = document.getElementById('modal-content');
+
+        function openModal() {
+            addClerkModal.classList.remove('hidden');
+            setTimeout(() => {
+                addClerkModal.classList.remove('opacity-0');
+                modalContent.classList.remove('scale-95');
+                modalContent.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            addClerkModal.classList.add('opacity-0');
+            modalContent.classList.remove('scale-100');
+            modalContent.classList.add('scale-95');
+            setTimeout(() => {
+                addClerkModal.classList.add('hidden');
+            }, 300);
+        }
+
+        addClerkButton.addEventListener('click', openModal);
+        closeModalButton.addEventListener('click', closeModal);
+        cancelButton.addEventListener('click', closeModal);
+
+        addClerkModal.addEventListener('click', function(e) {
+            if (e.target === addClerkModal) {
+                closeModal();
+            }
+        });
+
+        // Form submission
+        const createClerkButton = document.getElementById('create-clerk-button');
+        createClerkButton.addEventListener('click', function() {
+            // Form validation and submission logic here
+            alert('Clerk account created successfully!');
+            closeModal();
+        });
+    </script>
+</div>
+
+@code {
+
+}

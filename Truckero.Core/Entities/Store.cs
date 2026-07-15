@@ -3,8 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Truckero.Core.Entities;
 
-public class Store
-{
+public class Store {
     [Key]
     public Guid Id { get; set; }
 
@@ -38,4 +37,12 @@ public class Store
     // 🔁 Navigation
     public ICollection<StoreClerkAssignment> Clerks { get; set; } = new List<StoreClerkAssignment>();
 
+    // 📦 Delivery jobs requested by this store
+    public ICollection<StoreDeliveryJob> DeliveryJobs { get; set; } = new List<StoreDeliveryJob>();
+    public Guid CompanyId { get; set; }
+
+    [ForeignKey(nameof(CompanyId))]
+    public Company Company { get; set; } = null!;
+
 }
+

@@ -96,4 +96,10 @@ public static class ExceptionCodes {
         public const string Unknown = "PAYMENT_ACCOUNT_UNKNOWN";
         // Add any others as needed!
     }
+    public static class StoreErrorCodes {
+        public const string NotFound = "STORE_NOT_FOUND";
+        public const string ForeignKeyNotFound = "STORE_FOREIGN_KEY_NOT_FOUND";
+        public const string SaveFailed = "STORE_SAVE_FAILED";
+        public const string Unknown = "STORE_UNKNOWN";
+    }
 }

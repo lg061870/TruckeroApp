@@ -1,10 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
+    <!-- 🎯 Target Frameworks -->
     <TargetFrameworks>net9.0-android;net9.0-ios;net9.0-maccatalyst</TargetFrameworks>
-    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net9.0-windows10.0.19041.0</TargetFrameworks>
-    <!-- <TargetFrameworks>$(TargetFrameworks);net9.0-tizen</TargetFrameworks> -->
+    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">
+      $(TargetFrameworks);net9.0-windows10.0.19041.0
+    </TargetFrameworks>
 
+    <!-- ⚙️ Build Behavior -->
     <OutputType>Exe</OutputType>
     <RootNamespace>TruckeroApp</RootNamespace>
     <UseMaui>true</UseMaui>
@@ -12,25 +15,29 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <EnableDefaultCssItems>false</EnableDefaultCssItems>
     <Nullable>enable</Nullable>
+    <BlazorWebViewEnableGlobalUsing>true</BlazorWebViewEnableGlobalUsing>
 
-    <!-- Display name -->
+    <!-- 🧩 Prevent MVC metadata generation (fixes ApplicationPartAttribute errors) -->
+    <SuppressRazorApplicationPartAssemblyAttributes>true</SuppressRazorApplicationPartAssemblyAttributes>
+
+    <!-- 📱 App Metadata -->
     <ApplicationTitle>TruckeroApp</ApplicationTitle>
-
-    <!-- App Identifier -->
     <ApplicationId>com.companyname.truckeroapp</ApplicationId>
-
-    <!-- Versions -->
     <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
     <ApplicationVersion>1</ApplicationVersion>
 
+    <!-- 🪟 Windows config -->
     <WindowsPackageType>None</WindowsPackageType>
 
+    <!-- 🧩 Supported Platforms -->
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
     <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
+
+    <!-- 🧱 Configurations -->
     <Configurations>Debug;Release;UnitTesting</Configurations>
   </PropertyGroup>
 
@@ -42,6 +49,7 @@
     <DebugType>portable</DebugType>
   </PropertyGroup>
 
+  <!-- 🎨 App assets -->
   <ItemGroup>
     <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
     <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
@@ -51,10 +59,12 @@
     <MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
+  <!-- 🚫 Remove unused Android XML -->
   <ItemGroup>
     <None Remove="Platforms\Android\Resources\xml\network_security_config.xml" />
   </ItemGroup>
 
+  <!-- 📦 NuGet packages -->
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Maui" Version="11.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" Version="9.0.4" />
@@ -64,22 +74,30 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0" />
     <PackageReference Include="Refit" Version="8.0.0" />
+    <PackageReference Include="System.Net.Http" Version="4.3.4" />
+    <PackageReference Include="System.Private.Uri" Version="4.3.2" />
+    <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
   </ItemGroup>
 
+  <!-- 🔗 Project references -->
   <ItemGroup>
     <ProjectReference Include="..\Truckero.Core\Truckero.Core.csproj" />
     <ProjectReference Include="..\Truckero.Diagnostics\Truckero.Diagnostics.csproj" />
   </ItemGroup>
 
+  <!-- 🧭 Folder placeholders -->
   <ItemGroup>
     <Folder Include="Components\Pages\Customer\" />
+    <Folder Include="design_assets\" />
     <Folder Include="ServiceClients\Interfaces\" />
   </ItemGroup>
 
-  <!-- ✅ NEW: Ensure wwwroot is copied correctly -->
+  <!-- 🌐 Static web assets -->
   <ItemGroup>
     <MauiAsset Include="wwwroot\**" LogicalName="wwwroot\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
+
+  <!-- 🧹 Optional cleanup of unused content -->
   <ItemGroup>
     <Content Remove="wwwroot\css\StyleSheet1.css" />
   </ItemGroup>

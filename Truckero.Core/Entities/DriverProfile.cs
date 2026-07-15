@@ -39,5 +39,7 @@ public class DriverProfile {
 
     // --- Add this: navigation to DriverBids ---
     public ICollection<DriverBid> DriverBids { get; set; } = new List<DriverBid>();
+    public ICollection<StoreDeliveryJob> StoreDeliveryJobs { get; set; } = new List<StoreDeliveryJob>();
+
 }
 
