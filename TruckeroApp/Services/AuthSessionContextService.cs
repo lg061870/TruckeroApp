@@ -9,7 +9,7 @@ public class AuthSessionContextService : IAuthSessionContext
 
     public string? AccessToken { get; private set; }
     public string? ActiveRole { get; private set; }
-    public User LoggedUser { get; private set; }
+    public User LoggedUser { get; private set; } = new();
     public List<string> AvailableRoles { get; private set; } = new();
     public Guid? UserId { get; private set; }
     public string? Email { get; private set; }
@@ -33,7 +33,7 @@ public class AuthSessionContextService : IAuthSessionContext
         AccessToken = accessToken;
         AvailableRoles = session.AvailableRoles ?? new();
         ActiveRole = session.ActiveRole;
-        LoggedUser = session.LoggedUser;
+        LoggedUser = session.LoggedUser ?? new();
         Email = session.Email;
         IsInitialized = true;
     }
@@ -48,6 +48,7 @@ public class AuthSessionContextService : IAuthSessionContext
         AccessToken = null;
         AvailableRoles.Clear();
         ActiveRole = null;
+        LoggedUser = new();
         UserId = null;
         Email = null;
         IsInitialized = true; // ✅ Still mark as initialized to avoid fallback

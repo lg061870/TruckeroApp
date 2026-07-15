@@ -247,12 +247,15 @@ public class AuthController : ControllerBase
     [HttpGet("user/me")]
     public async Task<IActionResult> GetCurrentUser()
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var authHeader = Request.Headers.Authorization.ToString();
+        var accessToken = authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+            ? authHeader["Bearer ".Length..].Trim()
+            : string.Empty;
 
-        if (!Guid.TryParse(userId, out var guid))
+        if (string.IsNullOrWhiteSpace(accessToken))
             return Unauthorized();
 
-        var user = await _authService.GetUserByIdAsync(guid);
+        var user = await _authService.GetUserByAccessToken(accessToken);
         return user != null ? Ok(user) : NotFound();
     }
 

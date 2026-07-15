@@ -124,6 +124,8 @@ public class AuthService : IAuthService
                 AccessToken = existingToken.AccessToken,
                 RefreshToken = existingToken.RefreshToken,
                 Success = true,
+                UserId = user.Id,
+                Role = user.Role?.Name?.ToString() ?? RoleType.Guest.ToString(),
                 LoggedUser = user
             };
         }
@@ -148,7 +150,8 @@ public class AuthService : IAuthService
             RefreshToken = newToken.RefreshToken,
             Success = true,
             UserId = user.Id,
-            Role = user.Role?.Name?.ToString()
+            Role = user.Role?.Name?.ToString() ?? RoleType.Guest.ToString(),
+            LoggedUser = user
         };
     }
 
