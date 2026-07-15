@@ -3,8 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Truckero.Core.DTOs.Billing;
 
-public class PaymentMethodDto
-{
+public class PaymentMethodRequest {
     public Guid Id { get; set; } // Used for updates, ignored for adds
 
     [Required]
