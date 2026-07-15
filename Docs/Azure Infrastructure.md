@@ -1,3 +1,5 @@
+> ⚠️ **OBSOLETE - ignore this document.**
+
 ## 📌 Tenant and Subscription
 
 - **Primary Tenant (TruckeroCorp)**
@@ -130,4 +132,3 @@ builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
 | ⏳ Create Test + Prod Resource Groups | Azure CLI |
 | ⏳ DNS mapping and deployment slots | Azure Porta |
 
-CLI ACCESS KEY: XHXs69rH1p4rX2EQN6yiIBJD7WkWo4JsA6c9IvBZWYlQd4cj9iizJQQJ99BDACAAAAAAAAAAAAASAZDO3h8T

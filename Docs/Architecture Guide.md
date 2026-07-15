@@ -1,154 +1,185 @@
-# 🚚 Truckero Code Organization Reference Guide
+# Truckero Architecture Guide (Current)
+
+Last updated: 2026-03-13
+
+This guide documents the architecture that is currently implemented in `Truckero.sln`.
 
 ---
 
-## 🔷 Overview of Major Layers
+## 1. System Topology
 
-| Layer              | Project                   | Purpose                                                        |
-| ------------------ | ------------------------- | -------------------------------------------------------------- |
-| 📱 Frontend (UI)   | `TruckeroApp`             | Razor UI for Blazor Hybrid/Mobile apps                         |
-| 🌐 API Gateway     | `Truckero.API`            | ASP.NET Core Web API controllers                               |
-| 🧠 Core Domain     | `Truckero.Core`           | Entities, DTOs, Interfaces, Enums                              |
-| 🏗️ Infrastructure | `Truckero.Infrastructure` | Service & repository implementations, DbContext, storage logic |
+### Primary runtime path
 
----
+- Client: `TruckeroApp` (MAUI Blazor hybrid app)
+- API: `Truckero.API` (ASP.NET Core Web API)
+- Domain contracts: `Truckero.Core`
+- Implementations and persistence: `Truckero.Infrastructure`
+- Data store: SQL Server via EF Core (`AppDbContext`)
+- External storage: Azure Blob storage (`AzureBlobStorageService`)
 
-## 🧱 Folder Conventions by Layer
+Runtime flow:
 
-### ✅ TruckeroApp (Blazor App UI)
+`TruckeroApp` -> `Truckero.API` -> `Truckero.Infrastructure` -> SQL Server
 
-| Folder             | Purpose                                                     |
-| ------------------ | ----------------------------------------------------------- |
-| `Components/Pages` | Razor screens organized by feature (e.g., `RegisterDriver`) |
-| `ServiceClients`   | Typed HTTP clients for API calls                            |
-| `Interfaces`       | UI-side service abstractions (e.g., `ISessionContext`)      |
-| `Services`         | Local services (e.g., token storage)                        |
-| `Session/Routes`   | Session state & route definitions                           |
-| `wwwroot`          | Static assets like Tailwind config                          |
+`Truckero.Core` types are shared across client, API, and infrastructure.
 
-**Naming Convention**:
+### Additional apps in the solution
 
-* `Register*.razor` for screens
-* `*.ApiClientService.cs` for HTTP clients
-* Interfaces prefixed with `I`
+- `Truckero.Admin`: server-side Blazor admin UI
+- `TruckeroCorporate`: server-side Blazor corporate UI
+- `Truckero.Store`: MAUI Blazor store app scaffold
+- `Truckero.Diagnostics`: diagnostics/test helpers and simulators
+
+These projects are present and buildable, but `TruckeroApp` + `Truckero.API` are the primary end-to-end runtime path today.
 
 ---
 
-### ✅ Truckero.API (API Layer)
+## 2. Project Responsibilities
 
-| Folder                      | Purpose                                                              |
-| --------------------------- | -------------------------------------------------------------------- |
-| `Controllers`               | REST endpoints like `DriverController.cs`, `OnboardingController.cs` |
-| `Models`                    | API-only DTOs (e.g., `BlobUploadRequest.cs`)                         |
-| `Services`                  | Stateless helpers used by controllers                                |
-| `Filters`                   | Auth and error middleware                                            |
-| `Program.cs`                | Web host setup & middleware                                          |
-| `RepositoryServiceSetup.cs` | Registers infrastructure dependencies                                |
+| Project | Responsibility |
+| --- | --- |
+| `TruckeroApp` | UI pages, local session/state services, typed API clients |
+| `Truckero.API` | HTTP endpoints, auth setup, DI composition, request/response orchestration |
+| `Truckero.Core` | Entities, DTOs, enums, interfaces, constants, validation attributes |
+| `Truckero.Infrastructure` | Repository implementations, business services, EF Core context and migrations |
+| `Truckero.Diagnostics` | Development/test tooling (mocks, seeders, simulators, debug helpers) |
 
-**Pattern**:
-API controllers → Services → Core interfaces
+Dependency direction (current references):
 
----
-
-### ✅ Truckero.Core (Domain Layer)
-
-| Folder                         | Purpose                                        |
-| ------------------------------ | ---------------------------------------------- |
-| `Entities`                     | EF Core entities (e.g., `DriverProfile.cs`)    |
-| `DTOs/Auth`, `DTOs/Onboarding` | DTOs for API and frontend form mapping         |
-| `Interfaces/Repositories`      | Repository interfaces                          |
-| `Interfaces/Services`          | Domain service contracts                       |
-| `Enums`                        | Domain enums (e.g., `VehicleType`, `RoleType`) |
-| `DataAnnotations`              | Custom validators                              |
-| `Constants`                    | Static values, keys, roles                     |
-
-> ❗ Core contains no implementation logic.
+- `Truckero.Infrastructure` -> `Truckero.Core`
+- `Truckero.API` -> `Truckero.Core`, `Truckero.Infrastructure`, `Truckero.Diagnostics`
+- `TruckeroApp` -> `Truckero.Core`, `Truckero.Diagnostics`
 
 ---
 
-### ✅ Truckero.Infrastructure (Service & DB Layer)
+## 3. API Architecture
 
-| Folder         | Purpose                                             |
-| -------------- | --------------------------------------------------- |
-| `Repositories` | EF Core repository implementations                  |
-| `Services`     | Business logic implementations                      |
-| `Data`         | `AppDbContext`, migrations, seeding                 |
-| `Storage`      | External systems (e.g., AzureBlobStorageService.cs) |
-| `Extensions`   | Helpers like ClaimsPrincipal extension methods      |
+### 3.1 Environment-specific authentication
 
-**Naming Rule**:
+In `Truckero.API/Program.cs`:
 
-```csharp
-public class DriverRepository : IDriverRepository
-```
+- `UnitTesting` environment: custom `Test` scheme (`TestAuthHandler`)
+- `Development` environment: `AllowAll` scheme (`AllowAllAuthHandler`)
+- Non-development environments: Azure AD B2C OpenID Connect via `Microsoft.Identity.Web`
 
----
+Authorization is enabled globally with `AddAuthorization()`, and per-endpoint behavior is controlled by `[Authorize]` / `[AllowAnonymous]` attributes.
 
-## 🔀 Standard Flow: UI → API → Service → Repo → DB
+### 3.2 Route style currently in use
 
-```plaintext
-[Blazor Page]
-↓ binds to
-[DTO] (in Core)
-↓ sent via
-[ApiClientService] → [API Controller]
-↓ calls
-[Service Interface] (in Core)
-↓ handled by
-[Service Implementation] (Infrastructure)
-↓ calls
-[Repository Interface] (in Core)
-↓ handled by
-[Repository Implementation] (Infrastructure)
-↓ persists to
-[DbContext → SQL DB]
-```
+Route conventions are mixed and intentionally reflected in clients:
+
+- Prefixless groups: `/auth`, `/tokens`, `/onboarding`
+- Controller-token groups: `/api/[controller]`
+- Custom groups: for example `/api/driver`
+
+When adding endpoints, follow the existing route style for that specific module instead of introducing a new global style.
+
+### 3.3 DI composition
+
+- Main service/repository wiring is in `Truckero.API/Program.cs`
+- Additional repository extension wiring exists in `Truckero.API/RepositoryServiceSetup.cs`
+
+Controller rule of thumb: keep controllers thin and delegate to service/repository layers.
 
 ---
 
-## 🛠️ Where to Place New Code
+## 4. Client Architecture (`TruckeroApp`)
 
-| Task                             | Folder / File Location                                       |
-| -------------------------------- | ------------------------------------------------------------ |
-| Add new screen                   | `TruckeroApp/Components/Pages/Onboarding/RegisterX.razor`    |
-| Add API controller               | `Truckero.API/Controllers/[Module]Controller.cs`             |
-| Define new DTO                   | `Truckero.Core/DTOs/[Module]/MyDto.cs`                       |
-| Add interface for service        | `Truckero.Core/Interfaces/Services/I[Name]Service.cs`        |
-| Add interface for repository     | `Truckero.Core/Interfaces/Repositories/I[Name]Repository.cs` |
-| Add service logic implementation | `Truckero.Infrastructure/Services/[Name]Service.cs`          |
-| Add EF repository implementation | `Truckero.Infrastructure/Repositories/[Name]Repository.cs`   |
-| Modify DB mappings               | `Truckero.Infrastructure/Data/AppDbContext.cs`               |
-| Register DI                      | `RepositoryServiceSetup.cs` and `MauiProgram.cs`             |
+### 4.1 API access model
 
----
+- Typed API clients live in `TruckeroApp/ServiceClients`
+- Client registration lives in `TruckeroApp/ApiClientProxies.cs`
+- DI composition lives in `TruckeroApp/MauiProgram.cs`
 
-## 🧪 Unit Test Integration
+### 4.2 Platform-specific API base URL
 
-| Test Target      | Suggested File                                            |
-| ---------------- | --------------------------------------------------------- |
-| Razor page logic | `TruckeroApp.Tests/RegisterDriver.razor.test.cs`          |
-| API controller   | `Truckero.API.Tests/OnboardingControllerTests.cs`         |
-| Service logic    | `Truckero.Infrastructure.Tests/OnboardingServiceTests.cs` |
-| Repository logic | `Truckero.Infrastructure.Tests/DriverRepositoryTests.cs`  |
+`MauiProgram.cs` sets base URL by platform:
 
-Use `Moq`, `FakeItEasy`, or `TestAuthHandler` for mock setup.
+- Android emulator: `http://10.0.2.2:5200`
+- iOS: `http://localhost:5200`
+- Windows/other: `http://localhost:5200`
+
+### 4.3 Session and token handling
+
+- Session/token abstractions live under `TruckeroApp/Interfaces` and `TruckeroApp/Services`
+- `AuthenticatedEnvelope` is used for token-bearing requests in client services that require auth
+- Some onboarding calls are intentionally unauthenticated today (aligned with API attributes)
 
 ---
 
-## 🔒 Security & Logging Guidelines
+## 5. Domain and Persistence Architecture
 
-* Use `[Authorize]` or `[AllowAnonymous]` on API endpoints
-* Log via `ILogger<T>` and optionally `AuditLogRepository`
-* Validate on both client (Blazor) and server (ModelState)
+### 5.1 Core domain contract layer
+
+`Truckero.Core` defines:
+
+- Domain entities (`Entities/`)
+- API/app DTOs (`DTOs/` modules such as `Auth`, `Onboarding`, `CustomerFlow`, `Store`, `Trucks`)
+- Repository and service interfaces (`Interfaces/Repositories`, `Interfaces/Services`)
+- Enums, constants, custom data annotations
+
+This layer is shared and should remain implementation-light.
+
+### 5.2 Infrastructure layer
+
+`Truckero.Infrastructure` contains:
+
+- Repositories (`Repositories/`)
+- Business services (`Services/`)
+- EF Core context and initializer (`Data/`)
+- Migrations (`Migrations/`)
+- External integration services (`Storage/` and other integration folders)
+
+### 5.3 Transaction and consistency pattern
+
+Current service implementations (for example onboarding and freight bid flows) use:
+
+- EF execution strategy (`CreateExecutionStrategy()`)
+- Explicit transactions (`BeginTransactionAsync()`)
+- Controlled `SaveChangesAsync()` boundaries
+- Rollback + structured error response paths
+
+This is the preferred pattern for multi-step write operations.
 
 ---
 
-## ✅ Summary of Best Practices
+## 6. End-to-End Request Flow
 
-* 🧱 **Domain-first** design: start from Core definitions
-* 📦 **Modular structure**: feature-split with consistent layering
-* ♻️ **Bi-directional DTO ↔ Entity mappings**
-* 🔐 **Secure APIs** with token validation
-* 🧪 **Testable** through clean separation and DI
+Standard path for business operations:
+
+1. UI page triggers a typed API client call.
+2. API controller validates/orchestrates request handling.
+3. Infrastructure service executes domain behavior.
+4. Repository layer applies persistence operations.
+5. `AppDbContext` commits to SQL Server.
+6. Response DTO returns through API and client service to UI.
+
+For authenticated endpoints, the client sends bearer tokens and the API enforces authorization at endpoint level.
 
 ---
+
+## 7. Testing Architecture
+
+- `Truckero.API.Tests`: controller/integration tests using `WebApplicationFactory<Program>`
+- API tests commonly replace SQL Server `DbContext` registration with in-memory EF provider
+- `Truckero.Infrastructure.Tests`: repository tests
+- `Truckero.Admin.Tests`: render/basic UI tests
+- `TruckeroApp.Tests` and `TruckeroCorporate.Tests`: present but currently lighter/scaffolded
+
+When adding API or infrastructure behavior, add or extend tests in the matching test project.
+
+---
+
+## 8. Architecture Guardrails
+
+- Keep business logic out of Razor pages and API controllers.
+- Keep persistence operations in repositories and service-layer orchestration.
+- Reuse existing DTO modules and interface folders before creating new top-level patterns.
+- Follow existing route conventions per module to avoid client/API drift.
+- For multi-entity writes, use execution strategy + explicit transaction patterns already used in services.
+
+---
+
+## 9. Working Rule
+
+Before implementing a feature, identify the closest existing module path and mirror that structure. In this solution, consistency with the established module pattern is the primary architecture rule.
