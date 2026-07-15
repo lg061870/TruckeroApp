@@ -30,6 +30,8 @@
                 return;
             }
 
+            // Prime session with persisted token so authenticated client calls can work during startup restore.
+            SessionContext.Set(accessToken, null, string.Empty);
             var validationResult = await TokenRepository.ValidateAccessTokenAsync(accessToken);
             string? refreshToken = string.Empty;
 
@@ -39,20 +41,11 @@
 
                 switch (validationResult.Reason)
                 {
-                    case ExceptionCodes.InvalidHttpRequestSecurityHeader:
-                        NavManager.NavigateTo(AppRoutes.LoginExpired, forceLoad: true);
-                        return;
                     case ExceptionCodes.AccessTokenIsBlank:
                         NavManager.NavigateTo(AppRoutes.Login, forceLoad: true);
                         return;
                     case ExceptionCodes.AccessTokenNotFound:
                         NavManager.NavigateTo(AppRoutes.AccountNotAvailable, forceLoad: true);
-                        return;
-                    case ExceptionCodes.AccessTokenExpired:
-                        NavManager.NavigateTo(AppRoutes.LoginExpired, forceLoad: true);
-                        return;
-                    case ExceptionCodes.NetworkError:
-                        _logger.LogWarning("Network error detected. Redirecting to LoginExpired.");
                         return;
                 }
 
@@ -80,24 +73,24 @@
                         await TokenStorage.SaveAccessTokenAsync(refreshResult.AccessToken);
                         await TokenStorage.SaveRefreshTokenAsync(refreshResult.RefreshToken);
                         accessToken = refreshResult.AccessToken;
-                        await SetSession(accessToken);
+                        SessionContext.Set(accessToken, null, string.Empty);
+                        validationResult = new TokenValidationResult { Valid = true };
                     }
                     else
                     {
                         _logger.LogWarning("Refresh returned no token. Falling back to user state check.");
-                        await HandleUserAfterFailedRefresh();
+                        NavManager.NavigateTo($"{AppRoutes.LoginExpired}?reason={ExceptionCodes.RefreshFailed}", forceLoad: true);
                         return;
                     }
                 }
                 catch (Exception refreshEx)
                 {
                     _logger.LogError(refreshEx, "Error during token refresh.");
-                    await HandleUserAfterFailedRefresh();
+                    NavManager.NavigateTo($"{AppRoutes.LoginExpired}?reason={ExceptionCodes.RefreshError}", forceLoad: true);
                     return;
                 }
             }
 
-            SessionContext.Set(accessToken, null, string.Empty);
             var user = await AuthService.GetCurrentUserAsync();
             if (user == null)
             {

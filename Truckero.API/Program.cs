@@ -60,6 +60,18 @@ else
 }
 
 builder.Services.AddAuthorization();
+builder.Services.AddHttpClient("nominatim", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(10);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("Truckero.API/1.0 (+support@truckero.app)");
+    client.DefaultRequestHeaders.AcceptLanguage.ParseAdd("en-US,en;q=0.9");
+});
+builder.Services.AddHttpClient("osm-tiles", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(10);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("Truckero.API-MapTiles/1.0 (+support@truckero.app)");
+    client.DefaultRequestHeaders.AcceptLanguage.ParseAdd("en-US,en;q=0.9");
+});
 
 // Configure CORS
 builder.Services.AddCors(options =>

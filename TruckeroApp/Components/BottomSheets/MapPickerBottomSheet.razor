@@ -1,4 +1,7 @@
-﻿@using Microsoft.JSInterop
+@using Microsoft.JSInterop
+@using System.Globalization
+@using System.Net.Http.Json
+@implements IDisposable
 
 <div class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-end justify-center">
     <div class="w-full sm:max-w-md bg-white rounded-t-2xl shadow-lg animate-slide-up relative">
@@ -9,7 +12,7 @@
 
         <!-- Map Area -->
         <div class="h-[400px] relative">
-            <div id="map" class="w-full h-full rounded-b-2xl z-0"></div>
+            <div id="@_mapElementId" class="w-full h-full rounded-b-2xl z-0"></div>
 
             <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div class="w-10 h-10 bg-orange-100 rounded-full border-4 border-white shadow pointer-events-none"></div>
@@ -36,6 +39,13 @@
                 }
             </div>
 
+            @if (!IsAddressLoading && Address == "Unknown Location")
+            {
+                <div class="text-xs text-red-600">
+                    Could not resolve address for the coordinates above.
+                </div>
+            }
+
             <label class="block text-sm font-medium text-gray-700">Service Radius (km)</label>
             <div class="flex items-center">
                 <input type="range" min="5" max="100" @bind="RadiusKm" class="w-full accent-orange-500" />
@@ -61,6 +71,8 @@
     private double Longitude;
     private string Address = "Loading...";
     private bool IsAddressLoading = true;
+    private readonly string _mapElementId = $"map-{Guid.NewGuid():N}";
+    private DotNetObjectReference<MapPickerBottomSheet>? _dotNetRef;
 
     private bool CanConfirm =>
         !IsAddressLoading &&
@@ -74,7 +86,8 @@
     {
         if (firstRender)
         {
-            await JS.InvokeVoidAsync("initMapPicker", DotNetObjectReference.Create(this));
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("initMapPicker", _mapElementId, _dotNetRef, GetApiBaseUrl());
         }
     }
 
@@ -88,12 +101,22 @@
 
         try
         {
-            using var client = new HttpClient();
-            var url = $"https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat={lat}&lon={lon}";
-            var result = await client.GetFromJsonAsync<NominatimResponse>(url);
-            Address = result?.display_name ?? "Unknown Location";
+            var result = await ResolveAddressThroughProxyAsync(lat, lon);
+            if (result is null || !result.success || string.IsNullOrWhiteSpace(result.address))
+            {
+                result = await JS.InvokeAsync<BrowserGeocodeResult?>("reverseGeocodeFromBrowser", lat, lon);
+            }
+
+            if (result?.success == true && !string.IsNullOrWhiteSpace(result.address))
+            {
+                Address = result.address;
+            }
+            else
+            {
+                Address = "Unknown Location";
+            }
         }
-        catch
+        catch (Exception)
         {
             Address = "Unknown Location";
         }
@@ -121,12 +144,69 @@
 
     private async Task CenterMapToUserLocation()
     {
-        await JS.InvokeVoidAsync("centerMapToUserLocation");
+        await JS.InvokeVoidAsync("centerMapToUserLocation", _mapElementId);
     }
 
-    private class NominatimResponse
+    public void Dispose()
     {
-        public string display_name { get; set; } = "";
+        _dotNetRef?.Dispose();
+    }
+
+    private async Task<BrowserGeocodeResult?> ResolveAddressThroughProxyAsync(double lat, double lon)
+    {
+        var latText = lat.ToString("0.######", CultureInfo.InvariantCulture);
+        var lonText = lon.ToString("0.######", CultureInfo.InvariantCulture);
+        var url = $"{GetApiBaseUrl()}/api/geocoding/reverse?lat={latText}&lon={lonText}";
+
+        try
+        {
+            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+            var response = await client.GetFromJsonAsync<BrowserGeocodeResult>(url);
+            if (response is null)
+            {
+                return new BrowserGeocodeResult
+                {
+                    success = false,
+                    status = "Proxy error",
+                    message = "Proxy returned empty payload.",
+                    requestUrl = url
+                };
+            }
+
+            response.requestUrl ??= url;
+            response.status = string.IsNullOrWhiteSpace(response.status) ? "200 OK (Proxy)" : response.status;
+            return response;
+        }
+        catch (Exception ex)
+        {
+            return new BrowserGeocodeResult
+            {
+                success = false,
+                status = "Proxy request failed",
+                message = ex.Message,
+                requestUrl = url
+            };
+        }
+    }
+
+    private static string GetApiBaseUrl()
+    {
+#if ANDROID
+        return "http://10.0.2.2:5200";
+#elif IOS
+        return "http://localhost:5200";
+#else
+        return "http://localhost:5200";
+#endif
+    }
+
+    public class BrowserGeocodeResult
+    {
+        public bool success { get; set; }
+        public string? status { get; set; }
+        public string? message { get; set; }
+        public string? address { get; set; }
+        public string? requestUrl { get; set; }
     }
 
     public class MapPickResult

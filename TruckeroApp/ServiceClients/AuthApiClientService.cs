@@ -108,8 +108,8 @@ public class AuthApiClientService : IAuthService
 
     public async Task<AuthResponse> RefreshAccessTokenAsync(RefreshTokenRequest request)
     {
-        var envelope = AuthenticatedEnvelope.Create(RequireAccessToken(), _http, HttpMethod.Post, "auth/refresh", request);
-        var response = await envelope.SendAsync<HttpResponseMessage>();
+        // Refresh must work on cold start before session context is rebuilt.
+        var response = await _http.PostAsJsonAsync("auth/refresh", request);
         if (!response.IsSuccessStatusCode)
             throw new UnauthorizedAccessException("Refresh failed");
         return await response.Content.ReadFromJsonAsync<AuthResponse>() ?? throw new InvalidOperationException("Empty refresh response");
@@ -118,22 +118,20 @@ public class AuthApiClientService : IAuthService
     public async Task<bool> ValidateTokenAsync(string token)
     {
         var endpoint = $"auth/validate?accessToken={token}";
-        var envelope = AuthenticatedEnvelope.Create(RequireAccessToken(), _http, HttpMethod.Get, endpoint);
+        var envelope = AuthenticatedEnvelope.Create(token, _http, HttpMethod.Get, endpoint);
         var response = await envelope.SendAsync<HttpResponseMessage>();
         return response.IsSuccessStatusCode;
     }
 
     public async Task RequestPasswordResetAsync(PasswordResetRequest request)
     {
-        var envelope = AuthenticatedEnvelope.Create(RequireAccessToken(), _http, HttpMethod.Post, "auth/password/request-reset", request);
-        var response = await envelope.SendAsync<HttpResponseMessage>();
+        var response = await _http.PostAsJsonAsync("auth/password/request-reset", request);
         response.EnsureSuccessStatusCode();
     }
 
     public async Task ConfirmPasswordResetAsync(PasswordResetConfirmRequest request)
     {
-        var envelope = AuthenticatedEnvelope.Create(RequireAccessToken(), _http, HttpMethod.Post, "auth/password/confirm-reset", request);
-        var response = await envelope.SendAsync<HttpResponseMessage>();
+        var response = await _http.PostAsJsonAsync("auth/password/confirm-reset", request);
         response.EnsureSuccessStatusCode();
     }
 

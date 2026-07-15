@@ -86,3 +86,13 @@ h1:focus {
         padding-left: env(safe-area-inset-left);
     }
 }
+
+/* Leaflet + Tailwind/WebView compatibility:
+   Tailwind preflight applies `img { max-width: 100%; height: auto; }`,
+   which can break tile raster sizing and leave the map gray. */
+.leaflet-container img,
+.leaflet-pane > img,
+.leaflet-tile {
+    max-width: none !important;
+    max-height: none !important;
+}
