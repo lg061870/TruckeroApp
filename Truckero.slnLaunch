@@ -1,0 +1,17 @@
+[
+  {
+    "Name": "TruckeroApp + API",
+    "Projects": [
+      {
+        "Path": "Truckero.API\\Truckero.API.csproj",
+        "Action": "Start",
+        "DebugTarget": "Truckero.API"
+      },
+      {
+        "Path": "TruckeroApp\\TruckeroApp.csproj",
+        "Action": "Start",
+        "DebugTarget": "Pixel 7 - API 35 (Android 15.0 - API 35)"
+      }
+    ]
+  }
+]

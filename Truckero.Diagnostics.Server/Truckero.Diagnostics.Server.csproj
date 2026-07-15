@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <OutputType>Library</OutputType>
+    <Configurations>Debug;Release;UnitTesting</Configurations>
+  </PropertyGroup>
+
+  <!-- ✅ ASP.NET Core runtime + MVC -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <!-- ✅ Align logging version with EFCore 9.0.10 -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.10" />
+  </ItemGroup>
+
+  <!-- 🔗 Shared projects -->
+  <ItemGroup>
+    <ProjectReference Include="..\Truckero.Core\Truckero.Core.csproj" />
+    <ProjectReference Include="..\Truckero.Infrastructure\Truckero.Infrastructure.csproj" />
+    <ProjectReference Include="..\Truckero.Diagnostics\Truckero.Diagnostics.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -13,13 +13,19 @@
 		<Folder Include="Middleware\" />
 		<Folder Include="Mocks\APIControllers\" />
 		<Folder Include="CloneDBs\" />
+		<Folder Include="Tests\" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.5" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.5" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.5" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.5" />
+		<PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.10" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.10" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.10" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.10" />
+		<PackageReference Include="Moq" Version="4.20.72" />
+		<PackageReference Include="System.Net.Http" Version="4.3.4" />
+		<PackageReference Include="System.Private.Uri" Version="4.3.2" />
+		<PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
+		<PackageReference Include="xunit" Version="2.9.3" />
 	</ItemGroup>
 
 	<ItemGroup>
