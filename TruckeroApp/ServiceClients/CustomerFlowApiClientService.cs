@@ -121,6 +121,50 @@ public class CustomerFlowApiClientService : ICustomerFlowApiClientService {
         throw new Exception("Unreachable");
     }
 
+    // -------------------- FreightBidQueue Methods --------------------
+
+    public async Task<GetBidsForJobResponse> GetBidsForJobAsync(GetBidsForJobRequest request) {
+        var response = await _http.PostAsJsonAsync("/api/freightbid/job/responses", request);
+
+        if (response.IsSuccessStatusCode) {
+            var result = await response.Content.ReadFromJsonAsync<GetBidsForJobResponse>();
+            if (result == null)
+                throw new Exception("Empty GetBidsForJobResponse");
+            return result;
+        }
+
+        await HandleErrorResponse(response, "Failed to get bids for job.");
+        throw new Exception("Unreachable");
+    }
+
+    public async Task<ConfirmDriverBidResponse> ConfirmDriverBidAsync(ConfirmDriverBidRequest request) {
+        var response = await _http.PostAsJsonAsync("/api/freightbid/confirm", request);
+
+        if (response.IsSuccessStatusCode) {
+            var result = await response.Content.ReadFromJsonAsync<ConfirmDriverBidResponse>();
+            if (result == null)
+                throw new Exception("Empty ConfirmDriverBidResponse");
+            return result;
+        }
+
+        await HandleErrorResponse(response, "Failed to confirm driver bid.");
+        throw new Exception("Unreachable");
+    }
+
+    public async Task<RequestMoreDriversResponse> RequestMoreDriversAsync(RequestMoreDriversRequest request) {
+        var response = await _http.PostAsJsonAsync("/api/driverbid/request-more", request);
+
+        if (response.IsSuccessStatusCode) {
+            var result = await response.Content.ReadFromJsonAsync<RequestMoreDriversResponse>();
+            if (result == null)
+                throw new Exception("Empty RequestMoreDriversResponse");
+            return result;
+        }
+
+        await HandleErrorResponse(response, "Failed to request more drivers.");
+        throw new Exception("Unreachable");
+    }
+
     // -------------------- Exception Handling Helper --------------------
 
     private static async Task HandleErrorResponse(HttpResponseMessage response, string defaultMessage) {

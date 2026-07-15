@@ -12,6 +12,11 @@ public interface ICustomerFlowApiClientService {
     Task<List<DriverBidResponse>> GetDriverBidsForFreightBidAsync(Guid freightBidId);
     Task AssignDriverAsync(AssignDriverRequest request);
     Task<DriverBidResponse> GetDriverBidDetailsAsync(Guid bidId);
+    
+    // New methods for FreightBidQueue
+    Task<GetBidsForJobResponse> GetBidsForJobAsync(GetBidsForJobRequest request);
+    Task<ConfirmDriverBidResponse> ConfirmDriverBidAsync(ConfirmDriverBidRequest request);
+    Task<RequestMoreDriversResponse> RequestMoreDriversAsync(RequestMoreDriversRequest request);
 
     // Add more as your flow grows, e.g. CancelBid, TrackDriver, etc.
 }

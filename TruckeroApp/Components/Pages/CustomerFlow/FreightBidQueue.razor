@@ -1,10 +1,19 @@
-﻿<CenterWrapper>
+﻿@page "/customerflow/freight-bid-queue/{JobId:guid}"
+@using TruckeroApp.Models.CustomerFlow
+@using TruckeroApp.Services.CustomerFlow
+@using System.Net
+@using System.Timers
+@inject NavigationManager NavigationManager
+@inject IFreightBidQueueService BidService
+@implements IDisposable
+
+<CenterWrapper>
     <div id="drivers-list-screen" class="min-h-screen bg-gray-50">
 
         <!-- Header -->
         <div id="header" class="bg-white px-4 py-3 shadow-sm">
             <div class="flex items-center">
-                <button class="text-gray-600">
+                <button @onclick="NavigateBack" class="text-gray-600">
                     <i class="fa-solid fa-arrow-left text-xl"></i>
                 </button>
                 <h1 class="text-xl font-semibold text-center flex-1 mr-8">Available Drivers</h1>
@@ -24,184 +33,658 @@
         <div id="drivers-panel" class="bg-white rounded-t-3xl -mt-6 relative z-10">
             <div class="p-4">
 
-                <!-- Filters -->
-                <div id="search-filters" class="mb-3">
+                <!-- Filters - only show when we have data -->
+                @if (hasBids || (!isLoading && bids.Count == 0))
+                {
+                    <div id="search-filters" class="mb-3">
                     <div class="flex items-center mb-2">
                         <div class="relative flex-1">
                             <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
                             <input type="text"
+                                   @bind="filterState.Search"
+                                   @bind:event="oninput"
+                                   @onchange="ApplyFilters"
                                    class="w-full pl-9 pr-8 py-2 text-sm rounded-lg border border-gray-300"
                                    placeholder="Search by truck type, rating..." />
+                            @if (!string.IsNullOrEmpty(filterState.Search))
+                            {
+                                <button @onclick="ClearSearch" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                                    <i class="fa-solid fa-times-circle"></i>
+                                </button>
+                            }
                         </div>
                         <button class="ml-2 p-2 rounded-lg border border-gray-300">
                             <i class="fa-solid fa-sliders text-gray-600"></i>
                         </button>
+                    </div>                        <div class="flex items-center space-x-1 mb-2 overflow-x-auto pb-1">
+                            <button @onclick="@(() => SetSort("price"))" 
+                                    class="px-3 py-1.5 rounded-full @(filterState.SortBy == "price" ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-600") flex-shrink-0 flex items-center">
+                                <i class="fa-solid fa-sort-amount-down text-xs mr-1"></i>
+                                Price
+                            </button>
+                            <button @onclick="@(() => SetSort("distance"))"
+                                    class="px-3 py-1.5 rounded-full @(filterState.SortBy == "distance" ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-600") flex-shrink-0 flex items-center">
+                                <i class="fa-solid fa-location-dot text-xs mr-1"></i>
+                                Distance
+                            </button>
+                            <button @onclick="@(() => SetSort("rating"))"
+                                    class="px-3 py-1.5 rounded-full @(filterState.SortBy == "rating" ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-600") flex-shrink-0 flex items-center">
+                                <i class="fa-solid fa-star text-xs mr-1"></i>
+                                Rating
+                            </button>
+                            <button @onclick="@(() => ToggleFilter("help"))"
+                                    class="px-3 py-1.5 rounded-full @(!string.IsNullOrEmpty(filterState.Help) ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-600") flex-shrink-0">
+                                Help
+                            </button>
+                            <button @onclick="@(() => ToggleFilter("size"))"
+                                    class="px-3 py-1.5 rounded-full @(!string.IsNullOrEmpty(filterState.Size) ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-600") flex-shrink-0">
+                                Size
+                            </button>
+                            <button @onclick="@(() => ToggleFilter("category"))"
+                                    class="px-3 py-1.5 rounded-full @(!string.IsNullOrEmpty(filterState.Category) ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-600") flex-shrink-0">
+                                Category
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="flex items-center space-x-1 mb-2">
-                        <button class="px-3 py-1.5 rounded-full bg-gray-100 text-xs text-gray-600 flex items-center">
-                            <i class="fa-solid fa-sort-amount-down text-xs mr-1"></i>
-                            Price
+                    <!-- Delivery Type Toggle -->
+                    <div id="delivery-type-toggle" class="flex space-x-2 mb-4">
+                        <button @onclick="@(() => SetDeliveryType("Express"))" 
+                                class="flex-1 @(filterState.DeliveryType == "Express" ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-600") py-2 rounded-lg">
+                            Express Delivery
                         </button>
-                        <button class="px-3 py-1.5 rounded-full bg-gray-100 text-xs text-gray-600 flex items-center">
-                            <i class="fa-solid fa-location-dot text-xs mr-1"></i>
-                            Distance
+                        <button @onclick="@(() => SetDeliveryType("Scheduled"))" 
+                                class="flex-1 @(filterState.DeliveryType == "Scheduled" ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-600") py-2 rounded-lg">
+                            Scheduled Delivery
                         </button>
-                        <button class="px-3 py-1.5 rounded-full bg-gray-100 text-xs text-gray-600 flex items-center">
-                            <i class="fa-solid fa-star text-xs mr-1"></i>
-                            Rating
-                        </button>
-                        <button class="px-3 py-1.5 rounded-full bg-gray-100 text-xs text-gray-600">Help</button>
-                        <button class="px-3 py-1.5 rounded-full bg-gray-100 text-xs text-gray-600">Size</button>
-                        <button class="px-3 py-1.5 rounded-full bg-gray-100 text-xs text-gray-600">Category</button>
                     </div>
-                </div>
+                }
 
-                <!-- Delivery Type Toggle -->
-                <div id="delivery-type-toggle" class="flex space-x-2 mb-4">
-                    <button class="flex-1 bg-orange-500 text-white py-2 rounded-lg">Express Delivery</button>
-                    <button class="flex-1 bg-gray-100 text-gray-600 py-2 rounded-lg">Scheduled Delivery</button>
-                </div>
-
-                <!-- Driver List -->
-                <div id="drivers-list" class="space-y-4">
-                    <!-- Driver Card 1 -->
-                    <div id="driver-card-1" class="bg-white rounded-xl border border-gray-200 p-4">
-                        <div class="flex items-start justify-between">
-                            <div class="flex space-x-3">
-                                <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg"
-                                     class="w-12 h-12 rounded-full"
-                                     alt="Driver photo" />
-                                <div>
-                                    <h3 class="font-medium">John Smith</h3>
-                                    <div class="flex items-center text-sm text-yellow-400">
-                                        <i class="fa-solid fa-star"></i>
-                                        <i class="fa-solid fa-star"></i>
-                                        <i class="fa-solid fa-star"></i>
-                                        <i class="fa-solid fa-star"></i>
-                                        <i class="fa-regular fa-star"></i>
-                                        <span class="text-gray-600 ml-1">(4.0)</span>
+                <!-- Driver List States -->
+                @if (isLoading && !hasBids)
+                {
+                    <!-- Loading State -->
+                    <div class="py-12 flex flex-col items-center justify-center">
+                        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500 mb-4"></div>
+                        <p class="text-gray-600">Searching for available drivers...</p>
+                    </div>
+                }
+                else if (errorMessage != null)
+                {
+                    <!-- Error State -->
+                    <div class="py-8 flex flex-col items-center justify-center text-center">
+                        <div class="bg-red-100 text-red-700 p-4 rounded-lg mb-4 w-full">
+                            <p class="font-medium">@errorMessage</p>
+                        </div>
+                        <button @onclick="LoadBidsAsync" class="bg-orange-500 text-white px-5 py-2 rounded-lg">
+                            <i class="fa-solid fa-rotate-right mr-1"></i> Retry
+                        </button>
+                    </div>
+                }
+                else if (bids.Count == 0)
+                {
+                    <!-- Empty State -->
+                    <div class="py-12 flex flex-col items-center justify-center text-center">
+                        <div class="bg-blue-50 text-blue-700 p-6 rounded-lg mb-4 w-full">
+                            <i class="fa-solid fa-truck-fast text-4xl mb-3"></i>
+                            <p class="font-medium mb-1">No drivers have responded yet</p>
+                            <p class="text-sm">We're still looking for drivers in your area</p>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <!-- Driver List -->
+                    <div id="drivers-list" class="space-y-4">
+                        @foreach (var bid in filteredBids)
+                        {
+                            <div class="bg-white rounded-xl border border-gray-200 p-4 @(selectedBidId == bid.BidId ? "border-orange-500 border-2" : "")">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex space-x-3">
+                                        <img src="@bid.DriverAvatarUrl" onerror="this.src='images/default-avatar.png'"
+                                             class="w-12 h-12 rounded-full bg-gray-200"
+                                             alt="Driver photo" />
+                                        <div>
+                                            <h3 class="font-medium">@bid.DriverName</h3>
+                                            <div class="flex items-center text-sm text-yellow-400">
+                                                @for (int i = 1; i <= 5; i++)
+                                                {
+                                                    @if (i <= Math.Floor(bid.Rating))
+                                                    {
+                                                        <i class="fa-solid fa-star"></i>
+                                                    }
+                                                    else if (i <= Math.Ceiling(bid.Rating) && bid.Rating % 1 != 0)
+                                                    {
+                                                        <i class="fa-solid fa-star-half-stroke"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="fa-regular fa-star"></i>
+                                                    }
+                                                }
+                                                <span class="text-gray-600 ml-1">(@bid.Rating.ToString("F1"))</span>
+                                            </div>
+                                        </div>
                                     </div>
+                                    <button class="text-orange-500 pointer-events-none opacity-50">
+                                        <i class="fa-solid fa-comment-dots text-xl"></i>
+                                    </button>
                                 </div>
-                            </div>
-                            <button class="text-orange-500">
-                                <i class="fa-solid fa-comment-dots text-xl"></i>
-                            </button>
-                        </div>
 
-                        <div class="mt-3 p-3 bg-gray-50 rounded-lg text-sm">
-                            <div class="grid grid-cols-2 gap-2">
-                                <div class="flex items-center space-x-2">
-                                    <i class="fa-solid fa-box text-gray-500"></i>
-                                    <span>Category: Heavy</span>
-                                </div>
-                                <div class="flex items-center space-x-2">
-                                    <i class="fa-solid fa-ruler text-gray-500"></i>
-                                    <span>Size: Large</span>
-                                </div>
-                                <div class="flex items-center space-x-2">
-                                    <i class="fa-solid fa-hands-helping text-gray-500"></i>
-                                    <span>Help: Loading</span>
-                                </div>
-                                <div class="flex items-center space-x-2">
-                                    <i class="fa-solid fa-truck text-gray-500"></i>
-                                    <span>Box Truck 26ft</span>
-                                </div>
-                            </div>
-                            <button class="w-full mt-2 text-orange-500 text-center flex items-center justify-center">
-                                <span>View Truck Photos</span>
-                                <i class="fa-solid fa-chevron-right ml-1"></i>
-                            </button>
-                        </div>
-
-                        <div class="mt-3 flex items-center justify-between">
-                            <div class="flex items-center space-x-2">
-                                <i class="fa-solid fa-location-dot text-gray-500"></i>
-                                <span class="text-sm">2.5 miles away</span>
-                            </div>
-                            <div class="text-lg font-semibold text-orange-500">$120.00</div>
-                        </div>
-
-                        <div class="mt-3 grid grid-cols-2 gap-2">
-                            <button class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm flex items-center justify-center">
-                                <i class="fa-regular fa-eye mr-1"></i>
-                                View Bid
-                            </button>
-                            <button class="bg-orange-500 text-white px-4 py-2 rounded-lg text-sm flex items-center justify-center">
-                                <i class="fa-solid fa-check mr-1"></i>
-                                Select
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Driver Card 2 -->
-                    <div id="driver-card-2" class="bg-white rounded-xl border border-gray-200 p-4">
-                        <div class="flex items-start justify-between">
-                            <div class="flex space-x-3">
-                                <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-3.jpg"
-                                     class="w-12 h-12 rounded-full"
-                                     alt="Driver photo" />
-                                <div>
-                                    <h3 class="font-medium">Mike Johnson</h3>
-                                    <div class="flex items-center text-sm text-yellow-400">
-                                        <i class="fa-solid fa-star"></i>
-                                        <i class="fa-solid fa-star"></i>
-                                        <i class="fa-solid fa-star"></i>
-                                        <i class="fa-solid fa-star"></i>
-                                        <i class="fa-solid fa-star"></i>
-                                        <span class="text-gray-600 ml-1">(5.0)</span>
+                                <div class="mt-3 p-3 bg-gray-50 rounded-lg text-sm">
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div class="flex items-center space-x-2">
+                                            <i class="fa-solid fa-box text-gray-500"></i>
+                                            <span>Category: @bid.Category</span>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            <i class="fa-solid fa-ruler text-gray-500"></i>
+                                            <span>Size: @bid.Size</span>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            <i class="fa-solid fa-hands-helping text-gray-500"></i>
+                                            <span>Help: @bid.Help</span>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            <i class="fa-solid fa-truck text-gray-500"></i>
+                                            <span>@bid.VehicleType</span>
+                                        </div>
                                     </div>
+                                    <button class="w-full mt-2 text-orange-500 text-center flex items-center justify-center">
+                                        <span>View Truck Photos</span>
+                                        <i class="fa-solid fa-chevron-right ml-1"></i>
+                                    </button>
+                                </div>
+
+                                <div class="mt-3 flex items-center justify-between">
+                                    <div class="flex items-center space-x-2">
+                                        <i class="fa-solid fa-location-dot text-gray-500"></i>
+                                        <span class="text-sm">@bid.DistanceMiles.ToString("F1") miles away</span>
+                                    </div>
+                                    <div class="text-lg font-semibold text-orange-500">@($"{bid.PriceTotal:C}")</div>
+                                </div>
+
+                                <div class="mt-3 grid grid-cols-2 gap-2">
+                                    <button class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm flex items-center justify-center">
+                                        <i class="fa-regular fa-eye mr-1"></i>
+                                        View Bid
+                                    </button>
+                                    @if (isConfirming && selectedBidId == bid.BidId)
+                                    {
+                                        <button class="bg-gray-400 text-white px-4 py-2 rounded-lg text-sm flex items-center justify-center cursor-wait">
+                                            <div class="animate-pulse">Confirming...</div>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button @onclick="@(() => SelectBidAsync(bid.BidId))"
+                                                class="bg-orange-500 text-white px-4 py-2 rounded-lg text-sm flex items-center justify-center"
+                                                disabled="@(isConfirming)">
+                                            <i class="fa-solid fa-check mr-1"></i>
+                                            Select
+                                        </button>
+                                    }
                                 </div>
                             </div>
-                            <button class="text-orange-500">
-                                <i class="fa-solid fa-comment-dots text-xl"></i>
-                            </button>
-                        </div>
-
-                        <div class="mt-3 p-3 bg-gray-50 rounded-lg text-sm">
-                            <div class="grid grid-cols-2 gap-2">
-                                <div class="flex items-center space-x-2">
-                                    <i class="fa-solid fa-box text-gray-500"></i>
-                                    <span>Category: Medium</span>
-                                </div>
-                                <div class="flex items-center space-x-2">
-                                    <i class="fa-solid fa-ruler text-gray-500"></i>
-                                    <span>Size: Medium</span>
-                                </div>
-                                <div class="flex items-center space-x-2">
-                                    <i class="fa-solid fa-hands-helping text-gray-500"></i>
-                                    <span>Help: None</span>
-                                </div>
-                                <div class="flex items-center space-x-2">
-                                    <i class="fa-solid fa-truck-ramp-box text-gray-500"></i>
-                                    <span>Flatbed 20ft</span>
-                                </div>
-                            </div>
-                            <button class="w-full mt-2 text-orange-500 text-center flex items-center justify-center">
-                                <span>View Truck Photos</span>
-                                <i class="fa-solid fa-chevron-right ml-1"></i>
-                            </button>
-                        </div>
-
-                        <div class="mt-3 flex items-center justify-between">
-                            <div class="flex items-center space-x-2">
-                                <i class="fa-solid fa-location-dot text-gray-500"></i>
-                                <span class="text-sm">3.8 miles away</span>
-                            </div>
-                            <div class="text-lg font-semibold text-orange-500">$145.00</div>
-                        </div>
-
-                        <button class="w-full mt-3 bg-orange-500 text-white px-4 py-2 rounded-lg text-sm">Select Driver</button>
+                        }
                     </div>
-                </div>
+                }
+                
+                @if (!isLoading && errorMessage == null)
+                {
+                    <!-- Request More Drivers - shown when any results (even empty) are loaded successfully -->
+                    <button id="request-more-drivers" 
+                            @onclick="RequestMoreDriversAsync" 
+                            class="w-full mt-4 py-3 border-2 border-orange-500 text-orange-500 rounded-lg font-medium @(isRequestingMore ? "opacity-50 cursor-not-allowed" : "")"
+                            disabled="@isRequestingMore">
+                        @if (isRequestingMore)
+                        {
+                            <span class="inline-block mr-2">
+                                <span class="animate-spin inline-block h-4 w-4 border-t-2 border-orange-500 rounded-full"></span>
+                            </span>
+                            <span>Requesting More Drivers...</span>
+                        }
+                        else
+                        {
+                            <span>Request More Drivers</span>
+                        }
+                    </button>
+                }
 
-                <!-- Request More Drivers -->
-                <button id="request-more-drivers" class="w-full mt-4 py-3 border-2 border-orange-500 text-orange-500 rounded-lg font-medium">
-                    Request More Drivers
-                </button>
+
 
             </div> <!-- /.p-4 -->
         </div> <!-- /#drivers-panel -->
 
     </div> <!-- ✅ Fixed: Close #drivers-list-screen -->
+
+    <!-- Confirmation Dialog -->
+    @if (showConfirmationDialog)
+    {
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @onclick="() => showConfirmationDialog = false">
+            <div class="bg-white rounded-lg p-6 max-w-md mx-auto" @onclick:stopPropagation>
+                <h3 class="text-lg font-medium mb-4">Confirm Driver Selection</h3>
+                
+                @if (selectedDriver != null)
+                {
+                    <div class="mb-6">
+                        <p class="text-gray-700 mb-4">You are about to confirm this driver for your job:</p>
+                        
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <div class="flex items-center">
+                                @if (!string.IsNullOrEmpty(selectedDriver.DriverAvatarUrl))
+                                {
+                                    <img src="@selectedDriver.DriverAvatarUrl" alt="@selectedDriver.DriverName" 
+                                        class="w-12 h-12 rounded-full object-cover mr-3" />
+                                }
+                                else
+                                {
+                                    <div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center mr-3">
+                                        <i class="fa-solid fa-user text-gray-400 text-lg"></i>
+                                    </div>
+                                }
+                                
+                                <div>
+                                    <h4 class="font-medium">@selectedDriver.DriverName</h4>
+                                    <p class="text-sm text-gray-500">@selectedDriver.VehicleType</p>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4 mt-4">
+                                <div>
+                                    <p class="text-sm text-gray-500">Bid Amount</p>
+                                    <p class="font-medium">$@selectedDriver.PriceTotal.ToString("0.00")</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">Category</p>
+                                    <p class="font-medium">@selectedDriver.Category</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">Rating</p>
+                                    <div class="flex items-center">
+                                        <span class="text-yellow-400 mr-1">★</span>
+                                        <span>@selectedDriver.Rating.ToString("0.0") (@selectedDriver.RatingCount)</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">Distance</p>
+                                    <p class="font-medium">@selectedDriver.DistanceMiles miles</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3">
+                        <button @onclick="@(() => showConfirmationDialog = false)" 
+                            class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button @onclick="ConfirmDriverBid" 
+                            class="px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600">
+                            Confirm Driver
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Toast Messages -->
+    @if (showToast)
+    {
+        <div class="fixed bottom-5 left-0 right-0 mx-auto w-5/6 max-w-md">
+            <div class="@($"p-4 rounded-lg shadow-lg {(toastIsError ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}")">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 pt-0.5">
+                        <i class="fa-solid @(toastIsError ? "fa-circle-exclamation" : "fa-circle-check")"></i>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <p class="text-sm font-medium">@toastMessage</p>
+                    </div>
+                    <div class="ml-4 flex-shrink-0 flex">
+                        <button @onclick="@(() => showToast = false)" class="inline-flex text-gray-400 hover:text-gray-500">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 </CenterWrapper>
+
+@code {
+    [Parameter] 
+    public Guid JobId { get; set; }
+    
+    [Parameter]
+    public EventCallback<string> OnDriverConfirmed { get; set; }
+
+    private List<BidDetailsDto> bids = new();
+    private List<BidDetailsDto> filteredBids = new();
+    private bool isLoading = true;
+    private string errorMessage;
+    private FilterState filterState = new();
+    private string searchText = "";
+    private bool showConfirmationDialog = false;
+    private BidDetailsDto selectedDriver;
+    private bool showToast = false;
+    private string toastMessage = "";
+    private bool toastIsError = false;
+    private System.Threading.Timer refreshTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBidsAsync();
+        
+        // Set up refresh timer (every 5 seconds)
+        refreshTimer = new System.Threading.Timer(async _ => 
+        {
+            await LoadBidsAsync();
+            await InvokeAsync(StateHasChanged);
+        });
+        refreshTimer.Change(5000, 5000);
+    }
+
+    private async Task LoadBidsAsync()
+    {
+        try
+        {
+            isLoading = true;
+            errorMessage = null;
+            
+            var request = new GetBidsForJobRequest
+            {
+                JobId = JobId,
+                SortBy = filterState.SortBy,
+                SortDir = filterState.SortDir,
+                Search = filterState.Search,
+                Help = filterState.Help,
+                Size = filterState.Size,
+                Category = filterState.Category,
+                VehicleTypes = filterState.VehicleTypes
+            };
+            
+            var response = await BidService.GetBidsForJobAsync(request);
+            
+            if (response.Success)
+            {
+                bids = response.Bids ?? new List<BidDetailsDto>();
+                FilterBids(); // Apply client-side filtering
+            }
+            else
+            {
+                errorMessage = response.Message ?? "Failed to load available drivers.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void FilterBids()
+    {
+        filteredBids = bids.ToList();
+        
+        // Apply search filter
+        if (!string.IsNullOrWhiteSpace(filterState.Search))
+        {
+            filteredBids = filteredBids.Where(b => 
+                (b.DriverName?.Contains(filterState.Search, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (b.VehicleType?.Contains(filterState.Search, StringComparison.OrdinalIgnoreCase) ?? false)
+            ).ToList();
+        }
+        
+        // Apply category filter (delivery type)
+        if (!string.IsNullOrWhiteSpace(filterState.Category))
+        {
+            filteredBids = filteredBids.Where(b => b.Category == filterState.Category).ToList();
+        }
+        
+        // Apply size filter
+        if (!string.IsNullOrWhiteSpace(filterState.Size))
+        {
+            filteredBids = filteredBids.Where(b => b.Size == filterState.Size).ToList();
+        }
+        
+        // Apply help filter
+        if (!string.IsNullOrWhiteSpace(filterState.Help))
+        {
+            filteredBids = filteredBids.Where(b => b.Help == filterState.Help).ToList();
+        }
+        
+        // Apply vehicle types filter
+        if (filterState.VehicleTypes?.Any() == true)
+        {
+            filteredBids = filteredBids.Where(b => filterState.VehicleTypes.Contains(b.VehicleType)).ToList();
+        }
+        
+        // Apply delivery type filter
+        if (filterState.DeliveryType == "Express")
+        {
+            // Example filter: Express is everything under 50 miles
+            filteredBids = filteredBids.Where(b => b.DistanceMiles < 50).ToList();
+        }
+        else if (filterState.DeliveryType == "Scheduled") 
+        {
+            // Example filter: Scheduled is everything over 50 miles
+            filteredBids = filteredBids.Where(b => b.DistanceMiles >= 50).ToList();
+        }
+        
+        // Apply sort
+        var sortDir = filterState.SortDir?.ToLower() == "asc";
+        filteredBids = filterState.SortBy?.ToLower() switch
+        {
+            "price" => sortDir 
+                ? filteredBids.OrderBy(b => b.PriceTotal).ToList()
+                : filteredBids.OrderByDescending(b => b.PriceTotal).ToList(),
+                
+            "rating" => sortDir 
+                ? filteredBids.OrderBy(b => b.Rating).ToList()
+                : filteredBids.OrderByDescending(b => b.Rating).ToList(),
+                
+            "distance" => sortDir 
+                ? filteredBids.OrderBy(b => b.DistanceMiles).ToList()
+                : filteredBids.OrderByDescending(b => b.DistanceMiles).ToList(),
+                
+            _ => filteredBids
+        };
+    }
+
+    private void ClearSearch()
+    {
+        filterState.Search = null;
+        _ = LoadBidsAsync();
+    }
+    
+    private void NavigateBack()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+    
+    private void ApplyFilters()
+    {
+        _ = LoadBidsAsync();
+    }
+
+    private void SetSort(string sortField)
+    {
+        if (filterState.SortBy == sortField)
+        {
+            filterState.SortDir = filterState.SortDir == "asc" ? "desc" : "asc";
+        }
+        else
+        {
+            filterState.SortBy = sortField;
+            filterState.SortDir = "asc";
+        }
+        
+        _ = LoadBidsAsync();
+    }
+    
+    private void SetDeliveryType(string type)
+    {
+        filterState.DeliveryType = type;
+        _ = LoadBidsAsync();
+    }
+    
+    private void ToggleFilter(string filterType)
+    {
+        switch (filterType.ToLower())
+        {
+            case "help":
+                filterState.Help = string.IsNullOrEmpty(filterState.Help) ? "Yes" : null;
+                break;
+            case "size":
+                filterState.Size = string.IsNullOrEmpty(filterState.Size) ? "Large" : null;
+                break;
+            case "category":
+                filterState.Category = string.IsNullOrEmpty(filterState.Category) ? "Express" : null;
+                break;
+        }
+        
+        _ = LoadBidsAsync();
+    }
+
+    private async Task RequestMoreDriversAsync()
+    {
+        if (isRequestingMore) return;
+        
+        try
+        {
+            isRequestingMore = true;
+            
+            var request = new RequestMoreDriversRequest
+            {
+                JobId = JobId,
+                DistanceMilesMax = 25, // Default to 25 miles
+                VehicleTypes = filterState.VehicleTypes,
+                Help = filterState.Help,
+                Size = filterState.Size,
+                Category = filterState.Category
+            };
+            
+            var response = await BidService.RequestMoreDriversAsync(request);
+            
+            if (response.Success)
+            {
+                ShowToast("Request for more drivers has been sent.", false);
+            }
+            else
+            {
+                ShowToast(response.Message ?? "Failed to request more drivers.", true);
+            }
+            
+            // Reload bids after requesting more
+            await Task.Delay(1000); // Give the server a moment to process
+            await LoadBidsAsync();
+        }
+        catch (Exception ex)
+        {
+            ShowToast($"An error occurred: {ex.Message}", true);
+        }
+        finally
+        {
+            isRequestingMore = false;
+        }
+    }
+
+    private void ShowDriverConfirmation(BidDetailsDto driver)
+    {
+        selectedDriver = driver;
+        showConfirmationDialog = true;
+    }
+
+    private bool isConfirming = false;
+    private bool isRequestingMore = false;
+    private Guid? selectedBidId = null;
+    
+    private bool hasBids => bids.Count > 0;
+    
+    private async Task SelectBidAsync(Guid bidId)
+    {
+        selectedBidId = bidId;
+        
+        try
+        {
+            // Find the selected bid
+            var selectedBid = bids.FirstOrDefault(b => b.BidId == bidId);
+            if (selectedBid != null)
+            {
+                // Show confirmation dialog instead of direct confirmation
+                selectedDriver = selectedBid;
+                showConfirmationDialog = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowToast($"An error occurred: {ex.Message}", true);
+        }
+    }
+    
+    private async Task ConfirmDriverBid()
+    {
+        if (selectedDriver == null) return;
+        
+        try
+        {
+            var request = new ConfirmDriverBidRequest
+            {
+                JobId = JobId,
+                BidId = selectedDriver.BidId
+            };
+            
+            var response = await BidService.ConfirmDriverBidAsync(request);
+            
+            if (response.Success)
+            {
+                showConfirmationDialog = false;
+                ShowToast($"You've confirmed {selectedDriver.DriverName} for your job!", false);
+                
+                // Notify parent component
+                await OnDriverConfirmed.InvokeAsync(selectedDriver.DriverId.ToString());
+                
+                // Navigate to next page after a delay
+                await Task.Delay(2000);
+                NavigationManager.NavigateTo($"/customerflow/job-tracking/{JobId}");
+            }
+            else if (response.ErrorCode == "AlreadyConfirmed")
+            {
+                showConfirmationDialog = false;
+                ShowToast("This driver is no longer available. The list will refresh shortly.", true);
+                await LoadBidsAsync();
+            }
+            else
+            {
+                ShowToast(response.Message ?? "Failed to confirm driver.", true);
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowToast($"An error occurred: {ex.Message}", true);
+        }
+    }
+
+    private void ShowToast(string message, bool isError)
+    {
+        toastMessage = message;
+        toastIsError = isError;
+        showToast = true;
+        
+        // Auto-hide toast after 5 seconds
+        Task.Delay(5000).ContinueWith(_ => 
+        {
+            showToast = false;
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        refreshTimer?.Dispose();
+    }
+}
